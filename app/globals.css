@@ -1241,3 +1241,10 @@ body { background: #fff; color: #1d1d1f; font-family: -apple-system, BlinkMacSys
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 138px), 1fr));
   }
 }
+
+
+/* Remove the old green hover accent from the silver storefront header */
+.main-nav a:hover,
+.main-nav a:focus-visible {
+  color: #45484f;
+}
