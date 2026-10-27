@@ -71,9 +71,9 @@ const SAVE_PRODUCT_TEXT = 'حفظ المنتج';
 const CANCEL_TEXT = '/cancel';
 
 const FOOTER_PAGE_DEFINITIONS: Record<string, { title: string; group: 'policies' | 'customer-service' }> = {
-  returns: { title: 'الاستبدال والاسترجاع', group: 'policies' },
   privacy: { title: 'سياسة الخصوصية', group: 'policies' },
   terms: { title: 'الشروط والأحكام', group: 'policies' },
+  returns: { title: 'الاستبدال والاسترجاع', group: 'policies' },
   shipping: { title: 'الشحن والتوصيل', group: 'customer-service' },
   'payment-methods': { title: 'طرق الدفع', group: 'customer-service' },
   ordering: { title: 'طلب الدفع والشراء', group: 'customer-service' },
