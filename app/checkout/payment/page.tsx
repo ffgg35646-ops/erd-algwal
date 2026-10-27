@@ -30,7 +30,7 @@ export default function CheckoutPaymentPage() {
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem('erd-algwal-checkout-draft-v1');
+      const raw = window.sessionStorage.getItem('erd-algwal-checkout-draft-v1');
       if (raw) setDraft(JSON.parse(raw) as CheckoutDraft);
     } catch {
       setDraft(null);
