@@ -436,19 +436,16 @@ async function updateOrderStatus(
   const statusChanged = order.status !== nextStatus
     || (nextStatus === 'cancelled' && String(order.cancellationReason || '') !== reason);
   const now = new Date();
-  const setFields: Record<string, unknown> = {
+  const updateFields = {
     status: nextStatus,
     updatedAt: now,
-    updatedByTelegramId: telegramUserId
+    updatedByTelegramId: telegramUserId,
+    ...(nextStatus === 'cancelled' && reason ? { cancellationReason: reason } : {})
   };
-  if (nextStatus === 'cancelled' && reason) setFields.cancellationReason = reason;
-
-  const update: Record<string, unknown> = {
-    $set: setFields,
-    $unset: { cancellationReason: '' }
-  };
-  if (nextStatus === 'cancelled' && reason) delete (update.$unset as Record<string, unknown>).cancellationReason;
-  await orders.updateOne({ _id: order._id }, update);
+  const updateDocument = nextStatus === 'cancelled' && reason
+    ? { $set: updateFields }
+    : { $set: updateFields, $unset: { cancellationReason: '' } };
+  await orders.updateOne({ _id: order._id }, updateDocument);
 
   if (
     statusChanged
