@@ -12,9 +12,9 @@ type StorePage = {
 
 const PAGE_LINKS = {
   policies: [
-    { key: 'returns', title: 'الاستبدال والاسترجاع' },
     { key: 'privacy', title: 'سياسة الخصوصية' },
-    { key: 'terms', title: 'الشروط والأحكام' }
+    { key: 'terms', title: 'الشروط والأحكام' },
+    { key: 'returns', title: 'الاستبدال والاسترجاع' }
   ],
   'customer-service': [
     { key: 'shipping', title: 'الشحن والتوصيل' },
