@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { products as seedProducts } from '@/lib/products';
-import { findStoredProduct, type StoredProduct } from '@/lib/catalog';
+import { findStoredProduct } from '@/lib/catalog';
 import { sendNewOrderToAdmin, makeOrderNumber, type StoreOrder } from '@/lib/orders';
 import { adminReplyKeyboard, ensureTelegramIndexes, sendTelegramMessage } from '@/lib/telegram';
 
