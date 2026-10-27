@@ -71,7 +71,7 @@ export default function StoreHome() {
         <div className="category-grid">
           {categories.map((category) => (
             <button type="button" className={'category-tile' + (activeCategory === category.name ? ' active' : '')} key={category.name} onClick={() => { setActiveCategory(category.name); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
-              <span className="category-symbol">{categorySymbols[category.name] || category.icon}</span>
+              <span className="category-symbol">{categorySymbols[category.name] || category.icon || '✦'}</span>
               <span className="category-title">{category.name}</span>
               <span className="category-description">{category.description}</span>
               <span className="category-arrow" aria-hidden="true">←</span>
