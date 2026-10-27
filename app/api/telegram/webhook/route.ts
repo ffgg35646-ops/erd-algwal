@@ -1,7 +1,8 @@
 import { timingSafeEqual } from 'node:crypto';
-import { ObjectId } from 'mongodb';
+import { ObjectId, type Db } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
+import { ensureDefaultCategories, type StoreCategory, type StoredProduct } from '@/lib/catalog';
 import {
   adminReplyKeyboard,
   ORDER_STATUS_LABELS,
@@ -17,33 +18,53 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type TelegramUser = { id: number; first_name?: string; username?: string };
+type TelegramPhoto = { file_id: string; file_unique_id: string; width: number; height: number };
 type TelegramChat = { id: number };
-type TelegramMessage = { message_id: number; from?: TelegramUser; chat: TelegramChat; text?: string };
+type TelegramMessage = { message_id: number; from?: TelegramUser; chat: TelegramChat; text?: string; photo?: TelegramPhoto[] };
 type TelegramCallback = { id: string; from: TelegramUser; data?: string; message?: TelegramMessage };
 type TelegramUpdate = { update_id: number; message?: TelegramMessage; callback_query?: TelegramCallback };
 
-type AddOrderData = {
+type FlowData = {
   name?: string;
-  phone?: string;
-  address?: string;
-  items?: string;
+  categoryId?: string;
+  categoryName?: string;
+  colors?: string[];
+  storageOptions?: string[];
+  price?: number;
+  details?: string;
+  images?: string[];
 };
+
+type FlowStep =
+  | 'section_name'
+  | 'rename_section'
+  | 'product_name'
+  | 'product_colors'
+  | 'product_storage'
+  | 'product_price'
+  | 'product_details'
+  | 'product_images';
 
 type AdminSession = {
   telegramUserId: number;
   chatId: number;
-  step: 'name' | 'phone' | 'address' | 'items' | 'total';
-  data: AddOrderData;
+  workflow: 'add_section' | 'rename_section' | 'add_product';
+  step: FlowStep;
+  data: FlowData;
   updatedAt: Date;
 };
 
 const MENU_ORDERS = 'طلبات العملاء';
-const MENU_ADD = 'إضافة طلب';
-const MENU_EDIT = 'تعديل الطلبات';
+const MENU_ADD_SECTION = 'إضافة طلب';
+const MENU_EDIT_SECTION = 'تعديل الطلبات';
+const MENU_ADD_PRODUCT = 'إضافة منتج';
+const MAIN_MENU_TEXT = 'القائمة الرئيسية';
+const SAVE_PRODUCT_TEXT = 'حفظ المنتج';
+const CANCEL_TEXT = '/cancel';
 
 function isAuthorized(adminId: number) {
   const configured = process.env.TELEGRAM_ADMIN_ID;
-  return Boolean(configured && /^\d+$/.test(configured) && String(adminId) === configured);
+  return Boolean(configured && /^\\d+$/.test(configured) && String(adminId) === configured);
 }
 
 function isSecretValid(received: string | null, expected: string) {
@@ -53,77 +74,38 @@ function isSecretValid(received: string | null, expected: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+function isObjectId(value: string) {
+  return ObjectId.isValid(value) && new ObjectId(value).toHexString() === value.toLowerCase();
+}
+
 function orderStatusLabel(status: unknown) {
   return typeof status === 'string' && status in ORDER_STATUS_LABELS
     ? ORDER_STATUS_LABELS[status as OrderStatus]
     : 'غير محدد';
 }
 
-function validObjectId(value: string) {
-  return ObjectId.isValid(value) && new ObjectId(value).toHexString() === value.toLowerCase();
-}
-
 function normalizeAmount(value: string) {
   const arabicDigits = value
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
     .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
-  return Number(arabicDigits.replace(/[٬,\s]/g, '').replace(/[^\d.]/g, ''));
+  return Number(arabicDigits.replace(/[٬,\\s]/g, '').replace(/[^\\d.]/g, ''));
 }
 
-async function showMainMenu(chatId: number) {
-  await sendTelegramMessage(chatId, 'أهلًا بك في لوحة إدارة أرض الجوال. اختر القسم المطلوب:', {
-    reply_markup: adminReplyKeyboard()
-  });
+function parseList(value: string) {
+  return [...new Set(value.split(/[،,\\n]/).map((item) => item.trim()).filter(Boolean))].slice(0, 30);
 }
 
-async function showOrders(chatId: number, editMode: boolean) {
-  const db = await getDb();
-  const orders = await getRecentOrders(db, 10);
-  if (!orders.length) {
-    await sendTelegramMessage(chatId, editMode
-      ? 'لا توجد طلبات يمكن تعديلها حتى الآن.'
-      : 'لا توجد طلبات محفوظة حتى الآن. ستظهر طلبات المتجر هنا بعد تفعيل إرسال الطلبات إلى قاعدة البيانات.',
-      { reply_markup: adminReplyKeyboard() });
-    return;
-  }
-
-  const title = editMode ? 'اختر الطلب الذي تريد تعديله:' : 'آخر الطلبات المسجلة:';
-  const summary = orders.map((order) => {
-    const name = order.customer?.name || 'بدون اسم';
-    const total = Number(order.total || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
-    return `• ${order.orderNumber} — ${name} — ${total} ر.س — ${orderStatusLabel(order.status)}`;
-  }).join('\n');
-
-  const keyboard = {
-    inline_keyboard: orders.map((order) => [{
-      text: `${order.orderNumber} · ${orderStatusLabel(order.status)}`.slice(0, 60),
-      callback_data: `edit:${order._id.toHexString()}`
-    }])
-  };
-  await sendTelegramMessage(chatId, `${title}\n\n${summary}\n\nاضغط على رقم الطلب لعرض التفاصيل.`, {
-    reply_markup: keyboard
-  });
+async function unreadOrderCount(db: Db) {
+  return db.collection('orders').countDocuments({ source: 'website', adminSeenAt: null });
 }
 
-async function beginManualOrder(db: Awaited<ReturnType<typeof getDb>>, userId: number, chatId: number) {
-  const session: AdminSession = {
-    telegramUserId: userId,
-    chatId,
-    step: 'name',
-    data: {},
-    updatedAt: new Date()
-  };
-  await db.collection<AdminSession>('telegram_sessions').updateOne(
-    { telegramUserId: userId },
-    { $set: session },
-    { upsert: true }
-  );
-  await sendTelegramMessage(chatId, 'إضافة طلب جديد\n\nأرسل اسم العميل الكامل. اكتب /cancel للإلغاء.', {
-    reply_markup: { force_reply: true, selective: true }
-  });
+async function sendMainMenu(db: Db, chatId: number, message = 'أهلًا بك في لوحة إدارة أرض الجوال. اختر القسم المطلوب:') {
+  await ensureDefaultCategories(db);
+  const count = await unreadOrderCount(db);
+  await sendTelegramMessage(chatId, message, { reply_markup: adminReplyKeyboard(count) });
 }
 
-async function saveSession(db: Awaited<ReturnType<typeof getDb>>, session: AdminSession) {
+async function saveSession(db: Db, session: AdminSession) {
   session.updatedAt = new Date();
   await db.collection<AdminSession>('telegram_sessions').updateOne(
     { telegramUserId: session.telegramUserId },
@@ -132,212 +114,425 @@ async function saveSession(db: Awaited<ReturnType<typeof getDb>>, session: Admin
   );
 }
 
-async function handleManualOrderMessage(
-  db: Awaited<ReturnType<typeof getDb>>,
-  session: AdminSession,
-  text: string,
-  chatId: number
-) {
-  const value = text.trim();
-  if (!value) {
-    await sendTelegramMessage(chatId, 'الرسالة فارغة. اكتب البيانات المطلوبة أو /cancel للإلغاء.');
-    return;
-  }
-
-  if (session.step === 'name') {
-    if (value.length < 2 || value.length > 120) {
-      await sendTelegramMessage(chatId, 'اكتب اسمًا من حرفين إلى 120 حرفًا.');
-      return;
-    }
-    session.data.name = value;
-    session.step = 'phone';
-    await saveSession(db, session);
-    await sendTelegramMessage(chatId, 'أرسل رقم جوال العميل.');
-    return;
-  }
-
-  if (session.step === 'phone') {
-    if (!/^[+\d٠-٩۰-۹\s()\-]{7,24}$/.test(value)) {
-      await sendTelegramMessage(chatId, 'رقم الجوال غير واضح. أرسله بالأرقام فقط أو مع رمز الدولة.');
-      return;
-    }
-    session.data.phone = value;
-    session.step = 'address';
-    await saveSession(db, session);
-    await sendTelegramMessage(chatId, 'أرسل عنوان العميل بالتفصيل، بما في ذلك المدينة والحي.');
-    return;
-  }
-
-  if (session.step === 'address') {
-    if (value.length < 3 || value.length > 500) {
-      await sendTelegramMessage(chatId, 'اكتب عنوانًا واضحًا من 3 إلى 500 حرف.');
-      return;
-    }
-    session.data.address = value;
-    session.step = 'items';
-    await saveSession(db, session);
-    await sendTelegramMessage(chatId, 'اكتب أسماء المنتجات والكميات في رسالة واحدة.');
-    return;
-  }
-
-  if (session.step === 'items') {
-    if (value.length < 2 || value.length > 1000) {
-      await sendTelegramMessage(chatId, 'اكتب تفاصيل المنتجات في حدود 1000 حرف.');
-      return;
-    }
-    session.data.items = value;
-    session.step = 'total';
-    await saveSession(db, session);
-    await sendTelegramMessage(chatId, 'أرسل إجمالي الطلب بالريال السعودي، أرقام فقط مثال: 1250 أو 1250.50.');
-    return;
-  }
-
-  if (session.step === 'total') {
-    const total = normalizeAmount(value);
-    if (!Number.isFinite(total) || total <= 0 || total > 100000000) {
-      await sendTelegramMessage(chatId, 'المبلغ غير صحيح. أرسل مبلغًا أكبر من صفر وأقل من 100,000,000 ريال.');
-      return;
-    }
-
-    const now = new Date();
-    const _id = new ObjectId();
-    const order: StoreOrder = {
-      _id,
-      orderNumber: makeOrderNumber(_id, now),
-      source: 'telegram_manual',
-      customer: {
-        name: session.data.name || 'غير محدد',
-        phone: session.data.phone || 'غير محدد',
-        address: session.data.address || 'غير محدد'
-      },
-      items: [{ name: session.data.items || 'منتجات يحددها المتجر', quantity: 1, unitPrice: total }],
-      total,
-      currency: 'SAR',
-      status: 'new',
-      paymentStatus: 'not_recorded',
-      installment: false,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await db.collection<StoreOrder>('orders').insertOne(order);
-    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-    await sendTelegramMessage(chatId, `✅ تم إضافة الطلب بنجاح\n\n${formatOrderForAdmin(order as unknown as Record<string, unknown>)}`, {
-      reply_markup: {
-        inline_keyboard: [[{
-          text: 'تعديل حالة الطلب',
-          callback_data: `edit:${_id.toHexString()}`
-        }]]
-      }
-    });
-    await sendTelegramMessage(chatId, 'يمكنك متابعة قسم آخر من القائمة:', {
-      reply_markup: adminReplyKeyboard()
-    });
-  }
+async function startFlow(db: Db, userId: number, chatId: number, workflow: AdminSession['workflow'], step: FlowStep, data: FlowData, prompt: string) {
+  const session: AdminSession = { telegramUserId: userId, chatId, workflow, step, data, updatedAt: new Date() };
+  await saveSession(db, session);
+  await sendTelegramMessage(chatId, prompt, {
+    reply_markup: { keyboard: [[{ text: MAIN_MENU_TEXT }]], resize_keyboard: true, one_time_keyboard: false }
+  });
 }
 
-async function handleCallback(db: Awaited<ReturnType<typeof getDb>>, callback: TelegramCallback) {
+async function showCustomerOrders(db: Db, chatId: number) {
+  const orders = await getRecentOrders(db, 20);
+  const unseen = await unreadOrderCount(db);
+  if (unseen > 0) {
+    await db.collection('orders').updateMany(
+      { source: 'website', adminSeenAt: null },
+      { $set: { adminSeenAt: new Date() } }
+    );
+  }
+
+  if (!orders.length) {
+    await sendTelegramMessage(chatId, '🔔 لا توجد طلبات عملاء حتى الآن.', { reply_markup: adminReplyKeyboard(0) });
+    return;
+  }
+
+  const summary = orders.map((order) => {
+    const customer = order.customer || { name: 'بدون اسم', phone: '—', address: '—' };
+    const total = Number(order.total || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
+    return [
+      `طلب ${order.orderNumber || order._id.toHexString()}`,
+      `الاسم: ${customer.name || '—'}`,
+      `الجوال: ${customer.phone || '—'}`,
+      `الإجمالي: ${total} ر.س`,
+      `الحالة: ${orderStatusLabel(order.status)}`
+    ].join('\\n');
+  }).join('\\n\\n──────────────\\n\\n');
+
+  const keyboard = {
+    inline_keyboard: orders.map((order) => [{
+      text: `${order.orderNumber} · ${orderStatusLabel(order.status)}`.slice(0, 60),
+      callback_data: `edit-order:${order._id.toHexString()}`
+    }])
+  };
+  await sendTelegramMessage(chatId, `🧾 طلبات العملاء (آخر ${orders.length})\\n\\n${summary}\\n\\nاضغط على رقم طلب لو عايز تعرض تفاصيله وتغيّر حالته.`, {
+    reply_markup: keyboard
+  });
+  await sendMainMenu(db, chatId, 'تم عرض الطلبات. تم تحديث عدّاد الطلبات التي شاهدتها.');
+}
+
+async function listSectionsForEdit(db: Db, chatId: number) {
+  await ensureDefaultCategories(db);
+  const sections = await db.collection<StoreCategory>('categories').find({}).sort({ name: 1 }).limit(80).toArray();
+  if (!sections.length) {
+    await sendMainMenu(db, chatId, 'لا توجد أقسام لتعديلها.');
+    return;
+  }
+  await sendTelegramMessage(chatId, 'اختر القسم الذي تريد تعديل اسمه فقط:', {
+    reply_markup: {
+      inline_keyboard: sections.map((section) => [{
+        text: section.name.slice(0, 60),
+        callback_data: `rename-section:${section._id.toHexString()}`
+      }])
+    }
+  });
+}
+
+async function listSectionsForProduct(db: Db, chatId: number, userId: number) {
+  await ensureDefaultCategories(db);
+  const sections = await db.collection<StoreCategory>('categories').find({}).sort({ name: 1 }).limit(80).toArray();
+  if (!sections.length) {
+    await sendMainMenu(db, chatId, 'لا توجد أقسام. استخدم «إضافة طلب» لإنشاء قسم بالاسم أولًا.');
+    return;
+  }
+
+  await saveSession(db, {
+    telegramUserId: userId, chatId, workflow: 'add_product', step: 'product_name',
+    data: {}, updatedAt: new Date()
+  });
+
+  await sendTelegramMessage(chatId, 'اختر قسم المنتج:', {
+    reply_markup: {
+      inline_keyboard: sections.map((section) => [{
+        text: section.name.slice(0, 60),
+        callback_data: `product-section:${section._id.toHexString()}`
+      }])
+    }
+  });
+}
+
+async function listOrdersForEditing(db: Db, chatId: number, orderId: string) {
+  if (!isObjectId(orderId)) {
+    await sendTelegramMessage(chatId, 'معرّف الطلب غير صالح.');
+    return;
+  }
+  const order = await db.collection<StoreOrder>('orders').findOne({ _id: new ObjectId(orderId) });
+  if (!order) {
+    await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
+    return;
+  }
+  await sendTelegramMessage(chatId, `تفاصيل الطلب\\n\\n${formatOrderForAdmin(order as unknown as Record<string, unknown>)}\\n\\nاختر حالة الطلب:`, {
+    reply_markup: statusInlineKeyboard(orderId)
+  });
+}
+
+async function handleCallback(db: Db, callback: TelegramCallback) {
   await telegramApi('answerCallbackQuery', { callback_query_id: callback.id });
   const chatId = callback.message?.chat.id;
   if (!chatId || !callback.data) return;
 
   const [action, id, status] = callback.data.split(':');
-  if (!validObjectId(id || '')) {
-    await sendTelegramMessage(chatId, 'رقم الطلب غير صالح. افتح قائمة الطلبات وحاول مرة أخرى.');
-    return;
-  }
 
-  const orders = db.collection<StoreOrder>('orders');
-  const orderId = new ObjectId(id);
-
-  if (action === 'edit') {
-    const order = await orders.findOne({ _id: orderId });
-    if (!order) {
-      await sendTelegramMessage(chatId, 'لم يتم العثور على هذا الطلب.');
+  if (action === 'product-section') {
+    if (!isObjectId(id || '')) {
+      await sendTelegramMessage(chatId, 'القسم المحدد غير صالح.');
       return;
     }
-    await sendTelegramMessage(chatId, `تفاصيل الطلب\n\n${formatOrderForAdmin(order as unknown as Record<string, unknown>)}\n\nاختر الحالة الجديدة:`, {
-      reply_markup: statusInlineKeyboard(id)
-    });
+    const section = await db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(id) });
+    if (!section) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على القسم. أعد فتح «إضافة منتج».');
+      return;
+    }
+    await startFlow(db, callback.from.id, chatId, 'add_product', 'product_name', {
+      categoryId: section._id.toHexString(),
+      categoryName: section.name,
+      images: []
+    }, `القسم: ${section.name}\\n\\nاكتب اسم المنتج.`);
     return;
   }
 
-  if (action === 'status' && status && status in ORDER_STATUS_LABELS) {
+  if (action === 'rename-section') {
+    if (!isObjectId(id || '')) {
+      await sendTelegramMessage(chatId, 'القسم المحدد غير صالح.');
+      return;
+    }
+    const section = await db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(id) });
+    if (!section) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على القسم.');
+      return;
+    }
+    await startFlow(db, callback.from.id, chatId, 'rename_section', 'rename_section', {
+      categoryId: section._id.toHexString(),
+      categoryName: section.name
+    }, `القسم الحالي: ${section.name}\\n\\nاكتب الاسم الجديد فقط.`);
+    return;
+  }
+
+  if (action === 'edit-order') {
+    await listOrdersForEditing(db, chatId, id || '');
+    return;
+  }
+
+  if (action === 'status' && id && status && status in ORDER_STATUS_LABELS && isObjectId(id)) {
     const nextStatus = status as OrderStatus;
-    const result = await orders.updateOne(
-      { _id: orderId },
+    const result = await db.collection<StoreOrder>('orders').updateOne(
+      { _id: new ObjectId(id) },
       { $set: { status: nextStatus, updatedAt: new Date(), updatedByTelegramId: callback.from.id } }
     );
     if (!result.matchedCount) {
       await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب لتحديثه.');
       return;
     }
-    const order = await orders.findOne({ _id: orderId });
-    await sendTelegramMessage(chatId, `✅ تم تعديل حالة الطلب ${order?.orderNumber || id}\nالحالة الجديدة: ${ORDER_STATUS_LABELS[nextStatus]}.`, {
-      reply_markup: adminReplyKeyboard()
-    });
+    const order = await db.collection<StoreOrder>('orders').findOne({ _id: new ObjectId(id) });
+    await sendTelegramMessage(chatId, `✅ تم تعديل حالة الطلب ${order?.orderNumber || id}\\nالحالة الجديدة: ${ORDER_STATUS_LABELS[nextStatus]}.`);
+    await sendMainMenu(db, chatId);
+    return;
   }
+
+  await sendTelegramMessage(chatId, 'الأمر غير معروف. ارجع للقائمة الرئيسية.');
 }
 
-async function handleUpdate(db: Awaited<ReturnType<typeof getDb>>, update: TelegramUpdate) {
+async function saveCategory(db: Db, name: string) {
+  const normalized = name.trim().replace(/\\s+/g, ' ');
+  if (normalized.length < 2 || normalized.length > 80) throw new Error('اسم القسم يجب أن يكون من حرفين إلى 80 حرفًا.');
+  const existing = await db.collection<StoreCategory>('categories').findOne({ name: { $regex: `^${normalized.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}$`, $options: 'i' } });
+  if (existing) throw new Error('يوجد قسم بهذا الاسم بالفعل.');
+  const now = new Date();
+  await db.collection('categories').insertOne({ name: normalized, description: '', createdAt: now, updatedAt: now });
+}
+
+async function saveProduct(db: Db, session: AdminSession, chatId: number) {
+  const data = session.data;
+  if (!data.categoryId || !data.categoryName || !data.name || !data.price || !data.details || !data.images?.length) {
+    await sendTelegramMessage(chatId, 'بعض بيانات المنتج ناقصة. اكتب /cancel للإلغاء ثم أعد المحاولة.');
+    return false;
+  }
+  const section = await db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(data.categoryId) });
+  if (!section) {
+    await sendTelegramMessage(chatId, 'القسم لم يعد موجودًا. ابدأ «إضافة منتج» من جديد.');
+    return false;
+  }
+  const now = new Date();
+  const result = await db.collection<StoredProduct>('products').insertOne({
+    categoryId: section._id.toHexString(),
+    category: section.name,
+    name: data.name,
+    colors: data.colors || [],
+    storageOptions: data.storageOptions || [],
+    price: data.price,
+    details: data.details,
+    images: data.images.slice(0, 10),
+    createdAt: now,
+    updatedAt: now
+  } as Omit<StoredProduct, '_id'>);
+
+  await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+  await sendTelegramMessage(chatId, `✅ تم حفظ المنتج بنجاح\\n\\nاسم المنتج: ${data.name}\\nالقسم: ${section.name}\\nالألوان: ${(data.colors || []).join('، ') || 'غير محدد'}\\nمساحات التخزين: ${(data.storageOptions || []).join('، ') || 'غير محدد'}\\nالسعر: ${Number(data.price).toLocaleString('ar-SA')} ر.س\\nعدد الصور: ${data.images.length}\\n\\nسيظهر في القسم على المتجر عند تحديث بيانات المنصة.`, {
+    reply_markup: adminReplyKeyboard(await unreadOrderCount(db))
+  });
+  await sendTelegramMessage(chatId, 'اختر الإجراء التالي:', { reply_markup: adminReplyKeyboard(await unreadOrderCount(db)) });
+  return Boolean(result.insertedId);
+}
+
+async function handleImageStep(db: Db, session: AdminSession, message: TelegramMessage) {
+  const chatId = message.chat.id;
+  if (message.photo?.length) {
+    const best = message.photo[message.photo.length - 1];
+    session.data.images = [...(session.data.images || []), best.file_id].slice(0, 10);
+    await saveSession(db, session);
+    await sendTelegramMessage(chatId, `وصلت الصورة رقم ${session.data.images.length} من 10. أرسل صورًا أخرى أو اضغط «حفظ المنتج» عند الانتهاء.`, {
+      reply_markup: {
+        keyboard: [[{ text: SAVE_PRODUCT_TEXT }], [{ text: MAIN_MENU_TEXT }]],
+        resize_keyboard: true,
+        one_time_keyboard: false
+      }
+    });
+    return;
+  }
+
+  const text = message.text?.trim() || '';
+  if (text === SAVE_PRODUCT_TEXT || text === '/done') {
+    if (!session.data.images?.length) {
+      await sendTelegramMessage(chatId, 'أرسل صورة واحدة على الأقل قبل حفظ المنتج.');
+      return;
+    }
+    await saveProduct(db, session, chatId);
+    return;
+  }
+
+  await sendTelegramMessage(chatId, 'أرسل صورة المنتج من تيليجرام. يمكنك إرسال عدة صور، ثم اضغط «حفظ المنتج».');
+}
+
+async function handleFlowMessage(db: Db, session: AdminSession, message: TelegramMessage) {
+  const chatId = message.chat.id;
+  const text = message.text?.trim() || '';
+  if (session.step === 'product_images') {
+    await handleImageStep(db, session, message);
+    return;
+  }
+  if (!text) {
+    await sendTelegramMessage(chatId, 'أرسل النص المطلوب في هذه الخطوة أو /cancel للإلغاء.');
+    return;
+  }
+
+  if (session.workflow === 'add_section' && session.step === 'section_name') {
+    try {
+      await saveCategory(db, text);
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId, `✅ تم حفظ القسم «${text.trim()}» بالاسم فقط. سيظهر ضمن أقسام اختيار المنتج.`);
+    } catch (error) {
+      await sendTelegramMessage(chatId, error instanceof Error ? error.message : 'تعذر حفظ القسم.');
+    }
+    return;
+  }
+
+  if (session.workflow === 'rename_section' && session.step === 'rename_section') {
+    const categoryId = session.data.categoryId || '';
+    if (!isObjectId(categoryId)) {
+      await sendTelegramMessage(chatId, 'تعذر تحديد القسم. ارجع إلى القائمة وحاول مجددًا.');
+      return;
+    }
+    const normalized = text.replace(/\\s+/g, ' ');
+    if (normalized.length < 2 || normalized.length > 80) {
+      await sendTelegramMessage(chatId, 'الاسم يجب أن يكون من حرفين إلى 80 حرفًا.');
+      return;
+    }
+    const existing = await db.collection<StoreCategory>('categories').findOne({ name: { $regex: `^${normalized.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}$`, $options: 'i' }, _id: { $ne: new ObjectId(categoryId) } });
+    if (existing) {
+      await sendTelegramMessage(chatId, 'يوجد قسم آخر بهذا الاسم. اكتب اسمًا مختلفًا.');
+      return;
+    }
+    const updated = await db.collection<StoreCategory>('categories').findOneAndUpdate(
+      { _id: new ObjectId(categoryId) },
+      { $set: { name: normalized, updatedAt: new Date() } },
+      { returnDocument: 'after' }
+    );
+    if (!updated) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على القسم.');
+      return;
+    }
+    await db.collection('products').updateMany(
+      { categoryId },
+      { $set: { category: normalized, updatedAt: new Date() } }
+    );
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await sendMainMenu(db, chatId, `✅ تم تعديل اسم القسم إلى «${normalized}». تم تحديث الاسم في المنتجات التابعة له.`);
+    return;
+  }
+
+  if (session.workflow === 'add_product') {
+    if (session.step === 'product_name') {
+      if (text.length < 2 || text.length > 120) {
+        await sendTelegramMessage(chatId, 'اسم المنتج يجب أن يكون من حرفين إلى 120 حرفًا.');
+        return;
+      }
+      session.data.name = text;
+      session.step = 'product_colors';
+      await saveSession(db, session);
+      await sendTelegramMessage(chatId, 'اكتب الألوان المتاحة مفصولة بفاصلة، مثال: أسود، أبيض، أزرق. إذا لا توجد ألوان مختلفة اكتب «تخطي».');
+      return;
+    }
+    if (session.step === 'product_colors') {
+      session.data.colors = text === 'تخطي' ? [] : parseList(text);
+      session.step = 'product_storage';
+      await saveSession(db, session);
+      await sendTelegramMessage(chatId, 'اكتب مساحات التخزين المتاحة، مثال: 128GB، 256GB، 512GB. إذا لا ينطبق اكتب «تخطي».');
+      return;
+    }
+    if (session.step === 'product_storage') {
+      session.data.storageOptions = text === 'تخطي' ? [] : parseList(text);
+      session.step = 'product_price';
+      await saveSession(db, session);
+      await sendTelegramMessage(chatId, 'اكتب سعر المنتج بالريال السعودي، رقمًا فقط. مثال: 6099 أو 6099.50.');
+      return;
+    }
+    if (session.step === 'product_price') {
+      const price = normalizeAmount(text);
+      if (!Number.isFinite(price) || price <= 0 || price > 100000000) {
+        await sendTelegramMessage(chatId, 'السعر غير صحيح. اكتب مبلغًا أكبر من صفر.');
+        return;
+      }
+      session.data.price = price;
+      session.step = 'product_details';
+      await saveSession(db, session);
+      await sendTelegramMessage(chatId, 'اكتب تفاصيل المنتج ومواصفاته.');
+      return;
+    }
+    if (session.step === 'product_details') {
+      if (text.length < 2 || text.length > 3000) {
+        await sendTelegramMessage(chatId, 'تفاصيل المنتج يجب أن تكون من حرفين إلى 3000 حرف.');
+        return;
+      }
+      session.data.details = text;
+      session.step = 'product_images';
+      session.data.images = [];
+      await saveSession(db, session);
+      await sendTelegramMessage(chatId, 'أرسل صورة المنتج الآن. يمكنك إرسال عدة صور متتالية، ثم اضغط «حفظ المنتج».', {
+        reply_markup: {
+          keyboard: [[{ text: SAVE_PRODUCT_TEXT }], [{ text: MAIN_MENU_TEXT }]],
+          resize_keyboard: true,
+          one_time_keyboard: false
+        }
+      });
+      return;
+    }
+  }
+
+  await sendTelegramMessage(chatId, 'تعذر متابعة الخطوة الحالية. اكتب /cancel ثم ابدأ من القائمة.');
+}
+
+async function handleUpdate(db: Db, update: TelegramUpdate) {
   if (update.callback_query) {
     const callback = update.callback_query;
-    if (!isAuthorized(callback.from.id)) return;
+    if (!isAuthorized(callback.from.id)) {
+      await telegramApi('answerCallbackQuery', { callback_query_id: callback.id, text: 'غير مصرح لك بالإدارة.', show_alert: true });
+      return;
+    }
     await handleCallback(db, callback);
     return;
   }
 
   const message = update.message;
-  const text = message?.text?.trim();
   const from = message?.from;
   const chatId = message?.chat.id;
-  if (!text || !from || !chatId) return;
+  const text = message?.text?.trim();
+  if (!message || !from || !chatId) return;
+  if (!isAuthorized(from.id)) return;
 
-  if (!isAuthorized(from.id)) {
-    // Silently ignore messages from anyone except the configured admin.
+  if (text === '/start' || text === '/menu' || text === MAIN_MENU_TEXT) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await sendMainMenu(db, chatId);
+    return;
+  }
+  if (text === CANCEL_TEXT) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await sendMainMenu(db, chatId, 'تم إلغاء العملية الحالية.');
+    return;
+  }
+
+  const normalizedText = (text || '').replace(/^🔔\\s*/, '').replace(/\\s*\\(\\d+\\+?\\)$/, '');
+  if (normalizedText === MENU_ORDERS) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await showCustomerOrders(db, chatId);
+    return;
+  }
+  if (text === MENU_ADD_SECTION) {
+    await startFlow(db, from.id, chatId, 'add_section', 'section_name', {}, 'إضافة قسم/طلب جديد\\n\\nأرسل الاسم فقط. سيظهر هذا الاسم في قائمة أقسام المنتجات. اكتب /cancel للإلغاء.');
+    return;
+  }
+  if (text === MENU_EDIT_SECTION) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await listSectionsForEdit(db, chatId);
+    return;
+  }
+  if (text === MENU_ADD_PRODUCT) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await listSectionsForProduct(db, chatId, from.id);
     return;
   }
 
   const session = await db.collection<AdminSession>('telegram_sessions').findOne({ telegramUserId: from.id });
-  if (text === '/start' || text === '/menu') {
-    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
-    await showMainMenu(chatId);
-    return;
-  }
-  if (text === '/cancel') {
-    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
-    await sendTelegramMessage(chatId, 'تم إلغاء العملية الحالية.', { reply_markup: adminReplyKeyboard() });
-    return;
-  }
-  if (text === MENU_ORDERS) {
-    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
-    await showOrders(chatId, false);
-    return;
-  }
-  if (text === MENU_EDIT) {
-    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
-    await showOrders(chatId, true);
-    return;
-  }
-  if (text === MENU_ADD) {
-    await beginManualOrder(db, from.id, chatId);
-    return;
-  }
-
   if (session) {
-    const isExpired = Date.now() - new Date(session.updatedAt).getTime() > 30 * 60 * 1000;
-    if (isExpired) {
+    if (Date.now() - new Date(session.updatedAt).getTime() > 30 * 60 * 1000) {
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
-      await sendTelegramMessage(chatId, 'انتهت مهلة إضافة الطلب. اضغط «إضافة طلب» للبدء من جديد.', {
-        reply_markup: adminReplyKeyboard()
-      });
+      await sendMainMenu(db, chatId, 'انتهت المهلة. ابدأ العملية مرة أخرى من القائمة.');
       return;
     }
-    await handleManualOrderMessage(db, session, text, chatId);
+    await handleFlowMessage(db, session, message);
     return;
   }
 
-  await sendTelegramMessage(chatId, 'استخدم أزرار القائمة لإدارة الطلبات.', { reply_markup: adminReplyKeyboard() });
+  await sendMainMenu(db, chatId, 'استخدم أزرار القائمة لإدارة المتجر.');
 }
 
 export async function POST(request: NextRequest) {
@@ -354,6 +549,7 @@ export async function POST(request: NextRequest) {
 
     const db = await getDb();
     await ensureTelegramIndexes(db);
+    await ensureDefaultCategories(db);
     const updates = db.collection('telegram_updates');
     try {
       await updates.insertOne({ updateId: update.update_id, status: 'processing', receivedAt: new Date() });
