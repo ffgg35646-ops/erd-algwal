@@ -37,6 +37,7 @@ type FlowData = {
   orderId?: string;
   bannerId?: string;
   footerKey?: string;
+  footerSettingKey?: 'vat' | 'barcode';
   content?: string;
 };
 
@@ -44,12 +45,13 @@ type FlowStep =
   | 'section_name' | 'rename_section'
   | 'product_name' | 'product_colors' | 'product_storage' | 'product_price' | 'product_details' | 'product_images'
   | 'edit_product_name' | 'edit_product_colors' | 'edit_product_storage' | 'edit_product_price' | 'edit_product_details' | 'edit_product_images'
-  | 'contact_whatsapp' | 'cancel_reason' | 'slider_image' | 'footer_edit_text' | 'footer_confirm_save';
+  | 'contact_whatsapp' | 'cancel_reason' | 'slider_image' | 'footer_edit_text' | 'footer_confirm_save'
+  | 'footer_vat_number' | 'footer_barcode_image';
 
 type AdminSession = {
   telegramUserId: number;
   chatId: number;
-  workflow: 'add_section' | 'rename_section' | 'add_product' | 'edit_product' | 'contact' | 'cancel_order' | 'slider' | 'footer_content';
+  workflow: 'add_section' | 'rename_section' | 'add_product' | 'edit_product' | 'contact' | 'cancel_order' | 'slider' | 'footer_content' | 'footer_settings';
   step: FlowStep;
   data: FlowData;
   updatedAt: Date;
@@ -64,6 +66,7 @@ const MENU_CONTACT = 'الاتصال';
 const MENU_SLIDER = 'السلايدر';
 const MENU_POLICIES = 'السياسات';
 const MENU_CUSTOMER_SERVICE = 'خدمات العملاء';
+const MENU_FOOTER_SETTINGS = 'تعديلات أخرى';
 const SAVE_FOOTER_TEXT = 'حفظ النص';
 const REWRITE_FOOTER_TEXT = 'إعادة الكتابة';
 const MAIN_MENU_TEXT = 'رجوع إلى القائمة الرئيسية';
@@ -553,6 +556,50 @@ async function showFooterPages(chatId: number, group: 'policies' | 'customer-ser
   });
 }
 
+
+async function showFooterSettings(db: Db, chatId: number) {
+  const settings = await db.collection<{ _id: string; vatNumber?: string; barcodeFileId?: string }>('store_settings')
+    .findOne({ _id: 'footer' });
+  const vatNumber = settings?.vatNumber || 'غير مضاف';
+  const barcodeStatus = settings?.barcodeFileId ? 'تمت إضافته' : 'غير مضاف';
+  await sendTelegramMessage(chatId,
+    'تعديلات أخرى — بيانات الفوتر\n\nالرقم الضريبي: ' + vatNumber + '\nالباركود: ' + barcodeStatus + '\n\nاختر العنصر الذي تريد تعديله:',
+    {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'الرقم الضريبي', callback_data: 'footer-setting:vat' }],
+          [{ text: 'الباركود', callback_data: 'footer-setting:barcode' }],
+          [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+        ]
+      }
+    }
+  );
+}
+
+async function showFooterBarcodeMenu(db: Db, chatId: number) {
+  const settings = await db.collection<{ _id: string; barcodeFileId?: string }>('store_settings')
+    .findOne({ _id: 'footer' });
+  if (settings?.barcodeFileId) {
+    await telegramApi('sendPhoto', {
+      chat_id: chatId,
+      photo: settings.barcodeFileId,
+      caption: 'هذه صورة الباركود الحالية الظاهرة في فوتر المتجر.'
+    });
+  } else {
+    await sendTelegramMessage(chatId, 'لم تتم إضافة صورة باركود للفوتر حتى الآن.');
+  }
+  await sendTelegramMessage(chatId, 'يمكنك استبدال الصورة بصورة جديدة أو حذفها من الفوتر:', {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '📷 استبدال صورة الباركود', callback_data: 'footer-barcode-replace' }],
+        [{ text: '🗑 حذف صورة الباركود', callback_data: 'footer-barcode-delete' }],
+        [{ text: '↩ رجوع إلى تعديلات أخرى', callback_data: 'footer-settings-menu' }],
+        [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
+      ]
+    }
+  });
+}
+
 async function handleCallback(db: Db, callback: TelegramCallback) {
   await telegramApi('answerCallbackQuery', { callback_query_id: callback.id });
   const chat = callback.message?.chat;
@@ -577,6 +624,60 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     const result = await db.collection('store_banners').deleteOne({ _id: new ObjectId(id) });
     await sendTelegramMessage(chatId, result.deletedCount ? '✅ تم حذف الصورة من السلايدر في المتجر.' : 'الصورة غير موجودة أو سبق حذفها.');
     await showSliderMenu(chatId);
+    return;
+  }
+  if (action === 'footer-settings-menu') {
+    await showFooterSettings(db, chatId);
+    return;
+  }
+  if (action === 'footer-setting' && id === 'vat') {
+    const settings = await db.collection<{ _id: string; vatNumber?: string }>('store_settings')
+      .findOne({ _id: 'footer' });
+    await startFlow(
+      db,
+      callback.from.id,
+      chatId,
+      'footer_settings',
+      'footer_vat_number',
+      { footerSettingKey: 'vat' },
+      'تعديل الرقم الضريبي الظاهر أسفل اسم المتجر في الفوتر.\n\nالرقم الحالي: ' + (settings?.vatNumber || 'غير مضاف') + '\n\nأرسل الرقم الجديد بالأرقام فقط (من 5 إلى 30 رقمًا)، أو أرسل «مسح» لحذفه. اكتب /cancel للإلغاء.'
+    );
+    return;
+  }
+  if (action === 'footer-setting' && id === 'barcode') {
+    await showFooterBarcodeMenu(db, chatId);
+    return;
+  }
+  if (action === 'footer-barcode-replace') {
+    const settings = await db.collection<{ _id: string; barcodeFileId?: string }>('store_settings')
+      .findOne({ _id: 'footer' });
+    if (settings?.barcodeFileId) {
+      await telegramApi('sendPhoto', {
+        chat_id: chatId,
+        photo: settings.barcodeFileId,
+        caption: 'الباركود الحالي. أرسل صورة جديدة لاستبداله.'
+      });
+    }
+    await startFlow(
+      db,
+      callback.from.id,
+      chatId,
+      'footer_settings',
+      'footer_barcode_image',
+      { footerSettingKey: 'barcode' },
+      'أرسل صورة الباركود الجديدة كصورة في تيليجرام، وسيتم استبدال الصورة الحالية في الفوتر. اكتب /cancel للإلغاء.'
+    );
+    return;
+  }
+  if (action === 'footer-barcode-delete') {
+    const result = await db.collection('store_settings').updateOne(
+      { _id: 'footer' },
+      { $unset: { barcodeFileId: '' }, $set: { updatedAt: new Date(), updatedByTelegramId: callback.from.id } }
+    );
+    await sendTelegramMessage(chatId,
+      result.modifiedCount ? '✅ تم حذف الباركود من الفوتر.' : 'لا يوجد باركود محفوظ لحذفه.'
+    );
+    await showFooterSettings(db, chatId);
     return;
   }
   if (action === 'footer-page' && id && FOOTER_PAGE_DEFINITIONS[id]) {
@@ -770,6 +871,50 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     });
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
     await sendMainMenu(db, chatId, '✅ تمت إضافة صورة للسلايدر. ستظهر في واجهة المتجر عند تحديث الصور.');
+    return;
+  }
+
+  if (session.workflow === 'footer_settings' && session.step === 'footer_vat_number') {
+    if (value === 'مسح' || value === 'حذف') {
+      const result = await db.collection('store_settings').updateOne(
+        { _id: 'footer' },
+        { $unset: { vatNumber: '' }, $set: { updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } }
+      );
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId, result.modifiedCount ? '✅ تم حذف الرقم الضريبي من الفوتر.' : 'لا يوجد رقم ضريبي محفوظ لحذفه.');
+      return;
+    }
+    const vatNumber = value
+      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+      .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+      .replace(/[\s-]/g, '');
+    if (!/^\d{5,30}$/.test(vatNumber)) {
+      await sendTelegramMessage(chatId, 'الرقم غير صالح. أرسل من 5 إلى 30 رقمًا فقط، ويمكن فصل الأرقام بمسافات أو شرطات.');
+      return;
+    }
+    await db.collection('store_settings').updateOne(
+      { _id: 'footer' },
+      { $set: { vatNumber, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
+      { upsert: true }
+    );
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await sendMainMenu(db, chatId, '✅ تم حفظ الرقم الضريبي وسيظهر أسفل اسم المتجر في الفوتر.');
+    return;
+  }
+
+  if (session.workflow === 'footer_settings' && session.step === 'footer_barcode_image') {
+    if (!message.photo?.length) {
+      await sendTelegramMessage(chatId, 'أرسل صورة الباركود كصورة في تيليجرام، وليس كرابط نصي. اكتب /cancel للإلغاء.');
+      return;
+    }
+    const photo = message.photo[message.photo.length - 1];
+    await db.collection('store_settings').updateOne(
+      { _id: 'footer' },
+      { $set: { barcodeFileId: photo.file_id, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
+      { upsert: true }
+    );
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await sendMainMenu(db, chatId, '✅ تم حفظ صورة الباركود وتحديثها في الفوتر.');
     return;
   }
 
@@ -997,6 +1142,11 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
   }
   if (value === MENU_CUSTOMER_SERVICE) {
     await showFooterPages(chatId, 'customer-service');
+    return;
+  }
+  if (value === MENU_FOOTER_SETTINGS) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await showFooterSettings(db, chatId);
     return;
   }
   if (value === MENU_CONTACT) {
