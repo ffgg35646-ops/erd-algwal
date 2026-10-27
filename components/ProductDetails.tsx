@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Product } from '@/lib/products';
 import { formatPrice } from '@/lib/products';
 import { useCart } from '@/components/CartProvider';
@@ -12,7 +12,16 @@ export default function ProductDetails({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const gallery = product.images?.length ? product.images : [product.image];
-  const activeImage = gallery[Math.min(activeImageIndex, gallery.length - 1)] || product.image;
+  const safeImageIndex = Math.min(activeImageIndex, gallery.length - 1);
+  const activeImage = gallery[safeImageIndex] || product.image;
+
+  useEffect(() => {
+    if (gallery.length < 2) return;
+    const timer = window.setInterval(() => {
+      setActiveImageIndex((current) => (current + 1) % gallery.length);
+    }, 10_000);
+    return () => window.clearInterval(timer);
+  }, [gallery.length]);
 
   function handleAdd() {
     addToCart(product.id, quantity);
@@ -27,10 +36,35 @@ export default function ProductDetails({ product }: { product: Product }) {
         <div className="detail-gallery">
           <div className="detail-image-panel">
             {product.badge ? <span className="product-badge detail-badge">{product.badge}</span> : null}
-            {activeImage ? <img src={activeImage} alt={product.name} className="detail-image" /> : <div className="detail-no-image">صورة المنتج غير متاحة</div>}
+            {activeImage ? (
+              <img
+                key={safeImageIndex}
+                src={activeImage}
+                alt={product.name + ' - الصورة ' + (safeImageIndex + 1)}
+                className="detail-image"
+                fetchPriority="high"
+              />
+            ) : <div className="detail-no-image">صورة المنتج غير متاحة</div>}
+            {gallery.length > 1 ? (
+              <>
+                <button
+                  type="button"
+                  className="detail-image-nav detail-image-previous"
+                  onClick={() => setActiveImageIndex((current) => (current - 1 + gallery.length) % gallery.length)}
+                  aria-label="الصورة السابقة"
+                >›</button>
+                <button
+                  type="button"
+                  className="detail-image-nav detail-image-next"
+                  onClick={() => setActiveImageIndex((current) => (current + 1) % gallery.length)}
+                  aria-label="الصورة التالية"
+                >‹</button>
+                <span className="detail-image-counter">{safeImageIndex + 1} / {gallery.length}</span>
+              </>
+            ) : null}
           </div>
           {gallery.length > 1 ? <div className="detail-thumbnails" aria-label="صور المنتج">
-            {gallery.map((image, index) => <button type="button" className={index === activeImageIndex ? 'detail-thumbnail active' : 'detail-thumbnail'} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)}><img src={image} alt="" /></button>)}
+            {gallery.map((image, index) => <button type="button" className={index === safeImageIndex ? 'detail-thumbnail active' : 'detail-thumbnail'} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)} aria-pressed={index === safeImageIndex}><img src={image} alt="" loading="lazy" /></button>)}
           </div> : null}
         </div>
         <div className="detail-information">
