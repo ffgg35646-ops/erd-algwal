@@ -38,6 +38,8 @@ export default function StoreFooter() {
   const [pages, setPages] = useState<StorePage[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [vatNumber, setVatNumber] = useState('');
+  const [barcodeImageUrl, setBarcodeImageUrl] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -52,8 +54,10 @@ export default function StoreFooter() {
           if (alive && Array.isArray(data.pages)) setPages(data.pages);
         }
         if (settingsResponse.ok) {
-          const data = await settingsResponse.json() as { whatsappNumber?: string };
+          const data = await settingsResponse.json() as { whatsappNumber?: string; vatNumber?: string; barcodeImageUrl?: string };
           if (alive && typeof data.whatsappNumber === 'string') setWhatsappNumber(data.whatsappNumber);
+          if (alive && typeof data.vatNumber === 'string') setVatNumber(data.vatNumber);
+          if (alive && typeof data.barcodeImageUrl === 'string') setBarcodeImageUrl(data.barcodeImageUrl);
         }
       } catch {
         // Keep the fallback links working if settings cannot be loaded.
@@ -99,6 +103,7 @@ export default function StoreFooter() {
           <div className="store-footer-brand">
             <span className="stream-footer-mark">أ</span>
             <strong>أرض الجوال</strong>
+            {vatNumber ? <p className="store-footer-vat">الرقم الضريبي: <bdi dir="ltr">{vatNumber}</bdi></p> : null}
             <p>متجر متخصص في الجوالات وملحقاتها، مع أقسام تساعدك على الوصول إلى المنتجات بسهولة.</p>
             <small>© {new Date().getFullYear()} أرض الجوال. جميع الحقوق محفوظة.</small>
           </div>
@@ -126,6 +131,27 @@ export default function StoreFooter() {
               <span className="store-footer-muted">يمكنك التواصل معنا من خلال أيقونة واتساب بالموقع.</span>
             )}
           </div>
+
+          <div className="store-footer-column store-footer-barcode">
+            <h2>الباركود</h2>
+            {barcodeImageUrl ? (
+              <img
+                src={barcodeImageUrl}
+                alt="باركود أرض الجوال"
+                width={150}
+                height={150}
+                loading="lazy"
+              />
+            ) : (
+              <span className="store-footer-muted">يمكن إضافة الباركود من البوت ليظهر هنا.</span>
+            )}
+          </div>
+        </div>
+
+        <div className="store-footer-trust container" aria-label="مميزات المتجر">
+          <div className="store-footer-trust-item"><span aria-hidden="true">✓</span><strong>دفع آمن</strong></div>
+          <div className="store-footer-trust-item"><span aria-hidden="true">◇</span><strong>متجر موثوق</strong></div>
+          <div className="store-footer-trust-item"><span aria-hidden="true">↗</span><strong>شحن سريع</strong></div>
         </div>
       </footer>
 
