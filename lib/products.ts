@@ -9,6 +9,10 @@ export type Product = {
   shortDescription: string;
   description: string;
   specifications: string[];
+  categoryId?: string;
+  colors?: string[];
+  storageOptions?: string[];
+  images?: string[];
 };
 
 export const categories = [
