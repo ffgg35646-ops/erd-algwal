@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { useCart } from '@/components/CartProvider';
-import { formatPrice, products } from '@/lib/products';
+import { formatPrice } from '@/lib/products';
 
 export default function CartPage() {
-  const { cart, hydrated, setQuantity, removeFromCart } = useCart();
+  const { cart, hydrated, setQuantity, removeFromCart, catalogProducts: products } = useCart();
 
   const lines = useMemo(
     () => Object.entries(cart).map(([id, quantity]) => ({
@@ -61,7 +61,7 @@ export default function CartPage() {
             <div className="summary-row"><span>قيمة المنتجات</span><strong>{formatPrice(total)}</strong></div>
             <div className="summary-divider" />
             <div className="summary-total"><span>الإجمالي</span><strong>{formatPrice(total)}</strong></div>
-            <p className="cart-next-step">هذه نسخة واجهة أولية. خطوات إرسال الطلب وربطه ببوت تيليجرام ستُضاف في المرحلة التالية.</p>
+            <p className="cart-next-step">راجع بيانات السلة، ثم أكمل بيانات التوصيل لإرسال طلبك.</p>
             <div className="checkout-summary-actions"><Link href="/checkout" className="primary-button">إتمام الطلب <span aria-hidden="true">←</span></Link><Link href="/#products" className="outline-button summary-back">إضافة منتجات أخرى</Link></div>
           </aside>
         </div>
