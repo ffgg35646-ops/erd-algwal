@@ -1535,3 +1535,25 @@ body { background: #fff; color: #1d1d1f; font-family: -apple-system, BlinkMacSys
   .store-page-modal-content { padding: 18px 18px 24px; font-size: 12px; }
   .store-page-modal time { padding: 0 18px 15px; }
 }
+
+/* Additional footer details: VAT, editable barcode and trust markers */
+.store-footer-inner { grid-template-columns: minmax(1.2fr, 1.35fr) repeat(4, minmax(0, 1fr)); }
+.store-footer-vat { margin: 0 !important; color: #59656d !important; font-size: 11px !important; font-weight: 800; line-height: 1.8; }
+.store-footer-vat bdi { font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.store-footer-barcode img { display: block; width: 132px; height: 132px; max-width: 100%; object-fit: contain; padding: 7px; border: 1px solid #dfe4e7; border-radius: 12px; background: #fff; }
+.store-footer-trust { display: flex; justify-content: center; align-items: center; gap: clamp(18px, 4vw, 58px); margin-top: 34px; padding-top: 22px; border-top: 1px solid #d9dee2; }
+.store-footer-trust-item { display: inline-flex; align-items: center; gap: 9px; color: #4a565e; font-size: 12px; }
+.store-footer-trust-item span { display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid #d5dbe0; border-radius: 50%; background: #fff; color: #6d7b83; font-size: 15px; font-weight: 900; }
+.store-footer-trust-item strong { font-weight: 900; }
+@media (max-width: 1020px) {
+  .store-footer-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .store-footer-brand { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .store-footer-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 25px 16px; }
+  .store-footer-barcode img { width: 112px; height: 112px; }
+  .store-footer-trust { gap: 12px; justify-content: space-between; flex-wrap: wrap; margin-top: 25px; padding-top: 18px; }
+  .store-footer-trust-item { gap: 6px; font-size: 10px; }
+  .store-footer-trust-item span { width: 23px; height: 23px; font-size: 12px; }
+}
+
