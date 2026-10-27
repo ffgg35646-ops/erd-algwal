@@ -520,3 +520,6 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
   .policy-card { padding: 20px 15px; }
   .policy-card h1 { font-size: 22px; }
 }
+
+.checkout-order-number { margin-top: 8px !important; color: #547269 !important; font-size: 12px !important; }
+.checkout-order-number strong { color: var(--green-dark); font-family: ui-monospace, monospace; direction: ltr; }
