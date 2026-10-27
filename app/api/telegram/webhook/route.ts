@@ -756,6 +756,11 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       await sendTelegramMessage(chatId, 'أرسل الصورة كصورة في تيليجرام، وليس كرابط نصي. اكتب /cancel للإلغاء.');
       return;
     }
+    const bannerCount = await db.collection<StoreBannerRecord>('store_banners').countDocuments({});
+    if (bannerCount >= 12) {
+      await sendTelegramMessage(chatId, 'السلايدر ممتلئ بـ12 صورة. احذف صورة قديمة من «السلايدر ← حذف صورة» ثم أضف صورة جديدة.');
+      return;
+    }
     const photo = message.photo[message.photo.length - 1];
     await db.collection<StoreBannerRecord>('store_banners').insertOne({
       _id: new ObjectId(),
