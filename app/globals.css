@@ -1253,8 +1253,8 @@ body { background: #fff; color: #1d1d1f; font-family: -apple-system, BlinkMacSys
 /* Tall, non-cropping product gallery with a soft silver frame */
 .detail-gallery { min-width: 0; width: 100%; }
 .detail-image-panel {
-  height: clamp(760px, 84vh, 860px);
-  min-height: 760px;
+  height: clamp(820px, 86vh, 920px);
+  min-height: 820px;
   position: relative;
   display: grid;
   place-items: center;
@@ -1306,9 +1306,10 @@ body { background: #fff; color: #1d1d1f; font-family: -apple-system, BlinkMacSys
 .detail-image-counter {
   position: absolute;
   z-index: 4;
-  inset-inline-start: 50%;
+  left: 50%;
+  right: auto;
   bottom: 16px;
-  transform: translateX(50%);
+  transform: translateX(-50%);
   padding: 5px 11px;
   border: 1px solid rgba(196, 200, 208, .9);
   border-radius: 999px;
