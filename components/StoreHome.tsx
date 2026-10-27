@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import ProductCard from '@/components/ProductCard';
-import { categories, products } from '@/lib/products';
+import { useCart } from '@/components/CartProvider';
 
 const categorySymbols: Record<string, string> = {
   'آيفون': '',
@@ -13,6 +13,7 @@ const categorySymbols: Record<string, string> = {
 };
 
 export default function StoreHome() {
+  const { catalogProducts: products, catalogCategories: categories } = useCart();
   const [activeCategory, setActiveCategory] = useState('الكل');
   const [search, setSearch] = useState('');
 
