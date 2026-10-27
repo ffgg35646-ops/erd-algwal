@@ -126,10 +126,15 @@ async function showCustomerOrders(db: Db, chatId: number) {
   const orders = await getRecentOrders(db, 10);
   const unseen = await unreadOrderCount(db);
   if (unseen > 0) {
-    await db.collection('orders').updateMany(
-      { source: 'website', adminSeenAt: null },
-      { $set: { adminSeenAt: new Date() } }
-    );
+    const displayedWebsiteOrderIds = orders
+      .filter((order) => order.source === 'website')
+      .map((order) => order._id);
+    if (displayedWebsiteOrderIds.length) {
+      await db.collection('orders').updateMany(
+        { _id: { $in: displayedWebsiteOrderIds }, source: 'website', adminSeenAt: null },
+        { $set: { adminSeenAt: new Date() } }
+      );
+    }
   }
 
   if (!orders.length) {
@@ -313,10 +318,9 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
   } as Omit<StoredProduct, '_id'>);
 
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-  await sendTelegramMessage(chatId, `✅ تم حفظ المنتج بنجاح\\n\\nاسم المنتج: ${data.name}\\nالقسم: ${section.name}\\nالألوان: ${(data.colors || []).join('، ') || 'غير محدد'}\\nمساحات التخزين: ${(data.storageOptions || []).join('، ') || 'غير محدد'}\\nالسعر: ${Number(data.price).toLocaleString('ar-SA')} ر.س\\nعدد الصور: ${data.images.length}\\n\\nسيظهر في القسم على المتجر عند تحديث بيانات المنصة.`, {
+  await sendTelegramMessage(chatId, `✅ تم حفظ المنتج بنجاح\\n\\nاسم المنتج: ${data.name}\\nالقسم: ${section.name}\\nالألوان: ${(data.colors || []).join('، ') || 'غير محدد'}\\nمساحات التخزين: ${(data.storageOptions || []).join('، ') || 'غير محدد'}\\nالسعر: ${Number(data.price).toLocaleString('ar-SA')} ر.س\\nعدد الصور: ${data.images.length}\\n\\nسيظهر في القسم على المتجر خلال تحديث بيانات المنصة.`, {
     reply_markup: adminReplyKeyboard(await unreadOrderCount(db))
   });
-  await sendTelegramMessage(chatId, 'اختر الإجراء التالي:', { reply_markup: adminReplyKeyboard(await unreadOrderCount(db)) });
   return Boolean(result.insertedId);
 }
 
