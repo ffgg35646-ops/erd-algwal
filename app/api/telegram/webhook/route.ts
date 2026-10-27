@@ -34,26 +34,27 @@ type FlowData = {
   price?: number;
   details?: string;
   images?: string[];
+  orderId?: string;
 };
 
 type FlowStep =
   | 'section_name' | 'rename_section'
   | 'product_name' | 'product_colors' | 'product_storage' | 'product_price' | 'product_details' | 'product_images'
   | 'edit_product_name' | 'edit_product_colors' | 'edit_product_storage' | 'edit_product_price' | 'edit_product_details' | 'edit_product_images'
-  | 'contact_whatsapp';
+  | 'contact_whatsapp' | 'cancel_reason';
 
 type AdminSession = {
   telegramUserId: number;
   chatId: number;
-  workflow: 'add_section' | 'rename_section' | 'add_product' | 'edit_product' | 'contact';
+  workflow: 'add_section' | 'rename_section' | 'add_product' | 'edit_product' | 'contact' | 'cancel_order';
   step: FlowStep;
   data: FlowData;
   updatedAt: Date;
 };
 
 const MENU_ORDERS = 'طلبات العملاء';
-const MENU_ADD_SECTION = 'إضافة طلب';
-const MENU_EDIT_SECTION = 'تعديل الطلب';
+const MENU_ADD_SECTION = 'إضافة قسم';
+const MENU_EDIT_SECTION = 'تعديل قسم';
 const MENU_ADD_PRODUCT = 'إضافة منتج';
 const MENU_EDIT_PRODUCT = 'تعديل المنتج';
 const MENU_CONTACT = 'الاتصال';
@@ -167,7 +168,7 @@ async function listSectionsForProduct(db: Db, chatId: number) {
   await ensureDefaultCategories(db);
   const sections = await db.collection<StoreCategory>('categories').find({}).sort({ name: 1 }).limit(80).toArray();
   if (!sections.length) {
-    await sendMainMenu(db, chatId, 'لا توجد أقسام. استخدم «إضافة طلب» لإنشاء قسم أولًا.');
+    await sendMainMenu(db, chatId, 'لا توجد أقسام. استخدم «إضافة قسم» لإنشاء قسم أولًا.');
     return;
   }
   await sendTelegramMessage(chatId, 'اختر القسم الذي سيُضاف إليه المنتج:', {
@@ -410,6 +411,70 @@ async function saveEditedField(db: Db, session: AdminSession, value: string, cha
   await showProductEditMenu(db, chatId, id);
 }
 
+
+async function updateOrderStatus(
+  db: Db,
+  chatId: number,
+  telegramUserId: number,
+  orderId: string,
+  nextStatus: OrderStatus,
+  cancellationReason = ''
+) {
+  if (!isObjectId(orderId)) {
+    await sendTelegramMessage(chatId, 'معرّف الطلب غير صالح.');
+    return;
+  }
+
+  const orders = db.collection<StoreOrder>('orders');
+  const order = await orders.findOne({ _id: new ObjectId(orderId) });
+  if (!order) {
+    await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
+    return;
+  }
+
+  const reason = nextStatus === 'cancelled' ? cancellationReason.trim().slice(0, 500) : '';
+  const statusChanged = order.status !== nextStatus
+    || (nextStatus === 'cancelled' && String(order.cancellationReason || '') !== reason);
+  const now = new Date();
+  const setFields: Record<string, unknown> = {
+    status: nextStatus,
+    updatedAt: now,
+    updatedByTelegramId: telegramUserId
+  };
+  if (nextStatus === 'cancelled' && reason) setFields.cancellationReason = reason;
+
+  const update: Record<string, unknown> = {
+    $set: setFields,
+    $unset: { cancellationReason: '' }
+  };
+  if (nextStatus === 'cancelled' && reason) delete (update.$unset as Record<string, unknown>).cancellationReason;
+  await orders.updateOne({ _id: order._id }, update);
+
+  if (
+    statusChanged
+    && order.customerNotificationKey
+    && ['confirmed', 'shipped', 'completed', 'cancelled'].includes(nextStatus)
+  ) {
+    await db.collection('customer_notifications').insertOne({
+      customerNotificationKey: order.customerNotificationKey,
+      orderId: order._id.toHexString(),
+      orderNumber: order.orderNumber || order._id.toHexString(),
+      status: nextStatus,
+      statusLabel: ORDER_STATUS_LABELS[nextStatus],
+      ...(nextStatus === 'cancelled' && reason ? { cancellationReason: reason } : {}),
+      createdAt: now,
+      readAt: null
+    });
+  }
+
+  const reasonLine = nextStatus === 'cancelled' && reason ? '\nسبب الإلغاء: ' + reason : '';
+  await sendTelegramMessage(
+    chatId,
+    '✅ تم تعديل حالة الطلب ' + (order.orderNumber || orderId) + '\nالحالة الجديدة: ' + ORDER_STATUS_LABELS[nextStatus] + reasonLine
+  );
+  await sendMainMenu(db, chatId);
+}
+
 async function handleCallback(db: Db, callback: TelegramCallback) {
   await telegramApi('answerCallbackQuery', { callback_query_id: callback.id });
   const chat = callback.message?.chat;
@@ -531,15 +596,37 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await listOrderDetails(db, chatId, id || '');
     return;
   }
-  if (action === 'status' && id && field && field in ORDER_STATUS_LABELS && isObjectId(id)) {
-    const nextStatus = field as OrderStatus;
-    const result = await db.collection<StoreOrder>('orders').updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { status: nextStatus, updatedAt: new Date(), updatedByTelegramId: callback.from.id } }
+  if (action === 'skip-cancel-reason' && id && isObjectId(id)) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
+    await updateOrderStatus(db, chatId, callback.from.id, id, 'cancelled', '');
+    return;
+  }
+  if (action === 'status' && field === 'preparing') {
+    await sendTelegramMessage(chatId, 'حالة «قيد التجهيز» لم تعد متاحة. اختر حالة أخرى من تفاصيل الطلب.');
+    return;
+  }
+  if (action === 'status' && id && field === 'cancelled' && isObjectId(id)) {
+    const order = await db.collection<StoreOrder>('orders').findOne({ _id: new ObjectId(id) });
+    if (!order) return void await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
+    await startFlow(
+      db,
+      callback.from.id,
+      chatId,
+      'cancel_order',
+      'cancel_reason',
+      { orderId: id },
+      'إلغاء الطلب ' + (order.orderNumber || id) + '\n\nاكتب سبب الإلغاء (اختياري)، وسيظهر للعميل في إشعار المتصفح. أو اضغط «إلغاء بدون تعليق».',
+      {
+        inline_keyboard: [
+          [{ text: 'إلغاء بدون تعليق', callback_data: 'skip-cancel-reason:' + id }],
+          [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+        ]
+      }
     );
-    if (!result.matchedCount) return void await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
-    await sendTelegramMessage(chatId, '✅ تم تعديل حالة الطلب ' + id + '\nالحالة الجديدة: ' + ORDER_STATUS_LABELS[nextStatus]);
-    await sendMainMenu(db, chatId);
+    return;
+  }
+  if (action === 'status' && id && field && field in ORDER_STATUS_LABELS && field !== 'preparing' && isObjectId(id)) {
+    await updateOrderStatus(db, chatId, callback.from.id, id, field as OrderStatus);
     return;
   }
   await sendTelegramMessage(chatId, 'الأمر غير معروف. ارجع إلى القائمة الرئيسية.');
@@ -570,6 +657,23 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     await sendMainMenu(db, chatId, '✅ تم حفظ رقم واتساب الدعم. رابط التواصل: https://wa.me/' + phone);
     return;
   }
+  if (session.workflow === 'cancel_order' && session.step === 'cancel_reason') {
+    const orderId = session.data.orderId || '';
+    if (!isObjectId(orderId)) {
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId, 'تعذر تحديد الطلب المراد إلغاؤه.');
+      return;
+    }
+    if (value.length > 500) {
+      await sendTelegramMessage(chatId, 'سبب الإلغاء طويل جدًا. اكتب تعليقًا لا يتجاوز 500 حرف، أو اضغط «إلغاء بدون تعليق».');
+      return;
+    }
+    const reason = value === 'بدون تعليق' ? '' : value;
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await updateOrderStatus(db, chatId, session.telegramUserId, orderId, 'cancelled', reason);
+    return;
+  }
+
   if (!value) return void await sendTelegramMessage(chatId, 'أرسل النص المطلوب أو /cancel للإلغاء.');
 
   if (session.workflow === 'add_section' && session.step === 'section_name') {
