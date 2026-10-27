@@ -254,10 +254,21 @@ export default function StoreCheckoutPage() {
       };
       window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(checkoutDraft));
 
+      let reviewToken = '';
+      try {
+        reviewToken = window.localStorage.getItem('erd-algwal-review-token') || '';
+        if (!reviewToken) {
+          reviewToken = window.crypto.randomUUID();
+          window.localStorage.setItem('erd-algwal-review-token', reviewToken);
+        }
+      } catch {
+        reviewToken = window.crypto.randomUUID();
+      }
+
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...payload, submissionId, customerNotificationKey: getCustomerNotificationKey() })
+        body: JSON.stringify({ ...payload, submissionId, customerNotificationKey: getCustomerNotificationKey(), reviewToken })
       });
       const result = await response.json() as {
         ok?: boolean;
