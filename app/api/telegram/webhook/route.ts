@@ -56,7 +56,7 @@ type AdminSession = {
 
 const MENU_ORDERS = 'طلبات العملاء';
 const MENU_ADD_SECTION = 'إضافة طلب';
-const MENU_EDIT_SECTION = 'تعديل الطلبات';
+const MENU_EDIT_SECTION = 'تعديل الطلب';
 const MENU_ADD_PRODUCT = 'إضافة منتج';
 const MAIN_MENU_TEXT = 'رجوع إلى القائمة الرئيسية';
 const SAVE_PRODUCT_TEXT = 'حفظ المنتج';
