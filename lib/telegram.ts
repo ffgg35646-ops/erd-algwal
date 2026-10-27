@@ -60,7 +60,7 @@ export function adminReplyKeyboard(unreadCount = 0) {
   return {
     keyboard: [
       [{ text: ordersLabel }],
-      [{ text: 'إضافة طلب' }, { text: 'تعديل الطلب' }],
+      [{ text: 'إضافة قسم' }, { text: 'تعديل قسم' }],
       [{ text: 'إضافة منتج' }, { text: 'تعديل المنتج' }],
       [{ text: 'الاتصال' }]
     ],
@@ -71,7 +71,7 @@ export function adminReplyKeyboard(unreadCount = 0) {
 }
 
 export function statusInlineKeyboard(orderId: string) {
-  const statuses: OrderStatus[] = ['confirmed', 'preparing', 'shipped', 'completed', 'cancelled'];
+  const statuses: OrderStatus[] = ['confirmed', 'shipped', 'completed', 'cancelled'];
   return {
     inline_keyboard: statuses.map((status) => [{
       text: ORDER_STATUS_LABELS[status],
@@ -86,4 +86,7 @@ export async function ensureTelegramIndexes(db: Db) {
   await db.collection('orders').createIndex({ createdAt: -1 });
   await db.collection('orders').createIndex({ orderNumber: 1 }, { unique: true, sparse: true });
   await db.collection('orders').createIndex({ checkoutRequestId: 1 }, { unique: true, sparse: true });
+  await db.collection('orders').createIndex({ customerNotificationKey: 1 });
+  await db.collection('customer_notifications').createIndex({ customerNotificationKey: 1, createdAt: -1 });
+  await db.collection('customer_notifications').createIndex({ customerNotificationKey: 1, readAt: 1, createdAt: -1 });
 }
