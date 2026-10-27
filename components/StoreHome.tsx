@@ -138,20 +138,19 @@ export default function StoreHome() {
               </div>
 
               {category.products.length ? (
-                <>
+                isExpanded ? (
+                  <div className="category-expanded-grid" aria-label={'كل منتجات ' + category.name}>
+                    {category.products.map((product) => (
+                      <StripProductCard key={'expanded-' + product.id} product={product} />
+                    ))}
+                  </div>
+                ) : (
                   <div className="category-product-slider" aria-label={'منتجات ' + category.name}>
                     {category.products.map((product) => (
                       <StripProductCard key={product.id} product={product} />
                     ))}
                   </div>
-                  {isExpanded ? (
-                    <div className="category-expanded-grid">
-                      {category.products.map((product) => (
-                        <StripProductCard key={'expanded-' + product.id} product={product} />
-                      ))}
-                    </div>
-                  ) : null}
-                </>
+                )
               ) : (
                 <div className="category-no-products">سيتم عرض المنتجات هنا عند إضافتها من لوحة الإدارة.</div>
               )}
