@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
+import { getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
 type Region = {
   region_id: number;
@@ -256,7 +257,7 @@ export default function StoreCheckoutPage() {
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...payload, submissionId })
+        body: JSON.stringify({ ...payload, submissionId, customerNotificationKey: getCustomerNotificationKey() })
       });
       const result = await response.json() as {
         ok?: boolean;
