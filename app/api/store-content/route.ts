@@ -64,7 +64,7 @@ export async function GET() {
     const docs = await db.collection('store_pages')
       .find({ _id: { $in: keys } })
       .toArray();
-    const saved = new Map(docs.map((doc) => [String(doc._id), doc]));
+    const saved = new Map(docs.map((doc) => [String(doc._id), doc] as const));
     const pages = keys.map((key) => {
       const doc = saved.get(key);
       const content = typeof doc?.content === 'string' ? doc.content : STORE_CONTENT_PAGES[key].fallback;
