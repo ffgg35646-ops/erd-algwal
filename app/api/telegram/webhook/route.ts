@@ -308,7 +308,9 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     return false;
   }
   const now = new Date();
+  const productId = new ObjectId();
   const result = await db.collection<StoredProduct>('products').insertOne({
+    _id: productId,
     categoryId: section._id.toHexString(),
     category: section.name,
     name: data.name,
@@ -319,7 +321,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     images: data.images.slice(0, 10),
     createdAt: now,
     updatedAt: now
-  } as Omit<StoredProduct, '_id'>);
+  });
 
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
   await sendTelegramMessage(chatId, `✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ${data.name}\nالقسم: ${section.name}\nالألوان: ${(data.colors || []).join('، ') || 'غير محدد'}\nمساحات التخزين: ${(data.storageOptions || []).join('، ') || 'غير محدد'}\nالسعر: ${Number(data.price).toLocaleString('ar-SA')} ر.س\nعدد الصور: ${data.images.length}\n\nسيظهر في القسم على المتجر خلال تحديث بيانات المنصة.`, {
