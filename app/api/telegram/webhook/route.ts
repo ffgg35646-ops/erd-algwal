@@ -560,8 +560,8 @@ async function showFooterPages(chatId: number, group: 'policies' | 'customer-ser
 
 async function showReviewPage(db: Db, chatId: number, page = 0, notice = '') {
   const reviews = db.collection('customer_reviews');
-  // Hide demo records from admin moderation just as the storefront hides them.
-  const filter = { isDemo: { $ne: true } };
+  // Admin moderation intentionally includes demo/test reviews so the admin can remove them.
+  const filter = {};
   const total = await reviews.countDocuments(filter);
   const pageSize = 5;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
@@ -640,7 +640,7 @@ async function showFooterSettings(db: Db, chatId: number) {
   const [settings, reviewCount] = await Promise.all([
     db.collection<{ _id: string; vatNumber?: string; barcodeFileId?: string }>('store_settings')
       .findOne({ _id: 'footer' }),
-    db.collection('customer_reviews').countDocuments({ isDemo: { $ne: true } })
+    db.collection('customer_reviews').countDocuments({})
   ]);
   const vatNumber = settings?.vatNumber || 'غير مضاف';
   const barcodeStatus = settings?.barcodeFileId ? 'تمت إضافته' : 'غير مضاف';
@@ -746,8 +746,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف التقييم غير صالح.');
     const page = Number(field || 0);
     const review = await db.collection('customer_reviews').findOne({
-      _id: new ObjectId(id),
-      isDemo: { $ne: true }
+      _id: new ObjectId(id)
     });
     if (!review) {
       await showReviewPage(db, chatId, page, 'التقييم غير موجود أو سبق حذفه.');
@@ -773,8 +772,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف التقييم غير صالح.');
     const page = Number(field || 0);
     const result = await db.collection('customer_reviews').deleteOne({
-      _id: new ObjectId(id),
-      isDemo: { $ne: true }
+      _id: new ObjectId(id)
     });
     await showReviewPage(
       db,
