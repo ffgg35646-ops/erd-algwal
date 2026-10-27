@@ -193,16 +193,16 @@ export default function StoreCheckoutPage() {
   return (
     <main className="container checkout-page">
       <div className="breadcrumbs">
-        <Link href="/">الرئيسية</Link><span>/</span><Link href="/cart">سلة المشتريات</Link><span>/</span><span>بيانات التوصيل</span>
+        <Link href="/">الرئيسية</Link><span>/</span><Link href="/checkout">مراجعة الطلب</Link><span>/</span><span>بيانات التوصيل</span>
       </div>
 
       <div className="checkout-topline">
         <div>
-          <span className="section-kicker">خطوة إتمام الطلب</span>
+          <span className="section-kicker">الخطوة الثانية من إتمام الطلب</span>
           <h1>بيانات التوصيل</h1>
           <p>اكتب بيانات التواصل وعنوان الاستلام عشان تكون جاهزة مع طلبك.</p>
         </div>
-        <div className="checkout-step-indicator"><span>١</span><div><strong>بيانات العميل والعنوان</strong><small>بدون إنشاء حساب</small></div></div>
+        <div className="checkout-step-indicator"><span>٢</span><div><strong>بيانات العميل والعنوان</strong><small>الخطوة الثانية من ٢</small></div></div>
       </div>
 
       {!cartLines.length ? (
@@ -309,7 +309,7 @@ export default function StoreCheckoutPage() {
             ) : null}
 
             <div className="checkout-form-actions">
-              <Link href="/cart" className="outline-button">الرجوع للسلة</Link>
+              <Link href="/checkout" className="outline-button">الخطوة السابقة</Link>
               <button type="submit" className="primary-button checkout-submit">{saved ? 'تحديث البيانات المحفوظة' : 'حفظ بيانات التوصيل'} <span aria-hidden="true">←</span></button>
             </div>
           </form>
