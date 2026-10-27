@@ -5,12 +5,14 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "telegram:set-webhook": "node scripts/set-telegram-webhook.mjs"
   },
   "dependencies": {
     "next": "^16.0.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "mongodb": "^7.7.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
