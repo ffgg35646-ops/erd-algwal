@@ -81,9 +81,17 @@ export function serializeStoredProduct(product: StoredProduct): Product & {
 }
 
 export async function listCatalogProducts(db: Db): Promise<Product[]> {
-  const saved = await db.collection<StoredProduct>('products').find({}).sort({ createdAt: -1 }).toArray();
+  const [saved, seededSections] = await Promise.all([
+    db.collection<StoredProduct>('products').find({}).sort({ createdAt: -1 }).toArray(),
+    db.collection<StoreCategory>('categories').find({ seedName: { $exists: true } }).toArray()
+  ]);
+  const sectionNames = new Map(seededSections.map((section) => [String(section.seedName), section.name]));
   const dynamicProducts = saved.map((product) => serializeStoredProduct(product));
-  return [...dynamicProducts, ...seedProducts];
+  const demoProducts = seedProducts.map((product) => ({
+    ...product,
+    category: sectionNames.get(product.category) || product.category
+  }));
+  return [...dynamicProducts, ...demoProducts];
 }
 
 export async function findStoredProduct(db: Db, id: string) {
