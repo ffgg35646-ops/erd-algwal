@@ -1019,3 +1019,12 @@ body { background: #fff; color: #1d1d1f; font-family: -apple-system, BlinkMacSys
   .category-expanded-grid .strip-product-card { height: 100px; }
   .category-expanded-grid .strip-product-image { flex-basis: 78px; width: 78px; height: 82px; }
 }
+
+
+/* Keep category rails close to the full browser width */
+.category-stream-section { padding-inline: 18px; }
+.store-search-shell { width: calc(100% - 36px); max-width: none; }
+@media (max-width: 760px) {
+  .category-stream-section { padding-inline: 12px; }
+  .store-search-shell { width: calc(100% - 24px); }
+}
