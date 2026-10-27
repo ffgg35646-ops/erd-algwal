@@ -53,11 +53,15 @@ export async function sendTelegramMessage(
   });
 }
 
-export function adminReplyKeyboard() {
+export function adminReplyKeyboard(unreadCount = 0) {
+  const ordersLabel = unreadCount > 0
+    ? `🔔 طلبات العملاء (${Math.min(unreadCount, 99)}${unreadCount > 99 ? '+' : ''})`
+    : 'طلبات العملاء';
   return {
     keyboard: [
-      [{ text: 'طلبات العملاء' }, { text: 'إضافة طلب' }],
-      [{ text: 'تعديل الطلبات' }]
+      [{ text: ordersLabel }],
+      [{ text: 'إضافة طلب' }, { text: 'تعديل الطلبات' }],
+      [{ text: 'إضافة منتج' }]
     ],
     resize_keyboard: true,
     is_persistent: true,
