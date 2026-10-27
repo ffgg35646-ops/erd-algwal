@@ -92,11 +92,12 @@ export default function CustomerNotifications() {
     if (!opening || !key || unreadCount === 0) return;
 
     try {
-      await fetch('/api/customer-notifications', {
+      const response = await fetch('/api/customer-notifications', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ key, action: 'mark-read' })
       });
+      if (!response.ok) return;
       setNotifications((current) => current.map((item) => ({ ...item, read: true })));
       setUnreadCount(0);
     } catch {
