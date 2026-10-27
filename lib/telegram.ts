@@ -80,4 +80,5 @@ export async function ensureTelegramIndexes(db: Db) {
   await db.collection('telegram_sessions').createIndex({ telegramUserId: 1 }, { unique: true });
   await db.collection('orders').createIndex({ createdAt: -1 });
   await db.collection('orders').createIndex({ orderNumber: 1 }, { unique: true, sparse: true });
+  await db.collection('orders').createIndex({ checkoutRequestId: 1 }, { unique: true, sparse: true });
 }
