@@ -86,6 +86,31 @@ export default function StoreCheckoutPage() {
   }, []);
 
   useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('erd-algwal-checkout-draft-v1');
+      if (!raw) return;
+      const savedDraft = JSON.parse(raw) as Partial<CheckoutForm>;
+      const restored: CheckoutForm = {
+        ...EMPTY_FORM,
+        fullName: typeof savedDraft.fullName === 'string' ? savedDraft.fullName : '',
+        phone: typeof savedDraft.phone === 'string' ? savedDraft.phone : '',
+        email: typeof savedDraft.email === 'string' ? savedDraft.email : '',
+        regionId: typeof savedDraft.regionId === 'string' ? savedDraft.regionId : '',
+        cityId: typeof savedDraft.cityId === 'string' ? savedDraft.cityId : '',
+        city: typeof savedDraft.city === 'string' ? savedDraft.city : '',
+        neighborhood: typeof savedDraft.neighborhood === 'string' ? savedDraft.neighborhood : '',
+        street: typeof savedDraft.street === 'string' ? savedDraft.street : '',
+        building: typeof savedDraft.building === 'string' ? savedDraft.building : '',
+        notes: typeof savedDraft.notes === 'string' ? savedDraft.notes : ''
+      };
+      setForm(restored);
+      setCitySearch(restored.city);
+    } catch {
+      // A malformed local draft should never block checkout.
+    }
+  }, []);
+
+  useEffect(() => {
     if (!form.regionId || cities.length > 0) return;
     let alive = true;
     setCitiesLoading(true);
