@@ -229,7 +229,7 @@ export default function StoreCheckoutPage() {
   return (
     <main className="container checkout-page">
       <div className="breadcrumbs">
-        <Link href="/">الرئيسية</Link><span>/</span><Link href="/checkout">مراجعة الطلب</Link><span>/</span><span>بيانات التوصيل</span>
+        <Link href="/">الرئيسية</Link><span>/</span><Link href="/cart">سلة المشتريات</Link><span>/</span><span>إنهاء الطلب</span>
       </div>
 
       <div className="checkout-topline">
