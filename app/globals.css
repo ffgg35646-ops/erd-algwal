@@ -529,3 +529,12 @@ svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width:
 .detail-options h2 { margin: 0 0 9px; }
 .detail-option-chips { display: flex; flex-wrap: wrap; gap: 7px; }
 .detail-option-chips span { display: inline-flex; align-items: center; min-height: 29px; padding: 5px 10px; border: 1px solid #dce8e1; border-radius: 8px; background: #f8fbf9; color: #586d66; font-size: 10px; }
+
+
+.detail-gallery { min-width: 0; }
+.detail-thumbnails { display: flex; gap: 9px; overflow-x: auto; padding: 12px 2px 2px; }
+.detail-thumbnail { width: 70px; height: 70px; flex: 0 0 auto; padding: 3px; border: 1px solid var(--line); border-radius: 11px; overflow: hidden; background: white; }
+.detail-thumbnail.active { border-color: var(--green); box-shadow: 0 0 0 2px rgba(13,154,118,.1); }
+.detail-thumbnail img { width: 100%; height: 100%; border-radius: 7px; object-fit: cover; }
+.detail-no-image { display: grid; place-items: center; min-height: 280px; color: var(--muted); font-size: 12px; }
+@media (max-width: 650px) { .detail-gallery { width: 100%; } .detail-thumbnails { gap: 7px; } .detail-thumbnail { width: 58px; height: 58px; } }
