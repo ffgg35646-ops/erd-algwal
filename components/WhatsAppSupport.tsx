@@ -19,7 +19,11 @@ export default function WhatsAppSupport() {
         const response = await fetch('/api/store-settings', { cache: 'no-store' });
         if (!response.ok) return;
         const data = await response.json() as StoreSettings;
-        if (active) setPhone(normalizePhone(data.whatsappNumber || ''));
+        if (active) {
+          const nextPhone = normalizePhone(data.whatsappNumber || '');
+          setPhone(nextPhone);
+          if (nextPhone) setUnavailable(false);
+        }
       } catch {
         // The button remains in place if settings cannot be refreshed.
       }
