@@ -62,6 +62,7 @@ export function adminReplyKeyboard(unreadCount = 0) {
       [{ text: ordersLabel }],
       [{ text: 'إضافة طلب' }, { text: 'تعديل الطلب' }],
       [{ text: 'إضافة منتج' }, { text: 'تعديل المنتج' }],
+      [{ text: 'آراء العملاء' }],
       [{ text: 'الاتصال' }]
     ],
     resize_keyboard: true,

@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic';
 
 type CheckoutBody = {
   submissionId?: string;
+  reviewToken?: string;
   fullName?: string;
   phone?: string;
   email?: string;
@@ -48,6 +49,10 @@ export async function POST(request: NextRequest) {
   }
 
   const submissionId = text(body.submissionId, 80);
+  const reviewToken = text(body.reviewToken, 120);
+  if (!/^[a-f0-9-]{36}$/i.test(reviewToken)) {
+    return NextResponse.json({ ok: false, error: 'تعذر تجهيز رابط التقييم. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
+  }
   if (!/^[0-9a-f-]{36}$/i.test(submissionId)) {
     return NextResponse.json({ ok: false, error: 'معرّف الطلب غير صالح. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
   }
@@ -122,10 +127,11 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     const _id = new ObjectId();
-    const order: StoreOrder & { checkoutRequestId: string; acceptedPoliciesAt: Date; adminSeenAt: null } = {
+    const order: StoreOrder & { checkoutRequestId: string; reviewToken: string; acceptedPoliciesAt: Date; adminSeenAt: null } = {
       _id,
       orderNumber: makeOrderNumber(_id, now),
       checkoutRequestId: submissionId,
+      reviewToken,
       source: 'website',
       customer: {
         name: fullName,

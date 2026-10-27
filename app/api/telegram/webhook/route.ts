@@ -57,6 +57,7 @@ const MENU_EDIT_SECTION = 'تعديل الطلب';
 const MENU_ADD_PRODUCT = 'إضافة منتج';
 const MENU_EDIT_PRODUCT = 'تعديل المنتج';
 const MENU_CONTACT = 'الاتصال';
+const MENU_REVIEWS = 'آراء العملاء';
 const MAIN_MENU_TEXT = 'رجوع إلى القائمة الرئيسية';
 const SAVE_PRODUCT_TEXT = 'حفظ المنتج';
 const CANCEL_TEXT = '/cancel';
@@ -410,6 +411,39 @@ async function saveEditedField(db: Db, session: AdminSession, value: string, cha
   await showProductEditMenu(db, chatId, id);
 }
 
+async function showReviewPage(db: Db, chatId: number, page = 0, notice = '') {
+  const reviews = db.collection('customer_reviews');
+  const total = await reviews.countDocuments({});
+  const pageSize = 5;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const currentPage = Math.max(0, Math.min(Number.isFinite(page) ? page : 0, pages - 1));
+  const rows = await reviews.find({}).sort({ createdAt: -1 }).skip(currentPage * pageSize).limit(pageSize).toArray();
+  if (!total) {
+    await sendTelegramMessage(chatId, (notice ? notice + '\\n\\n' : '') + 'آراء العملاء\\nلا توجد تعليقات حتى الآن.\\nالعدد الإجمالي: 0', {
+      reply_markup: { inline_keyboard: [[{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]] }
+    });
+    return;
+  }
+  const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
+  for (const review of rows) {
+    await sendTelegramMessage(chatId,
+      'آراء العملاء (' + total + ')\\n' +
+      'الاسم: ' + String(review.name || 'بدون اسم').slice(0, 45) + '\\n' +
+      'التعليق: ' + String(review.comment || '—').slice(0, 900) + '\\n' +
+      'النجوم: ' + (Number.isInteger(review.rating) ? String(review.rating) + ' من 5' : 'لم يحدد تقييمًا نجميًا') + '\\n' +
+      'رقم الطلب: ' + String(review.orderNumber || '—'),
+      { reply_markup: { inline_keyboard: [[{ text: '🗑 حذف هذا التعليق', callback_data: 'review-delete:' + String(review._id) + ':' + currentPage }]] } }
+    );
+  }
+  if (currentPage > 0) keyboard.push([{ text: '→ السابق', callback_data: 'review-page:' + (currentPage - 1) }]);
+  if (currentPage < pages - 1) keyboard.push([{ text: 'التالي ←', callback_data: 'review-page:' + (currentPage + 1) }]);
+  keyboard.push([{ text: '📊 العدد الإجمالي: ' + total + ' | صفحة ' + (currentPage + 1) + '/' + pages, callback_data: 'review-page:' + currentPage }]);
+  keyboard.push([{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]);
+  await sendTelegramMessage(chatId, (notice ? notice + '\\n\\n' : '') + 'انتهت قائمة الصفحة ' + (currentPage + 1) + ' من ' + pages + '.', {
+    reply_markup: { inline_keyboard: keyboard }
+  });
+}
+
 async function handleCallback(db: Db, callback: TelegramCallback) {
   await telegramApi('answerCallbackQuery', { callback_query_id: callback.id });
   const chat = callback.message?.chat;
@@ -525,6 +559,29 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     const result = await db.collection('products').deleteOne({ _id: new ObjectId(id) });
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
     await sendMainMenu(db, chatId, result.deletedCount ? '🗑 تم حذف المنتج من المتجر.' : 'المنتج غير موجود أو سبق حذفه.');
+    return;
+  }
+  if (action === 'review-page') {
+    await showReviewPage(db, chatId, Number(id || 0));
+    return;
+  }
+  if (action === 'review-delete') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف التعليق غير صالح.');
+    const review = await db.collection('customer_reviews').findOne({ _id: new ObjectId(id) });
+    if (!review) return void await showReviewPage(db, chatId, Number(field || 0), 'التعليق غير موجود أو سبق حذفه.');
+    await sendTelegramMessage(chatId,
+      'تأكيد حذف التعليق؟\\n\\nالاسم: ' + String(review.name || 'بدون اسم') + '\\nالتعليق: ' + String(review.comment || '—').slice(0, 900),
+      { reply_markup: { inline_keyboard: [
+        [{ text: '🗑 تأكيد الحذف', callback_data: 'review-confirm-delete:' + id + ':' + (field || '0') }],
+        [{ text: 'إلغاء', callback_data: 'review-page:' + (field || '0') }]
+      ] } }
+    );
+    return;
+  }
+  if (action === 'review-confirm-delete') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف التعليق غير صالح.');
+    const result = await db.collection('customer_reviews').deleteOne({ _id: new ObjectId(id) });
+    await showReviewPage(db, chatId, Number(field || 0), result.deletedCount ? '🗑 تم حذف التعليق.' : 'التعليق غير موجود أو سبق حذفه.');
     return;
   }
   if (action === 'edit-order') {
@@ -684,6 +741,11 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
   if (value === MENU_EDIT_PRODUCT) {
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
     await listProductsForEdit(db, chatId);
+    return;
+  }
+  if (value === MENU_REVIEWS) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await showReviewPage(db, chatId, 0);
     return;
   }
   if (value === MENU_CONTACT) {
