@@ -93,7 +93,7 @@ export default function StoreCheckoutPage() {
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem('erd-algwal-checkout-draft-v1');
+      const raw = window.sessionStorage.getItem('erd-algwal-checkout-draft-v1');
       if (!raw) return;
       const savedDraft = JSON.parse(raw) as Partial<CheckoutForm>;
       const restored: CheckoutForm = {
@@ -220,7 +220,7 @@ export default function StoreCheckoutPage() {
       setIsSubmitting(true);
       let submissionId = '';
       try {
-        const previousRaw = window.localStorage.getItem('erd-algwal-checkout-draft-v1');
+        const previousRaw = window.sessionStorage.getItem('erd-algwal-checkout-draft-v1');
         if (previousRaw) {
           const previous = JSON.parse(previousRaw) as { submissionId?: string; submissionFingerprint?: string; orderId?: string };
           if (previous.submissionFingerprint === fingerprint && typeof previous.submissionId === 'string' && !previous.orderId) {
@@ -251,7 +251,7 @@ export default function StoreCheckoutPage() {
         savedAt: new Date().toISOString(),
         stage: 'delivery-details'
       };
-      window.localStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(checkoutDraft));
+      window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(checkoutDraft));
 
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -271,7 +271,7 @@ export default function StoreCheckoutPage() {
         throw new Error(result.error || 'تعذر حفظ الطلب. حاول مرة أخرى.');
       }
 
-      window.localStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify({
+      window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify({
         ...checkoutDraft,
         orderId: result.orderId,
         orderNumber: result.orderNumber,
