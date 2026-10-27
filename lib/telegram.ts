@@ -45,11 +45,51 @@ export async function sendTelegramMessage(
   text: string,
   extra: Record<string, unknown> = {}
 ) {
+  const suppliedMarkup = extra.reply_markup as {
+    keyboard?: Array<Array<{ text: string; [key: string]: unknown }>>;
+    inline_keyboard?: Array<Array<{ text: string; callback_data?: string; [key: string]: unknown }>>;
+    [key: string]: unknown;
+  } | undefined;
+
+  let replyMarkup = suppliedMarkup;
+  if (!suppliedMarkup) {
+    // Keep a menu shortcut available while the admin moves through a workflow.
+    replyMarkup = {
+      keyboard: [[{ text: 'رجوع إلى القائمة الرئيسية' }]],
+      resize_keyboard: true,
+      is_persistent: true,
+      one_time_keyboard: false
+    };
+  } else if (Array.isArray(suppliedMarkup.inline_keyboard)) {
+    const rows = suppliedMarkup.inline_keyboard;
+    const hasMainMenu = rows.some((row) => row.some((button) => button.callback_data === 'main-menu'));
+    if (!hasMainMenu) {
+      replyMarkup = {
+        ...suppliedMarkup,
+        inline_keyboard: [...rows, [{ text: '↩ القائمة الرئيسية', callback_data: 'main-menu' }]]
+      };
+    }
+  } else if (Array.isArray(suppliedMarkup.keyboard)) {
+    const rows = suppliedMarkup.keyboard;
+    const hasMenuShortcut = rows.some((row) => row.some((button) => button.text === 'رجوع إلى القائمة الرئيسية'));
+    const hasMainMenuItems = rows.some((row) => row.some((button) => ['طلبات العملاء', 'إضافة طلب', 'تعديل الطلب', 'إضافة منتج', 'تعديل المنتج'].includes(button.text.replace(/^🔔\\s*/, '').replace(/\\s*\\(\\d+\\+?\\)$/, ''))));
+    if (!hasMenuShortcut && !hasMainMenuItems) {
+      replyMarkup = {
+        ...suppliedMarkup,
+        keyboard: [...rows, [{ text: 'رجوع إلى القائمة الرئيسية' }]],
+        resize_keyboard: true,
+        is_persistent: true,
+        one_time_keyboard: false
+      };
+    }
+  }
+
   return telegramApi('sendMessage', {
     chat_id: chatId,
     text,
     disable_web_page_preview: true,
-    ...extra
+    ...extra,
+    ...(replyMarkup ? { reply_markup: replyMarkup } : {})
   });
 }
 

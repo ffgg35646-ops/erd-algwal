@@ -755,11 +755,7 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
 
   const session = await db.collection<AdminSession>('telegram_sessions').findOne({ telegramUserId: from.id });
   if (session) {
-    if (Date.now() - new Date(session.updatedAt).getTime() > 30 * 60 * 1000) {
-      await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
-      await sendMainMenu(db, chatId, 'انتهت المهلة. ابدأ العملية مرة أخرى من القائمة.');
-      return;
-    }
+    // The authorized admin session remains available; do not force a fresh /start after inactivity.
     await handleFlowMessage(db, session, message);
     return;
   }

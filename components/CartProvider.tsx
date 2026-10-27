@@ -68,7 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     void refreshCatalog();
-    const refreshTimer = window.setInterval(() => { void refreshCatalog(); }, 30_000);
+    const refreshTimer = window.setInterval(() => { void refreshCatalog(); }, 60_000);
     return () => window.clearInterval(refreshTimer);
   }, [refreshCatalog]);
 
