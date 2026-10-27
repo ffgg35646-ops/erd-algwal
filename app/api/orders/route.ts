@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     const _id = new ObjectId();
-    const order: StoreOrder & { checkoutRequestId: string; acceptedPoliciesAt: Date; adminSeenAt: null } = {
+    const order: StoreOrder & { checkoutRequestId: string; reviewToken: string; acceptedPoliciesAt: Date; adminSeenAt: null } = {
       _id,
       orderNumber: makeOrderNumber(_id, now),
       checkoutRequestId: submissionId,
