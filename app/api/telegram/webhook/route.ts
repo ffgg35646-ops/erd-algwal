@@ -197,9 +197,9 @@ async function listProductsForEdit(db: Db, chatId: number) {
 function editProductKeyboard(id: string) {
   return {
     inline_keyboard: [
-      [{ text: 'اسم المنتج', callback_data: 'product-field:' + id + ':name' }, { text: 'الألوان', callback_data: 'product-field:' + id + ':colors' }],
-      [{ text: 'مساحة التخزين', callback_data: 'product-field:' + id + ':storage' }, { text: 'السعر', callback_data: 'product-field:' + id + ':price' }],
-      [{ text: 'تفاصيل المنتج', callback_data: 'product-field:' + id + ':details' }],
+      [{ text: 'القسم', callback_data: 'product-field:' + id + ':category' }, { text: 'اسم المنتج', callback_data: 'product-field:' + id + ':name' }],
+      [{ text: 'الألوان', callback_data: 'product-field:' + id + ':colors' }, { text: 'مساحة التخزين', callback_data: 'product-field:' + id + ':storage' }],
+      [{ text: 'السعر', callback_data: 'product-field:' + id + ':price' }, { text: 'تفاصيل المنتج', callback_data: 'product-field:' + id + ':details' }],
       [{ text: 'الصور (استبدال الصور)', callback_data: 'product-field:' + id + ':images' }],
       [{ text: '🗑 حذف المنتج', callback_data: 'delete-product:' + id }],
       [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
@@ -452,6 +452,23 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       name: 'edit_product_name', colors: 'edit_product_colors', storage: 'edit_product_storage',
       price: 'edit_product_price', details: 'edit_product_details', images: 'edit_product_images'
     };
+    if (field === 'category') {
+      await ensureDefaultCategories(db);
+      const sections = await db.collection<StoreCategory>('categories').find({}).sort({ name: 1 }).limit(80).toArray();
+      await sendTelegramMessage(chatId, 'اختر القسم الجديد للمنتج:', {
+        reply_markup: {
+          inline_keyboard: [
+            ...sections.map((section) => [{
+              text: section.name.slice(0, 50),
+              callback_data: 'move-product:' + id + ':' + section._id.toHexString()
+            }]),
+            [{ text: '↩ رجوع إلى المنتج', callback_data: 'edit-product:' + id }],
+            [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+          ]
+        }
+      });
+      return;
+    }
     const step = fieldToStep[field || ''];
     if (!step) return void await sendTelegramMessage(chatId, 'الخانة غير معروفة.');
     if (step === 'edit_product_images') {
@@ -468,6 +485,26 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       details: 'التفاصيل الحالية:\n' + product.details + '\n\nأرسل التفاصيل الجديدة.'
     };
     await startFlow(db, callback.from.id, chatId, 'edit_product', step, { productId: id }, prompts[field || 'name'] || 'أرسل القيمة الجديدة.');
+    return;
+  }
+  if (action === 'move-product') {
+    if (!isObjectId(id || '') || !isObjectId(field || '')) {
+      await sendTelegramMessage(chatId, 'معرّف المنتج أو القسم غير صالح.');
+      return;
+    }
+    const [product, section] = await Promise.all([
+      db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id) }),
+      db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(field) })
+    ]);
+    if (!product || !section) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج أو القسم.');
+      return;
+    }
+    await db.collection<StoredProduct>('products').updateOne(
+      { _id: product._id },
+      { $set: { categoryId: section._id.toHexString(), category: section.name, updatedAt: new Date() } }
+    );
+    await showProductEditMenu(db, chatId, id);
     return;
   }
   if (action === 'delete-product') {
