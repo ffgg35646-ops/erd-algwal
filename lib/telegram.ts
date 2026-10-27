@@ -63,6 +63,7 @@ export function adminReplyKeyboard(unreadCount = 0) {
       [{ text: 'إضافة قسم' }, { text: 'تعديل قسم' }],
       [{ text: 'إضافة منتج' }, { text: 'تعديل المنتج' }],
       [{ text: 'السلايدر' }],
+      [{ text: 'تعديلات أخرى' }],
       [{ text: 'السياسات' }, { text: 'خدمات العملاء' }],
       [{ text: 'الاتصال' }]
     ],
