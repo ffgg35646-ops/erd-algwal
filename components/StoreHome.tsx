@@ -1,8 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import ProductCard from '@/components/ProductCard';
 import { useCart } from '@/components/CartProvider';
+import { formatPrice, type Product } from '@/lib/products';
 
 const categorySymbols: Record<string, string> = {
   'آيفون': '',
@@ -12,145 +13,204 @@ const categorySymbols: Record<string, string> = {
   'إكسسوارات': '✦'
 };
 
+function normalizeSearchValue(value: string | number) {
+  return String(value)
+    .normalize('NFKC')
+    .toLocaleLowerCase('ar')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/[ًٌٍَُِّْـ]/g, '')
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+    .trim();
+}
+
+function matchesSearch(product: Product, term: string) {
+  if (!term) return true;
+  const searchableValues = [
+    product.name,
+    product.category,
+    product.shortDescription,
+    product.description,
+    product.price,
+    product.oldPrice || '',
+    product.id,
+    ...(product.specifications || []),
+    ...(product.colors || []),
+    ...(product.storageOptions || [])
+  ];
+  return searchableValues.some((value) => normalizeSearchValue(value).includes(term));
+}
+
 export default function StoreHome() {
   const { catalogProducts: products, catalogCategories: categories } = useCart();
-  const [activeCategory, setActiveCategory] = useState('الكل');
   const [search, setSearch] = useState('');
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const term = normalizeSearchValue(search);
 
-  const filteredProducts = useMemo(() => {
-    const normalize = (value: string | number) => String(value)
-      .normalize('NFKC')
-      .toLocaleLowerCase('ar')
-      .replace(/[أإآ]/g, 'ا')
-      .replace(/ى/g, 'ي')
-      .replace(/[ًٌٍَُِّْـ]/g, '')
-      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
-      .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
-      .trim();
-    const term = normalize(search);
-    return products.filter((product) => {
-      const categoryMatches = activeCategory === 'الكل' || product.category === activeCategory;
-      const searchableValues = [
-        product.name,
-        product.category,
-        product.shortDescription,
-        product.description,
-        product.price,
-        product.oldPrice || '',
-        product.id,
-        ...(product.specifications || []),
-        ...(product.colors || []),
-        ...(product.storageOptions || [])
-      ];
-      const searchMatches = !term || searchableValues.some((value) => normalize(value).includes(term));
-      return categoryMatches && searchMatches;
-    });
-  }, [activeCategory, search]);
+  const searchedProducts = useMemo(
+    () => products.filter((product) => matchesSearch(product, term)),
+    [products, term]
+  );
+
+  const allCategories = useMemo(() => {
+    const knownNames = new Set(categories.map((category) => category.name));
+    const extraNames = Array.from(new Set(products.map((product) => product.category)))
+      .filter((name) => name && !knownNames.has(name));
+    return [
+      ...categories,
+      ...extraNames.map((name) => ({ id: name, name, description: 'تصفح منتجات القسم' }))
+    ];
+  }, [categories, products]);
+
+  const sections = useMemo(
+    () => allCategories
+      .map((category) => ({
+        ...category,
+        products: searchedProducts.filter((product) => product.category === category.name)
+      }))
+      .filter((category) => !term || category.products.length > 0),
+    [allCategories, searchedProducts, term]
+  );
+
+  function toggleCategory(categoryName: string) {
+    setExpandedCategory((current) => current === categoryName ? null : categoryName);
+  }
 
   return (
-    <main>
-      <section className="hero-section">
-        <div className="container hero-content">
-          <div className="hero-copy">
-            <span className="eyebrow"><span className="eyebrow-dot" /> عالم الجوالات في مكان واحد</span>
-            <h1>التقنية اللي تحبها،<br /><span>أقرب لك.</span></h1>
-            <p>اكتشف جوالاتك المفضلة وملحقاتها، واختر اللي يناسبك بكل سهولة.</p>
-            <a href="#products" className="primary-button hero-button">تسوق المنتجات <span aria-hidden="true">←</span></a>
-            <div className="hero-trust">
-              <span><b>✓</b> خيارات متنوعة</span>
-              <span><b>✓</b> تجربة تسوق سهلة</span>
-            </div>
-          </div>
-          <div className="hero-visual" aria-hidden="true">
-            <div className="hero-orbit orbit-one" />
-            <div className="hero-orbit orbit-two" />
-            <div className="hero-phone phone-back">
-              <div className="camera-dot" /><div className="camera-dot" /><div className="camera-dot" />
-            </div>
-            <div className="hero-phone phone-front">
-              <div className="phone-screen-glow" />
-              <span className="phone-screen-brand">EG</span>
-            </div>
-            <div className="floating-chip chip-top"><span>✦</span> جودة تستحقها</div>
-            <div className="floating-chip chip-bottom"><span>ϟ</span> اختيارات ذكية</div>
-          </div>
-        </div>
-        <div className="hero-bottom-line" />
-      </section>
-
-      <section className="container benefits-strip" aria-label="مميزات المتجر">
-        <div className="benefit-item"><span className="benefit-icon">✦</span><div><strong>منتجات مختارة</strong><small>خيارات تناسب احتياجك</small></div></div>
-        <div className="benefit-item"><span className="benefit-icon">♡</span><div><strong>تجربة بسيطة</strong><small>تصفح وأضف للسلة بسهولة</small></div></div>
-        <div className="benefit-item"><span className="benefit-icon">↻</span><div><strong>سلتك محفوظة</strong><small>ارجع في أي وقت من نفس المتصفح</small></div></div>
-      </section>
-
-      <section className="container section-block" id="categories">
-        <div className="section-heading">
-          <div><span className="section-kicker">تسوق حسب احتياجك</span><h2>تصفح الأقسام</h2></div>
-          <span className="section-side-note">اختر القسم وابدأ الاستكشاف</span>
-        </div>
-        <div className="category-grid">
-          {categories.map((category) => (
-            <button type="button" className={'category-tile' + (activeCategory === category.name ? ' active' : '')} key={category.name} onClick={() => { setActiveCategory(category.name); document.getElementById('products')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
-              <span className="category-symbol">{categorySymbols[category.name] || category.icon || '✦'}</span>
-              <span className="category-title">{category.name}</span>
-              <span className="category-description">{category.description}</span>
-              <span className="category-arrow" aria-hidden="true">←</span>
-            </button>
-          ))}
+    <main className="store-home">
+      <section className="store-search-shell" aria-label="البحث عن المنتجات">
+        <label className="store-search-bar">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="10.8" cy="10.8" r="6.8" />
+            <path d="m16 16 4.5 4.5" />
+          </svg>
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="ابحث باسم المنتج أو اللون أو السعة أو السعر..."
+            aria-label="ابحث عن منتج"
+            type="search"
+          />
+          {search ? (
+            <button type="button" className="store-search-clear" onClick={() => setSearch('')} aria-label="مسح البحث">×</button>
+          ) : null}
+        </label>
+        <div className="store-search-hint" aria-live="polite">
+          {term
+            ? 'نتائج البحث: ' + searchedProducts.length + ' منتج'
+            : 'تصفح حسب الأقسام • ' + products.length + ' منتج'}
         </div>
       </section>
 
-      <section className="container section-block products-section" id="products">
-        <div className="section-heading products-heading">
-          <div><span className="section-kicker">اختيارات أرض الجوال</span><h2>منتجات تستحق التجربة</h2></div>
-          <label className="search-box">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث فورًا بالاسم أو اللون أو السعة أو السعر..." aria-label="ابحث عن المنتجات" />
-          </label>
-        </div>
-        <div className="search-results-status" aria-live="polite">
-          {search.trim()
-            ? `نتائج البحث: ${filteredProducts.length} منتج`
-            : `تصفح ${products.length} منتجًا`}
-          {search.trim() ? <button type="button" onClick={() => setSearch('')}>مسح البحث ×</button> : null}
-        </div>
-        <div className="filter-row" aria-label="تصفية المنتجات">
-          {['الكل', ...categories.map((category) => category.name)].map((category) => (
-            <button type="button" className={'filter-pill' + (activeCategory === category ? ' active' : '')} key={category} onClick={() => setActiveCategory(category)}>{category}</button>
-          ))}
-        </div>
-        {filteredProducts.length ? (
-          <div className="product-grid">
-            {filteredProducts.map((product) => <ProductCard key={product.id} product={product} />)}
+      <div className="category-stream" id="categories">
+        {sections.length ? sections.map((category) => {
+          const isExpanded = expandedCategory === category.name;
+          const symbol = categorySymbols[category.name] || category.icon || '✦';
+
+          return (
+            <section className="category-stream-section" key={category.id || category.name} aria-label={'قسم ' + category.name}>
+              <div className="category-stream-heading">
+                <button
+                  type="button"
+                  className="category-heading-main"
+                  onClick={() => category.products.length && toggleCategory(category.name)}
+                  aria-expanded={isExpanded}
+                  disabled={!category.products.length}
+                >
+                  <span className="category-stream-symbol" aria-hidden="true">{symbol}</span>
+                  <span className="category-heading-copy">
+                    <strong>{category.name}</strong>
+                    <small>{category.products.length ? category.products.length + ' منتج' : 'لا توجد منتجات حاليًا'}</small>
+                  </span>
+                </button>
+                {category.products.length > 0 ? (
+                  <button
+                    type="button"
+                    className="category-more-button"
+                    onClick={() => toggleCategory(category.name)}
+                    aria-expanded={isExpanded}
+                  >
+                    {isExpanded ? 'عرض أقل' : 'المزيد'}
+                    <span aria-hidden="true">{isExpanded ? '↑' : '←'}</span>
+                  </button>
+                ) : null}
+              </div>
+
+              {category.products.length ? (
+                <>
+                  <div className="category-product-slider" aria-label={'منتجات ' + category.name}>
+                    {category.products.map((product) => (
+                      <StripProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+                  {isExpanded ? (
+                    <div className="category-expanded-grid">
+                      {category.products.map((product) => (
+                        <StripProductCard key={'expanded-' + product.id} product={product} />
+                      ))}
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <div className="category-no-products">سيتم عرض المنتجات هنا عند إضافتها من لوحة الإدارة.</div>
+              )}
+            </section>
+          );
+        }) : (
+          <div className="store-no-results">
+            <span>⌕</span>
+            <strong>ما لقيناش منتج مطابق للبحث</strong>
+            <p>جرّب اسمًا أو لونًا أو سعرًا مختلفًا.</p>
+            <button type="button" className="store-reset-search" onClick={() => setSearch('')}>عرض كل الأقسام</button>
           </div>
-        ) : (
-          <div className="empty-search"><span>⌕</span><h3>ما لقينا منتجات مطابقة</h3><p>جرّب كلمة بحث مختلفة أو اختر قسمًا آخر.</p><button type="button" className="outline-button" onClick={() => { setSearch(''); setActiveCategory('الكل'); }}>عرض كل المنتجات</button></div>
         )}
-      </section>
+      </div>
 
-      <section className="container service-banner">
-        <div className="service-banner-mark">أ</div>
-        <div><span>أرض الجوال</span><h2>اختيارك يبدأ من هنا</h2><p>تصفح المنتجات وأضف اختياراتك إلى السلة، وستبقى محفوظة في نفس المتصفح.</p></div>
-        <a href="#products" className="service-banner-link">اكتشف المنتجات <span aria-hidden="true">←</span></a>
-      </section>
-
-      <footer className="site-footer">
-        <div className="container footer-inner">
-          <LinkBrand />
-          <span>© {new Date().getFullYear()} أرض الجوال — جميع الحقوق محفوظة</span>
-          <a href="#categories">تصفح الأقسام ↑</a>
-        </div>
+      <footer className="stream-footer">
+        <span className="stream-footer-mark">أ</span>
+        <strong>أرض الجوال</strong>
+        <span>© {new Date().getFullYear()} جميع الحقوق محفوظة</span>
       </footer>
     </main>
   );
 }
 
-function LinkBrand() {
+function StripProductCard({ product }: { product: Product }) {
+  const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
+
+  function handleAdd() {
+    addToCart(product.id);
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 1200);
+  }
+
   return (
-    <div className="footer-brand">
-      <span className="brand-mark">أ</span>
-      <strong>أرض الجوال</strong>
-    </div>
+    <article className="strip-product-card">
+      <Link href={'/products/' + product.id} className="strip-product-image" aria-label={'تفاصيل ' + product.name}>
+        <img src={product.image} alt={product.name} loading="lazy" />
+        {product.badge ? <span className="strip-product-badge">{product.badge}</span> : null}
+      </Link>
+      <div className="strip-product-info">
+        <span className="strip-product-category">{product.category}</span>
+        <Link href={'/products/' + product.id} className="strip-product-name">{product.name}</Link>
+        <div className="strip-product-bottom">
+          <div className="strip-price-group">
+            <strong>{formatPrice(product.price)}</strong>
+            {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
+          </div>
+          <button
+            type="button"
+            className={'strip-add-button' + (added ? ' is-added' : '')}
+            onClick={handleAdd}
+            aria-label={'إضافة ' + product.name + ' إلى السلة'}
+            title="أضف إلى السلة"
+          >
+            {added ? '✓' : '+'}
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
