@@ -35,18 +35,21 @@ type FlowData = {
   details?: string;
   images?: string[];
   orderId?: string;
+  bannerId?: string;
+  footerKey?: string;
+  content?: string;
 };
 
 type FlowStep =
   | 'section_name' | 'rename_section'
   | 'product_name' | 'product_colors' | 'product_storage' | 'product_price' | 'product_details' | 'product_images'
   | 'edit_product_name' | 'edit_product_colors' | 'edit_product_storage' | 'edit_product_price' | 'edit_product_details' | 'edit_product_images'
-  | 'contact_whatsapp' | 'cancel_reason';
+  | 'contact_whatsapp' | 'cancel_reason' | 'slider_image' | 'footer_edit_text' | 'footer_confirm_save';
 
 type AdminSession = {
   telegramUserId: number;
   chatId: number;
-  workflow: 'add_section' | 'rename_section' | 'add_product' | 'edit_product' | 'contact' | 'cancel_order';
+  workflow: 'add_section' | 'rename_section' | 'add_product' | 'edit_product' | 'contact' | 'cancel_order' | 'slider' | 'footer_content';
   step: FlowStep;
   data: FlowData;
   updatedAt: Date;
@@ -58,9 +61,31 @@ const MENU_EDIT_SECTION = 'تعديل قسم';
 const MENU_ADD_PRODUCT = 'إضافة منتج';
 const MENU_EDIT_PRODUCT = 'تعديل المنتج';
 const MENU_CONTACT = 'الاتصال';
+const MENU_SLIDER = 'السلايدر';
+const MENU_POLICIES = 'السياسات';
+const MENU_CUSTOMER_SERVICE = 'خدمات العملاء';
+const SAVE_FOOTER_TEXT = 'حفظ النص';
+const REWRITE_FOOTER_TEXT = 'إعادة الكتابة';
 const MAIN_MENU_TEXT = 'رجوع إلى القائمة الرئيسية';
 const SAVE_PRODUCT_TEXT = 'حفظ المنتج';
 const CANCEL_TEXT = '/cancel';
+
+const FOOTER_PAGE_DEFINITIONS: Record<string, { title: string; group: 'policies' | 'customer-service' }> = {
+  returns: { title: 'الاستبدال والاسترجاع', group: 'policies' },
+  privacy: { title: 'سياسة الخصوصية', group: 'policies' },
+  terms: { title: 'الشروط والأحكام', group: 'policies' },
+  shipping: { title: 'الشحن والتوصيل', group: 'customer-service' },
+  'payment-methods': { title: 'طرق الدفع', group: 'customer-service' },
+  ordering: { title: 'طلب الدفع والشراء', group: 'customer-service' },
+  faq: { title: 'الأسئلة الشائعة', group: 'customer-service' }
+};
+
+type StoreBannerRecord = {
+  _id: ObjectId;
+  fileId: string;
+  createdAt: Date;
+  createdByTelegramId?: number;
+};
 
 function isAuthorized(adminId: number) {
   const configured = process.env.TELEGRAM_ADMIN_ID;
@@ -472,6 +497,62 @@ async function updateOrderStatus(
   await sendMainMenu(db, chatId);
 }
 
+async function showSliderMenu(chatId: number) {
+  await sendTelegramMessage(chatId, 'إدارة سلايدر العروض\n\nاختر إضافة صورة جديدة أو حذف صورة موجودة:', {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '➕ إضافة صورة', callback_data: 'slider-add' }],
+        [{ text: '🗑 حذف صورة', callback_data: 'slider-delete' }],
+        [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+      ]
+    }
+  });
+}
+
+async function showBannersForDelete(db: Db, chatId: number) {
+  const banners = await db.collection<StoreBannerRecord>('store_banners').find({})
+    .sort({ createdAt: 1, _id: 1 }).limit(12).toArray();
+
+  if (!banners.length) {
+    await sendTelegramMessage(chatId, 'لا توجد صور في السلايدر لحذفها.', {
+      reply_markup: { inline_keyboard: [[{ text: '↩ رجوع إلى السلايدر', callback_data: 'slider-menu' }], [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]] }
+    });
+    return;
+  }
+
+  await sendTelegramMessage(chatId, 'اضغط «حذف هذه الصورة» أسفل الصورة التي تريد إزالتها من واجهة المتجر. الحذف يتم مباشرة.');
+  for (let index = 0; index < banners.length; index += 1) {
+    const banner = banners[index];
+    await telegramApi('sendPhoto', {
+      chat_id: chatId,
+      photo: banner.fileId,
+      caption: 'صورة السلايدر رقم ' + (index + 1),
+      reply_markup: {
+        inline_keyboard: [[{
+          text: '🗑 حذف هذه الصورة',
+          callback_data: 'delete-banner:' + banner._id.toHexString()
+        }]]
+      }
+    });
+  }
+  await sendTelegramMessage(chatId, 'انتهت قائمة الصور.', {
+    reply_markup: { inline_keyboard: [[{ text: '↩ رجوع إلى السلايدر', callback_data: 'slider-menu' }], [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]] }
+  });
+}
+
+async function showFooterPages(chatId: number, group: 'policies' | 'customer-service') {
+  const pages = Object.entries(FOOTER_PAGE_DEFINITIONS).filter(([, page]) => page.group === group);
+  const title = group === 'policies' ? 'السياسات' : 'خدمات العملاء';
+  await sendTelegramMessage(chatId, 'اختر صفحة من «' + title + '» لتعديل النص الذي يظهر في نافذتها بالموقع:', {
+    reply_markup: {
+      inline_keyboard: [
+        ...pages.map(([key, page]) => [{ text: page.title, callback_data: 'footer-page:' + key }]),
+        [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+      ]
+    }
+  });
+}
+
 async function handleCallback(db: Db, callback: TelegramCallback) {
   await telegramApi('answerCallbackQuery', { callback_query_id: callback.id });
   const chat = callback.message?.chat;
@@ -479,6 +560,43 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   if (!chatId || chat.type !== 'private' || chatId !== callback.from.id || !callback.data) return;
   const [action, id, field] = callback.data.split(':');
 
+  if (action === 'slider-menu') {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
+    await showSliderMenu(chatId);
+    return;
+  }
+  if (action === 'slider-add') {
+    await startFlow(db, callback.from.id, chatId, 'slider', 'slider_image', {}, 'إضافة صورة للسلايدر\n\nأرسل صورة العرض أو الإعلان كصورة في تيليجرام. ستظهر بالموقع بعد حفظها. اكتب /cancel للإلغاء.');
+    return;
+  }
+  if (action === 'slider-delete') {
+    await showBannersForDelete(db, chatId);
+    return;
+  }
+  if (action === 'delete-banner' && id && isObjectId(id)) {
+    const result = await db.collection('store_banners').deleteOne({ _id: new ObjectId(id) });
+    await sendTelegramMessage(chatId, result.deletedCount ? '✅ تم حذف الصورة من السلايدر في المتجر.' : 'الصورة غير موجودة أو سبق حذفها.');
+    await showSliderMenu(chatId);
+    return;
+  }
+  if (action === 'footer-page' && id && FOOTER_PAGE_DEFINITIONS[id]) {
+    const definition = FOOTER_PAGE_DEFINITIONS[id];
+    const saved = await db.collection('store_pages').findOne({ _id: id });
+    const current = typeof saved?.content === 'string' && saved.content.trim()
+      ? saved.content
+      : 'لم تتم إضافة نص لهذه الصفحة بعد.';
+    const preview = current.length > 2000 ? current.slice(0, 2000) + '\n… (تم اختصار النص المعروض)' : current;
+    await startFlow(
+      db,
+      callback.from.id,
+      chatId,
+      'footer_content',
+      'footer_edit_text',
+      { footerKey: id },
+      'تعديل صفحة: ' + definition.title + '\n\nالمحتوى الحالي:\n' + preview + '\n\nأرسل النص الجديد بالكامل (حتى 3500 حرف). لن يتغير الموقع إلا بعد ضغط «حفظ النص».'
+    );
+    return;
+  }
   if (action === 'main-menu') {
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
     await sendMainMenu(db, chatId);
@@ -633,7 +751,84 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
   const chatId = message.chat.id;
   const value = message.text?.trim() || '';
 
-  if (session.step === 'product_images' || session.step === 'edit_product_images') {
+  if (session.workflow === 'slider' && session.step === 'slider_image') {
+    if (!message.photo?.length) {
+      await sendTelegramMessage(chatId, 'أرسل الصورة كصورة في تيليجرام، وليس كرابط نصي. اكتب /cancel للإلغاء.');
+      return;
+    }
+    const photo = message.photo[message.photo.length - 1];
+    await db.collection<StoreBannerRecord>('store_banners').insertOne({
+      _id: new ObjectId(),
+      fileId: photo.file_id,
+      createdAt: new Date(),
+      createdByTelegramId: session.telegramUserId
+    });
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await sendMainMenu(db, chatId, '✅ تمت إضافة صورة للسلايدر. ستظهر في واجهة المتجر عند تحديث الصور.');
+    return;
+  }
+
+  if (session.workflow === 'footer_content' && session.step === 'footer_edit_text') {
+    const footerKey = session.data.footerKey || '';
+    if (!FOOTER_PAGE_DEFINITIONS[footerKey]) {
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId, 'تعذر تحديد صفحة الفوتر.');
+      return;
+    }
+    if (!value) {
+      await sendTelegramMessage(chatId, 'أرسل نص الصفحة، أو اكتب /cancel للإلغاء.');
+      return;
+    }
+    if (value.length > 3500) {
+      await sendTelegramMessage(chatId, 'النص طويل جدًا. الحد الأقصى 3500 حرف حتى يظهر بشكل صحيح. اختصر النص وأرسله مرة أخرى.');
+      return;
+    }
+    session.data.content = value;
+    session.step = 'footer_confirm_save';
+    await saveSession(db, session);
+    const preview = value.length > 2200 ? value.slice(0, 2200) + '\n… (معاينة مختصرة للنص)' : value;
+    await sendTelegramMessage(chatId, 'معاينة صفحة «' + FOOTER_PAGE_DEFINITIONS[footerKey].title + '» قبل الحفظ:\n\n' + preview + '\n\nاضغط «حفظ النص» لنشره في نافذة الصفحة بالفوتر.', {
+      reply_markup: {
+        keyboard: [[{ text: SAVE_FOOTER_TEXT }], [{ text: REWRITE_FOOTER_TEXT }], [{ text: MAIN_MENU_TEXT }]],
+        resize_keyboard: true,
+        one_time_keyboard: false
+      }
+    });
+    return;
+  }
+
+  if (session.workflow === 'footer_content' && session.step === 'footer_confirm_save') {
+    if (value === REWRITE_FOOTER_TEXT) {
+      session.step = 'footer_edit_text';
+      delete session.data.content;
+      await saveSession(db, session);
+      await sendTelegramMessage(chatId, 'أرسل النص الجديد بالكامل لصفحة «' + (FOOTER_PAGE_DEFINITIONS[session.data.footerKey || '']?.title || '') + '».');
+      return;
+    }
+    if (value !== SAVE_FOOTER_TEXT) {
+      await sendTelegramMessage(chatId, 'اضغط «حفظ النص» لنشر المحتوى، أو «إعادة الكتابة» لتعديله.');
+      return;
+    }
+    const footerKey = session.data.footerKey || '';
+    const definition = FOOTER_PAGE_DEFINITIONS[footerKey];
+    const content = session.data.content || '';
+    if (!definition || !content.trim()) {
+      await sendTelegramMessage(chatId, 'النص أو الصفحة غير صالح. اختر الصفحة من جديد.');
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId);
+      return;
+    }
+    await db.collection('store_pages').updateOne(
+      { _id: footerKey },
+      { $set: { title: definition.title, group: definition.group, content, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
+      { upsert: true }
+    );
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await sendMainMenu(db, chatId, '✅ تم حفظ صفحة «' + definition.title + '» وتحديث محتواها في فوتر المتجر.');
+    return;
+  }
+
+  if (session.step === 'product_images' || session.step === 'edit_product_images') {  if (session.step === 'product_images' || session.step === 'edit_product_images') {
     await handleImageStep(db, session, message);
     return;
   }
@@ -785,6 +980,18 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
   if (value === MENU_EDIT_PRODUCT) {
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
     await listProductsForEdit(db, chatId);
+    return;
+  }
+  if (value === MENU_SLIDER) {
+    await showSliderMenu(chatId);
+    return;
+  }
+  if (value === MENU_POLICIES) {
+    await showFooterPages(chatId, 'policies');
+    return;
+  }
+  if (value === MENU_CUSTOMER_SERVICE) {
+    await showFooterPages(chatId, 'customer-service');
     return;
   }
   if (value === MENU_CONTACT) {
