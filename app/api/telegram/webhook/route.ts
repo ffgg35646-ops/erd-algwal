@@ -673,7 +673,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       'contact',
       'contact_whatsapp',
       {},
-      'الاتصال والدعم\\n\\nأرسل رقم واتساب مع مفتاح الدولة، مثال: 9665XXXXXXXX. يمكن تغييره لاحقًا من نفس الخيار.'
+      'الاتصال والدعم\n\nأرسل رقم واتساب مع مفتاح الدولة، مثال: 9665XXXXXXXX. يمكن تغييره لاحقًا من نفس الخيار.'
     );
     return;
   }
