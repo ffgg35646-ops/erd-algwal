@@ -11,7 +11,7 @@ export async function GET() {
 
   try {
     const db = await getDb();
-    const settings = await db.collection('store_settings').findOne({ _id: 'contact' });
+    const settings = await db.collection<{ _id: string; whatsappNumber?: string }>('store_settings').findOne({ _id: 'contact' });
     const whatsappNumber = typeof settings?.whatsappNumber === 'string'
       ? settings.whatsappNumber
       : '';
