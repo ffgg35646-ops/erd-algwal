@@ -158,7 +158,6 @@ export default function StoreCheckoutPage() {
     setForm((current) => ({ ...current, regionId, cityId: '', city: '' }));
     setCitySearch('');
     setCityDropdownOpen(false);
-    setSaved(false);
     setFormError('');
   }
 
@@ -166,7 +165,6 @@ export default function StoreCheckoutPage() {
     setForm((current) => ({ ...current, cityId: String(city.city_id), city: city.name_ar }));
     setCitySearch(city.name_ar);
     setCityDropdownOpen(false);
-    setSaved(false);
     setFormError('');
   }
 
