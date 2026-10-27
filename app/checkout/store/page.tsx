@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useCart } from '@/components/CartProvider';
-import { formatPrice, products } from '@/lib/products';
+import { formatPrice } from '@/lib/products';
 
 type Region = {
   region_id: number;
@@ -67,7 +67,7 @@ function normalizeArabic(value: string) {
 
 export default function StoreCheckoutPage() {
   const router = useRouter();
-  const { cart, hydrated } = useCart();
+  const { cart, hydrated, catalogProducts: products } = useCart();
   const [regions, setRegions] = useState<Region[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [regionsLoading, setRegionsLoading] = useState(true);
