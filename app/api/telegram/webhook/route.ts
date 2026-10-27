@@ -743,7 +743,12 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
     await listProductsForEdit(db, chatId);
     return;
   }
-  if (value === MENU_REVIEWS) {\n    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });\n    await showReviewPage(db, chatId, 0);\n    return;\n  }\n  if (value === MENU_CONTACT) {
+  if (value === MENU_REVIEWS) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await showReviewPage(db, chatId, 0);
+    return;
+  }
+  if (value === MENU_CONTACT) {
     await startFlow(db, from.id, chatId, 'contact', 'contact_whatsapp', {}, 'الاتصال والدعم\n\nأرسل رقم واتساب مع مفتاح الدولة، مثال: 9665XXXXXXXX. يمكن تغييره لاحقًا من نفس الزر.');
     return;
   }
