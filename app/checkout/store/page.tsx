@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useCart } from '@/components/CartProvider';
 import { formatPrice, products } from '@/lib/products';
@@ -31,6 +32,8 @@ type CheckoutForm = {
   street: string;
   building: string;
   notes: string;
+  installment: 'yes' | 'no';
+  acceptedPolicies: boolean;
 };
 
 const EMPTY_FORM: CheckoutForm = {
@@ -43,7 +46,9 @@ const EMPTY_FORM: CheckoutForm = {
   neighborhood: '',
   street: '',
   building: '',
-  notes: ''
+  notes: '',
+  installment: 'no',
+  acceptedPolicies: false
 };
 
 function regionLabel(name: string) {
@@ -61,6 +66,7 @@ function normalizeArabic(value: string) {
 }
 
 export default function StoreCheckoutPage() {
+  const router = useRouter();
   const { cart, hydrated } = useCart();
   const [regions, setRegions] = useState<Region[]>([]);
   const [cities, setCities] = useState<City[]>([]);
@@ -70,7 +76,6 @@ export default function StoreCheckoutPage() {
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -101,7 +106,9 @@ export default function StoreCheckoutPage() {
         neighborhood: typeof savedDraft.neighborhood === 'string' ? savedDraft.neighborhood : '',
         street: typeof savedDraft.street === 'string' ? savedDraft.street : '',
         building: typeof savedDraft.building === 'string' ? savedDraft.building : '',
-        notes: typeof savedDraft.notes === 'string' ? savedDraft.notes : ''
+        notes: typeof savedDraft.notes === 'string' ? savedDraft.notes : '',
+        installment: savedDraft.installment === 'yes' ? 'yes' : 'no',
+        acceptedPolicies: savedDraft.acceptedPolicies === true
       };
       setForm(restored);
       setCitySearch(restored.city);
@@ -144,7 +151,6 @@ export default function StoreCheckoutPage() {
 
   function setField<K extends keyof CheckoutForm>(key: K, value: CheckoutForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
-    setSaved(false);
     setFormError('');
   }
 
@@ -186,6 +192,11 @@ export default function StoreCheckoutPage() {
       return;
     }
 
+    if (!form.acceptedPolicies) {
+      setFormError('يجب الموافقة على سياسة الضمان والاسترجاع والتوصيل قبل المتابعة.');
+      return;
+    }
+
     const checkoutDraft = {
       ...form,
       phone: cleanPhone,
@@ -205,7 +216,7 @@ export default function StoreCheckoutPage() {
 
     try {
       window.localStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(checkoutDraft));
-      setSaved(true);
+      router.push('/checkout/payment');
     } catch {
       setFormError('تعذر حفظ البيانات في المتصفح. تأكد أن التخزين المحلي غير محظور ثم حاول مرة أخرى.');
     }
@@ -223,11 +234,11 @@ export default function StoreCheckoutPage() {
 
       <div className="checkout-topline">
         <div>
-          <span className="section-kicker">الخطوة الثانية من إتمام الطلب</span>
-          <h1>بيانات التوصيل</h1>
+          <span className="section-kicker">الخطوة الأولى من إتمام الطلب</span>
+          <h1>عنوان التوصيل</h1>
           <p>اكتب بيانات التواصل وعنوان الاستلام عشان تكون جاهزة مع طلبك.</p>
         </div>
-        <div className="checkout-step-indicator"><span>٢</span><div><strong>بيانات العميل والعنوان</strong><small>الخطوة الثانية من ٢</small></div></div>
+        <div className="checkout-step-indicator"><span>١</span><div><strong>الشحن والتوصيل</strong><small>الخطوة الأولى من ٢</small></div></div>
       </div>
 
       {!cartLines.length ? (
@@ -260,7 +271,7 @@ export default function StoreCheckoutPage() {
             </section>
 
             <section className="checkout-form-section">
-              <div className="checkout-section-heading"><span className="checkout-section-number">٢</span><div><h2>عنوان الاستلام</h2><p>اختر المنطقة أولًا ثم حدد المدينة أو المحافظة من القائمة.</p></div></div>
+              <div className="checkout-section-heading"><span className="checkout-section-number">٢</span><div><h2>الشحن والتوصيل (1)</h2><p>عنوان التوصيل — اختر المنطقة ثم المدينة.</p></div></div>
               <div className="checkout-fields-grid">
                 <label className="checkout-field">
                   <span>المنطقة / المحافظة <b>*</b></span>
@@ -325,17 +336,28 @@ export default function StoreCheckoutPage() {
               </div>
             </section>
 
-            {formError ? <div className="checkout-alert checkout-alert-error" role="alert"><span>!</span>{formError}</div> : null}
-            {saved ? (
-              <div className="checkout-alert checkout-alert-success" role="status">
-                <span>✓</span>
-                <div><strong>تم حفظ بيانات العنوان في هذا المتصفح.</strong><p>لم يتم إرسال طلب شراء بعد؛ ربط التأكيد مع MongoDB وبوت تيليجرام سيتم في المرحلة التالية.</p></div>
+            <section className="checkout-form-section checkout-extra-options">
+              <div className="checkout-section-heading"><span className="checkout-section-number">٣</span><div><h2>هل تريد تقسيط الجهاز؟</h2><p>اختيارك يُحفظ مع بيانات الطلب؛ خيارات التقسيط الفعلية تحتاج تفعيل مزود التقسيط.</p></div></div>
+              <div className="installment-choice">
+                <label className={form.installment === 'no' ? 'installment-option selected' : 'installment-option'}>
+                  <input type="radio" name="installment" value="no" checked={form.installment === 'no'} onChange={() => setField('installment', 'no')} />
+                  <span><strong>لا، بدون تقسيط</strong><small>شراء عادي</small></span>
+                </label>
+                <label className={form.installment === 'yes' ? 'installment-option selected' : 'installment-option'}>
+                  <input type="radio" name="installment" value="yes" checked={form.installment === 'yes'} onChange={() => setField('installment', 'yes')} />
+                  <span><strong>نعم، أرغب في التقسيط</strong><small>تأكيد التوفر عند ربط مزود التقسيط</small></span>
+                </label>
               </div>
-            ) : null}
+              <label className="policy-consent">
+                <input type="checkbox" checked={form.acceptedPolicies} onChange={(event) => setField('acceptedPolicies', event.target.checked)} required />
+                <span>أقر أنني راغب في استلام الطلب وموافق على <Link href="/policies">سياسة الضمان والاسترجاع والتوصيل</Link>.</span>
+              </label>
+            </section>
 
+            {formError ? <div className="checkout-alert checkout-alert-error" role="alert"><span>!</span>{formError}</div> : null}
             <div className="checkout-form-actions">
-              <Link href="/checkout" className="outline-button">الخطوة السابقة</Link>
-              <button type="submit" className="primary-button checkout-submit">{saved ? 'تحديث البيانات المحفوظة' : 'حفظ بيانات التوصيل'} <span aria-hidden="true">←</span></button>
+              <Link href="/cart" className="outline-button">العودة للسلة</Link>
+              <button type="submit" className="primary-button checkout-submit">إكمال الطلب <span aria-hidden="true">←</span></button>
             </div>
           </form>
 
