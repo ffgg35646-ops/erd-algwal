@@ -76,6 +76,7 @@ export default function StoreCheckoutPage() {
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -168,8 +169,9 @@ export default function StoreCheckoutPage() {
     setFormError('');
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
     setFormError('');
 
     if (!cartLines.length) {
@@ -184,39 +186,104 @@ export default function StoreCheckoutPage() {
       setFormError('اختر المدينة من القائمة، وليس بكتابة الاسم فقط.');
       return;
     }
-    const cleanPhone = form.phone.replace(/[\s()-]/g, '');
-    if (!/^(?:\+?966|0)?5\d{8}$/.test(cleanPhone)) {
+    const cleanPhone = form.phone.replace(/[\\s()-]/g, '');
+    if (!/^(?:\\+?966|0)?5\\d{8}$/.test(cleanPhone)) {
       setFormError('اكتب رقم جوال سعودي صحيحًا، مثل 05XXXXXXXX أو +9665XXXXXXXX.');
       return;
     }
-
     if (!form.acceptedPolicies) {
       setFormError('يجب الموافقة على سياسة الضمان والاسترجاع والتوصيل قبل المتابعة.');
       return;
     }
 
-    const checkoutDraft = {
-      ...form,
+    const items = cartLines.map(({ product, quantity }) => ({
+      productId: product!.id,
+      quantity
+    }));
+    const payload = {
+      fullName: form.fullName.trim(),
       phone: cleanPhone,
-      region: selectedRegion.name_ar,
+      email: form.email.trim(),
+      region: regionLabel(selectedRegion.name_ar),
       city: form.city,
-      items: cartLines.map(({ product, quantity }) => ({
-        productId: product!.id,
-        name: product!.name,
-        unitPrice: product!.price,
-        quantity
-      })),
-      total,
-      currency: 'SAR',
-      savedAt: new Date().toISOString(),
-      stage: 'delivery-details'
+      neighborhood: form.neighborhood.trim(),
+      street: form.street.trim(),
+      building: form.building.trim(),
+      notes: form.notes.trim(),
+      installment: form.installment,
+      acceptedPolicies: form.acceptedPolicies,
+      items
     };
+    const fingerprint = JSON.stringify(payload);
 
     try {
+      setIsSubmitting(true);
+      let submissionId = '';
+      try {
+        const previousRaw = window.localStorage.getItem('erd-algwal-checkout-draft-v1');
+        if (previousRaw) {
+          const previous = JSON.parse(previousRaw) as { submissionId?: string; submissionFingerprint?: string; orderId?: string };
+          if (previous.submissionFingerprint === fingerprint && typeof previous.submissionId === 'string' && !previous.orderId) {
+            submissionId = previous.submissionId;
+          }
+        }
+      } catch {
+        // A malformed local draft is replaced below.
+      }
+      if (!submissionId) submissionId = window.crypto.randomUUID();
+
+      const checkoutDraft = {
+        ...form,
+        ...payload,
+        regionId: form.regionId,
+        cityId: form.cityId,
+        regionName: selectedRegion.name_ar,
+        items: cartLines.map(({ product, quantity }) => ({
+          productId: product!.id,
+          name: product!.name,
+          unitPrice: product!.price,
+          quantity
+        })),
+        total,
+        currency: 'SAR',
+        submissionId,
+        submissionFingerprint: fingerprint,
+        savedAt: new Date().toISOString(),
+        stage: 'delivery-details'
+      };
       window.localStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(checkoutDraft));
+
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ ...payload, submissionId })
+      });
+      const result = await response.json() as {
+        ok?: boolean;
+        orderId?: string;
+        orderNumber?: string;
+        notificationSent?: boolean;
+        error?: string;
+        message?: string;
+      };
+
+      if (!response.ok || !result.ok || !result.orderId || !result.orderNumber) {
+        throw new Error(result.error || 'تعذر حفظ الطلب. حاول مرة أخرى.');
+      }
+
+      window.localStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify({
+        ...checkoutDraft,
+        orderId: result.orderId,
+        orderNumber: result.orderNumber,
+        notificationSent: result.notificationSent === true,
+        savedAt: new Date().toISOString(),
+        stage: 'payment'
+      }));
       router.push('/checkout/payment');
-    } catch {
-      setFormError('تعذر حفظ البيانات في المتصفح. تأكد أن التخزين المحلي غير محظور ثم حاول مرة أخرى.');
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'تعذر حفظ الطلب. تحقق من الاتصال وحاول مرة أخرى.');
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -355,7 +422,7 @@ export default function StoreCheckoutPage() {
             {formError ? <div className="checkout-alert checkout-alert-error" role="alert"><span>!</span>{formError}</div> : null}
             <div className="checkout-form-actions">
               <Link href="/cart" className="outline-button">العودة للسلة</Link>
-              <button type="submit" className="primary-button checkout-submit">إكمال الطلب <span aria-hidden="true">←</span></button>
+              <button type="submit" className="primary-button checkout-submit" disabled={isSubmitting}>{isSubmitting ? 'جارٍ حفظ الطلب...' : 'إكمال الطلب'} <span aria-hidden="true">←</span></button>
             </div>
           </form>
 
