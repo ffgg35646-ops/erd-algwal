@@ -567,8 +567,10 @@ async function showFooterSettings(db: Db, chatId: number) {
     {
       reply_markup: {
         inline_keyboard: [
-          [{ text: 'الرقم الضريبي', callback_data: 'footer-setting:vat' }],
-          [{ text: 'الباركود', callback_data: 'footer-setting:barcode' }],
+          [{ text: 'الرقم الضريبي', callback_data: 'footer-setting:vat' }, { text: 'الباركود', callback_data: 'footer-setting:barcode' }],
+          [{ text: '🖼️ السلايدر', callback_data: 'footer-setting:slider' }],
+          [{ text: 'السياسات', callback_data: 'footer-setting:policies' }, { text: 'خدمات العملاء', callback_data: 'footer-setting:customer-service' }],
+          [{ text: '📞 الاتصال', callback_data: 'footer-setting:contact' }],
           [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
         ]
       }
@@ -646,6 +648,33 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'footer-setting' && id === 'barcode') {
     await showFooterBarcodeMenu(db, chatId);
+    return;
+  }
+  if (action === 'footer-setting' && id === 'slider') {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
+    await showSliderMenu(chatId);
+    return;
+  }
+  if (action === 'footer-setting' && id === 'policies') {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
+    await showFooterPages(chatId, 'policies');
+    return;
+  }
+  if (action === 'footer-setting' && id === 'customer-service') {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
+    await showFooterPages(chatId, 'customer-service');
+    return;
+  }
+  if (action === 'footer-setting' && id === 'contact') {
+    await startFlow(
+      db,
+      callback.from.id,
+      chatId,
+      'contact',
+      'contact_whatsapp',
+      {},
+      'الاتصال والدعم\\n\\nأرسل رقم واتساب مع مفتاح الدولة، مثال: 9665XXXXXXXX. يمكن تغييره لاحقًا من نفس الخيار.'
+    );
     return;
   }
   if (action === 'footer-barcode-replace') {
