@@ -1028,3 +1028,216 @@ body { background: #fff; color: #1d1d1f; font-family: -apple-system, BlinkMacSys
   .category-stream-section { padding-inline: 12px; }
   .store-search-shell { width: calc(100% - 24px); }
 }
+
+
+/* Final responsive silver storefront palette */
+.store-home {
+  background: #e9ebef;
+  color: #242426;
+  padding-top: 1px;
+}
+.site-header {
+  background: rgba(239, 241, 245, .96);
+  border-bottom-color: #cfd2d9;
+  backdrop-filter: blur(18px);
+}
+.header-cart {
+  background: linear-gradient(145deg, #f9fafc, #dfe2e8);
+  border-color: #c7cbd2;
+  color: #242426;
+}
+.header-cart:hover {
+  background: linear-gradient(145deg, #e7e9ee, #d3d6dd);
+  border-color: #aeb3bc;
+}
+.store-search-shell {
+  width: calc(100% - 30px);
+  max-width: 1500px;
+  margin: 20px auto 16px;
+  padding: 13px;
+  border: 1px solid #d0d3da;
+  border-radius: 19px;
+  background: linear-gradient(135deg, #f7f8fa 0%, #e3e6eb 53%, #f1f2f5 100%);
+  box-shadow: 0 8px 24px rgba(39, 42, 49, .055);
+}
+.store-search-bar {
+  border-color: #c5c9d1;
+  background: linear-gradient(145deg, #f1f2f5, #e1e3e8);
+  color: #505157;
+}
+.store-search-bar:focus-within {
+  background: #fafbfc;
+  border-color: #898e98;
+  box-shadow: 0 0 0 3px rgba(112, 117, 127, .14);
+}
+.store-search-bar input { color: #242426; }
+.store-search-bar input::placeholder { color: #777b84; }
+.store-search-clear {
+  background: linear-gradient(145deg, #d7dae1, #c1c5ce);
+  color: #34363b;
+}
+.store-search-hint { color: #686c75; }
+
+.category-stream-section {
+  width: calc(100% - 24px);
+  max-width: 1500px;
+  margin: 0 auto 14px;
+  padding: 15px 14px 12px;
+  border: 1px solid #cbd0d8;
+  border-radius: 19px;
+  background: linear-gradient(118deg, #dfe2e8 0%, #f0f1f4 45%, #e3e6eb 100%);
+  box-shadow: 0 5px 16px rgba(39, 42, 49, .035);
+}
+.category-stream-section:nth-child(even) {
+  background: linear-gradient(118deg, #e5e7ec 0%, #d9dce3 52%, #eef0f3 100%);
+}
+.category-stream-symbol {
+  background: linear-gradient(145deg, #fafbfc 0%, #c9cdd5 100%);
+  border-color: #bdc2cb;
+  color: #34363b;
+}
+.category-heading-copy strong { color: #242426; }
+.category-heading-copy small { color: #686c75; }
+.category-more-button {
+  background: linear-gradient(145deg, #fafbfc 0%, #d8dbe2 100%);
+  border-color: #c2c6ce;
+  color: #32343a;
+}
+.category-more-button:hover {
+  background: linear-gradient(145deg, #e1e3e8, #c8cbd3);
+  border-color: #a5aab4;
+}
+
+/* Fluid item width means the visible count follows viewport width and browser zoom. */
+.category-product-slider {
+  gap: 9px;
+  padding: 1px 1px 8px;
+  scrollbar-color: #aeb3bc transparent;
+}
+.category-product-slider::-webkit-scrollbar-thumb { background: #aeb3bc; }
+.strip-product-card {
+  flex: 0 0 clamp(150px, 13.5vw, 210px);
+  width: clamp(150px, 13.5vw, 210px);
+  height: 102px;
+  gap: 8px;
+  padding: 7px;
+  border-color: #cbd0d8;
+  background: linear-gradient(145deg, #fbfcfd 0%, #e8eaef 54%, #f6f7f9 100%);
+  box-shadow: 0 3px 9px rgba(38, 40, 47, .04);
+}
+.strip-product-card:hover {
+  border-color: #9da3ad;
+  background: linear-gradient(145deg, #ffffff 0%, #e0e3e9 100%);
+}
+.strip-product-image {
+  flex: 0 0 clamp(52px, 4.8vw, 76px);
+  width: clamp(52px, 4.8vw, 76px);
+  height: 82px;
+  background: linear-gradient(145deg, #dfe2e8, #f8f9fb 55%, #c8ccd4);
+  border: 1px solid rgba(190, 195, 204, .8);
+}
+.strip-product-category { color: #737781; }
+.strip-product-name { color: #242426; font-size: clamp(10px, .85vw, 12px); }
+.strip-price-group strong { color: #25262a; font-size: clamp(9px, .8vw, 11px); }
+.strip-price-group del { color: #737781; }
+.strip-product-badge {
+  background: linear-gradient(145deg, #555960, #292b30);
+  color: #fff;
+}
+.strip-add-button {
+  background: linear-gradient(145deg, #f7f8fa, #d0d4dc);
+  border-color: #b6bbc4;
+  color: #2d3036;
+}
+.strip-add-button:hover, .strip-add-button.is-added {
+  background: linear-gradient(145deg, #44474e, #202226);
+  border-color: #34363c;
+  color: #fff;
+}
+.category-expanded-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 165px), 1fr));
+  border-color: #cbd0d8;
+  background: linear-gradient(135deg, #e2e5ea, #f3f4f6);
+}
+.category-expanded-grid .strip-product-card {
+  width: auto;
+  min-width: 0;
+  flex-basis: auto;
+}
+.category-no-products,
+.store-no-results {
+  border-color: #bdc2cb;
+  background: linear-gradient(135deg, #f0f1f4, #dfe2e8);
+  color: #4c5058;
+}
+.store-no-results strong { color: #25262a; }
+.store-no-results p { color: #686c75; }
+.store-reset-search {
+  border-color: #b9bec7;
+  background: linear-gradient(145deg, #fafbfc, #d9dce2);
+  color: #292b30;
+}
+.stream-footer {
+  margin-top: 20px;
+  border-top-color: #c7cbd3;
+  background: linear-gradient(110deg, #d7dae1 0%, #eceef2 50%, #d3d6de 100%);
+  color: #555963;
+}
+.stream-footer strong { color: #242426; }
+.stream-footer-mark {
+  background: linear-gradient(145deg, #f8f9fb, #bdc2cb);
+  border-color: #b8bdc6;
+  color: #282a30;
+}
+
+@media (min-width: 1500px) {
+  .category-stream-section { padding-inline: 18px; }
+}
+@media (max-width: 760px) {
+  .store-search-shell {
+    width: calc(100% - 20px);
+    margin-top: 12px;
+    padding: 9px;
+    border-radius: 15px;
+  }
+  .category-stream-section {
+    width: calc(100% - 16px);
+    margin-bottom: 10px;
+    padding: 11px 9px 9px;
+    border-radius: 15px;
+  }
+  .category-product-slider { gap: 7px; }
+  .strip-product-card {
+    flex-basis: clamp(145px, 42vw, 178px);
+    width: clamp(145px, 42vw, 178px);
+    height: 98px;
+    gap: 7px;
+    padding: 6px;
+  }
+  .strip-product-image {
+    flex-basis: 54px;
+    width: 54px;
+    height: 80px;
+  }
+  .strip-product-name { font-size: 10px; }
+  .strip-price-group strong { font-size: 9px; }
+  .category-expanded-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
+    gap: 7px;
+    padding: 8px;
+  }
+  .category-expanded-grid .strip-product-card {
+    height: 96px;
+    gap: 6px;
+    padding: 6px;
+  }
+}
+@media (max-width: 390px) {
+  .strip-product-card {
+    flex-basis: clamp(138px, 43vw, 160px);
+    width: clamp(138px, 43vw, 160px);
+  }
+  .category-expanded-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 138px), 1fr));
+  }
+}
