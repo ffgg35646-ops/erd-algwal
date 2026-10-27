@@ -372,7 +372,7 @@ export default function StoreCheckoutPage() {
             </div>
             <div className="checkout-total-row"><span>عدد القطع</span><strong>{cartLines.reduce((sum, line) => sum + line.quantity, 0)}</strong></div>
             <div className="checkout-total-row"><span>قيمة المنتجات</span><strong>{formatPrice(total)}</strong></div>
-            <p className="checkout-shipping-note">تكلفة الشحن وطريقة الدفع لم يتم تحديدهما في هذه المرحلة.</p>
+            <p className="checkout-shipping-note">تكلفة الشحن تُحدد لاحقًا، والدفع في الخطوة التالية.</p>
             <div className="checkout-grand-total"><span>الإجمالي الحالي</span><strong>{formatPrice(total)}</strong></div>
             <Link href="/cart" className="checkout-edit-cart">تعديل محتويات السلة ←</Link>
           </aside>
