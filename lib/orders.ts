@@ -1,0 +1,77 @@
+import { ObjectId, type Db, type Document } from 'mongodb';
+import { ORDER_STATUS_LABELS, type OrderStatus, sendTelegramMessage, statusInlineKeyboard } from '@/lib/telegram';
+
+export type OrderItem = {
+  name: string;
+  quantity: number;
+  unitPrice?: number;
+};
+
+export type StoreOrder = Document & {
+  _id: ObjectId;
+  orderNumber: string;
+  source: 'website' | 'telegram_manual';
+  customer: {
+    name: string;
+    phone: string;
+    email?: string;
+    address: string;
+  };
+  items: OrderItem[];
+  total: number;
+  currency: 'SAR';
+  status: OrderStatus;
+  paymentStatus: 'pending' | 'paid' | 'not_recorded' | 'failed';
+  installment: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  notes?: string;
+};
+
+export function makeOrderNumber(id: ObjectId, date = new Date()) {
+  const day = date.toISOString().slice(2, 10).replace(/-/g, '');
+  return `AG-${day}-${id.toHexString().slice(-6).toUpperCase()}`;
+}
+
+export function formatOrderForAdmin(order: Record<string, unknown>) {
+  const customer = (order.customer && typeof order.customer === 'object')
+    ? order.customer as Record<string, unknown>
+    : {};
+  const items = Array.isArray(order.items) ? order.items as Array<Record<string, unknown>> : [];
+  const status = typeof order.status === 'string' && order.status in ORDER_STATUS_LABELS
+    ? ORDER_STATUS_LABELS[order.status as OrderStatus]
+    : 'غير محدد';
+  const itemText = items.slice(0, 8).map((item) => {
+    const name = String(item.name || 'منتج');
+    const quantity = Number(item.quantity || 1);
+    return `• ${name} × ${quantity}`;
+  }).join('\n') || '• تفاصيل المنتجات غير متاحة';
+  const total = Number(order.total || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
+  return [
+    `رقم الطلب: ${String(order.orderNumber || order._id || '—')}`,
+    `العميل: ${String(customer.name || '—')}`,
+    `الجوال: ${String(customer.phone || '—')}`,
+    `العنوان: ${String(customer.address || '—')}`,
+    `المنتجات:\n${itemText}`,
+    `الإجمالي: ${total} ر.س`,
+    `الحالة: ${status}`,
+    `المصدر: ${order.source === 'telegram_manual' ? 'أضيف من البوت' : 'المتجر الإلكتروني'}`
+  ].join('\n');
+}
+
+export async function sendNewOrderToAdmin(order: StoreOrder) {
+  const adminId = process.env.TELEGRAM_ADMIN_ID;
+  if (!adminId) throw new Error('TELEGRAM_ADMIN_ID is not configured');
+
+  await sendTelegramMessage(Number(adminId), `🛍️ طلب جديد في أرض الجوال\n\n${formatOrderForAdmin(order)}\n\nاختر الحالة لتعديل الطلب:`, {
+    reply_markup: statusInlineKeyboard(order._id.toHexString())
+  });
+}
+
+export async function getRecentOrders(db: Db, limit = 10) {
+  return db.collection<StoreOrder>('orders')
+    .find({})
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+}
