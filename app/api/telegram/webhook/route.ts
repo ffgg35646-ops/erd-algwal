@@ -123,7 +123,7 @@ async function startFlow(db: Db, userId: number, chatId: number, workflow: Admin
 }
 
 async function showCustomerOrders(db: Db, chatId: number) {
-  const orders = await getRecentOrders(db, 20);
+  const orders = await getRecentOrders(db, 10);
   const unseen = await unreadOrderCount(db);
   if (unseen > 0) {
     await db.collection('orders').updateMany(
@@ -185,11 +185,6 @@ async function listSectionsForProduct(db: Db, chatId: number, userId: number) {
     await sendMainMenu(db, chatId, 'لا توجد أقسام. استخدم «إضافة طلب» لإنشاء قسم بالاسم أولًا.');
     return;
   }
-
-  await saveSession(db, {
-    telegramUserId: userId, chatId, workflow: 'add_product', step: 'product_name',
-    data: {}, updatedAt: new Date()
-  });
 
   await sendTelegramMessage(chatId, 'اختر قسم المنتج:', {
     reply_markup: {
@@ -285,8 +280,9 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
 async function saveCategory(db: Db, name: string) {
   const normalized = name.trim().replace(/\\s+/g, ' ');
   if (normalized.length < 2 || normalized.length > 80) throw new Error('اسم القسم يجب أن يكون من حرفين إلى 80 حرفًا.');
-  const existing = await db.collection<StoreCategory>('categories').findOne({ name: { $regex: `^${normalized.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}$`, $options: 'i' } });
-  if (existing) throw new Error('يوجد قسم بهذا الاسم بالفعل.');
+  const sections = await db.collection<StoreCategory>('categories').find({}).toArray();
+  const duplicate = sections.some((section) => section.name.trim().toLocaleLowerCase('ar') === normalized.toLocaleLowerCase('ar'));
+  if (duplicate) throw new Error('يوجد قسم بهذا الاسم بالفعل.');
   const now = new Date();
   await db.collection('categories').insertOne({ name: normalized, description: '', createdAt: now, updatedAt: now });
 }
@@ -387,8 +383,9 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       await sendTelegramMessage(chatId, 'الاسم يجب أن يكون من حرفين إلى 80 حرفًا.');
       return;
     }
-    const existing = await db.collection<StoreCategory>('categories').findOne({ name: { $regex: `^${normalized.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}$`, $options: 'i' }, _id: { $ne: new ObjectId(categoryId) } });
-    if (existing) {
+    const otherSections = await db.collection<StoreCategory>('categories').find({ _id: { $ne: new ObjectId(categoryId) } }).toArray();
+    const duplicateName = otherSections.some((section) => section.name.trim().toLocaleLowerCase('ar') === normalized.toLocaleLowerCase('ar'));
+    if (duplicateName) {
       await sendTelegramMessage(chatId, 'يوجد قسم آخر بهذا الاسم. اكتب اسمًا مختلفًا.');
       return;
     }
