@@ -10,6 +10,9 @@ export default function ProductDetails({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const gallery = product.images?.length ? product.images : [product.image];
+  const activeImage = gallery[Math.min(activeImageIndex, gallery.length - 1)] || product.image;
 
   function handleAdd() {
     addToCart(product.id, quantity);
@@ -21,9 +24,14 @@ export default function ProductDetails({ product }: { product: Product }) {
     <main className="container detail-page">
       <div className="breadcrumbs"><Link href="/">الرئيسية</Link><span>/</span><Link href="/#products">المنتجات</Link><span>/</span><span>{product.name}</span></div>
       <div className="detail-layout">
-        <div className="detail-image-panel">
-          {product.badge ? <span className="product-badge detail-badge">{product.badge}</span> : null}
-          <img src={product.image} alt={product.name} className="detail-image" />
+        <div className="detail-gallery">
+          <div className="detail-image-panel">
+            {product.badge ? <span className="product-badge detail-badge">{product.badge}</span> : null}
+            {activeImage ? <img src={activeImage} alt={product.name} className="detail-image" /> : <div className="detail-no-image">صورة المنتج غير متاحة</div>}
+          </div>
+          {gallery.length > 1 ? <div className="detail-thumbnails" aria-label="صور المنتج">
+            {gallery.map((image, index) => <button type="button" className={index === activeImageIndex ? 'detail-thumbnail active' : 'detail-thumbnail'} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)}><img src={image} alt="" /></button>)}
+          </div> : null}
         </div>
         <div className="detail-information">
           <span className="product-category">{product.category}</span>
