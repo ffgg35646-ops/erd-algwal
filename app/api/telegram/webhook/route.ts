@@ -561,7 +561,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
   if (session.workflow === 'contact' && session.step === 'contact_whatsapp') {
     const phone = normalizeWhatsAppNumber(value);
     if (!phone) return void await sendTelegramMessage(chatId, 'رقم واتساب غير صالح. أرسله مع مفتاح الدولة، أو اكتب رقمًا سعوديًا مثل 05XXXXXXXX.');
-    await db.collection('store_settings').updateOne(
+    await db.collection<{ _id: string; whatsappNumber?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
       { _id: 'contact' },
       { $set: { whatsappNumber: phone, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
       { upsert: true }
