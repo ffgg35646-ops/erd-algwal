@@ -833,7 +833,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     return;
   }
 
-  if (session.step === 'product_images' || session.step === 'edit_product_images') {  if (session.step === 'product_images' || session.step === 'edit_product_images') {
+  if (session.step === 'product_images' || session.step === 'edit_product_images') {
     await handleImageStep(db, session, message);
     return;
   }
