@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
 type Review = { id: string; name: string; comment: string; rating?: number; createdAt: string };
 type Prompt = { orderId: string; orderNumber: string } | null;
@@ -43,7 +43,7 @@ export default function CustomerReviews() {
     return () => window.clearInterval(timer);
   }, [load]);
 
-  async function submitReview(event: React.FormEvent<HTMLFormElement>) {
+  async function submitReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!prompt || saving) return;
     setSaving(true);
