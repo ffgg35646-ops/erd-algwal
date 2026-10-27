@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useCart } from '@/components/CartProvider';
-import { formatPrice, products } from '@/lib/products';
+import { formatPrice } from '@/lib/products';
 
 type CheckoutDraft = {
   orderId?: string;
@@ -23,7 +23,7 @@ type CheckoutDraft = {
 };
 
 export default function CheckoutPaymentPage() {
-  const { cart, hydrated } = useCart();
+  const { cart, hydrated, catalogProducts: products } = useCart();
   const [draft, setDraft] = useState<CheckoutDraft | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState('');
