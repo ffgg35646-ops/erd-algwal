@@ -62,7 +62,7 @@ export default function CartPage() {
             <div className="summary-divider" />
             <div className="summary-total"><span>الإجمالي</span><strong>{formatPrice(total)}</strong></div>
             <p className="cart-next-step">هذه نسخة واجهة أولية. خطوات إرسال الطلب وربطه ببوت تيليجرام ستُضاف في المرحلة التالية.</p>
-            <div className="checkout-summary-actions"><Link href="/checkout/store" className="primary-button">إتمام الطلب <span aria-hidden="true">←</span></Link><Link href="/#products" className="outline-button summary-back">إضافة منتجات أخرى</Link></div>
+            <div className="checkout-summary-actions"><Link href="/checkout" className="primary-button">إتمام الطلب <span aria-hidden="true">←</span></Link><Link href="/#products" className="outline-button summary-back">إضافة منتجات أخرى</Link></div>
           </aside>
         </div>
       )}
