@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react';
 import { useCart } from '@/components/CartProvider';
 import { formatPrice, type Product } from '@/lib/products';
 import StoreBannerSlider from '@/components/StoreBannerSlider';
+import CustomerReviews from '@/components/CustomerReviews';
 
 const categorySymbols: Record<string, string> = {
   'آيفون': '',
@@ -168,6 +169,7 @@ export default function StoreHome() {
         )}
       </div>
 
+      <CustomerReviews />
     </main>
   );
 }
