@@ -18,10 +18,31 @@ export default function StoreHome() {
   const [search, setSearch] = useState('');
 
   const filteredProducts = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase('ar');
+    const normalize = (value: string | number) => String(value)
+      .normalize('NFKC')
+      .toLocaleLowerCase('ar')
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ى/g, 'ي')
+      .replace(/[ًٌٍَُِّْـ]/g, '')
+      .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+      .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+      .trim();
+    const term = normalize(search);
     return products.filter((product) => {
       const categoryMatches = activeCategory === 'الكل' || product.category === activeCategory;
-      const searchMatches = !term || [product.name, product.category, product.shortDescription].some((value) => value.toLocaleLowerCase('ar').includes(term));
+      const searchableValues = [
+        product.name,
+        product.category,
+        product.shortDescription,
+        product.description,
+        product.price,
+        product.oldPrice || '',
+        product.id,
+        ...(product.specifications || []),
+        ...(product.colors || []),
+        ...(product.storageOptions || [])
+      ];
+      const searchMatches = !term || searchableValues.some((value) => normalize(value).includes(term));
       return categoryMatches && searchMatches;
     });
   }, [activeCategory, search]);
@@ -85,8 +106,14 @@ export default function StoreHome() {
           <div><span className="section-kicker">اختيارات أرض الجوال</span><h2>منتجات تستحق التجربة</h2></div>
           <label className="search-box">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث عن جوال أو إكسسوار..." aria-label="ابحث عن المنتجات" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="ابحث فورًا بالاسم أو اللون أو السعة أو السعر..." aria-label="ابحث عن المنتجات" />
           </label>
+        </div>
+        <div className="search-results-status" aria-live="polite">
+          {search.trim()
+            ? `نتائج البحث: ${filteredProducts.length} منتج`
+            : `تصفح ${products.length} منتجًا`}
+          {search.trim() ? <button type="button" onClick={() => setSearch('')}>مسح البحث ×</button> : null}
         </div>
         <div className="filter-row" aria-label="تصفية المنتجات">
           {['الكل', ...categories.map((category) => category.name)].map((category) => (
