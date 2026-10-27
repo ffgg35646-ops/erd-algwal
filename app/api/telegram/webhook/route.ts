@@ -557,9 +557,91 @@ async function showFooterPages(chatId: number, group: 'policies' | 'customer-ser
 }
 
 
+
+async function showReviewPage(db: Db, chatId: number, page = 0, notice = '') {
+  const reviews = db.collection('customer_reviews');
+  // Hide demo records from admin moderation just as the storefront hides them.
+  const filter = { isDemo: { $ne: true } };
+  const total = await reviews.countDocuments(filter);
+  const pageSize = 5;
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const currentPage = Math.max(0, Math.min(Number.isFinite(page) ? page : 0, pageCount - 1));
+
+  if (!total) {
+    const text = [
+      notice,
+      '⭐ تقييمات العملاء',
+      'لا توجد تقييمات من العملاء حتى الآن.',
+      'العدد الإجمالي: 0'
+    ].filter(Boolean).join('\n\n');
+    await sendTelegramMessage(chatId, text, {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '↩ رجوع إلى تعديلات أخرى', callback_data: 'footer-settings-menu' }],
+          [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
+        ]
+      }
+    });
+    return;
+  }
+
+  const rows = await reviews.find(filter)
+    .sort({ createdAt: -1, _id: -1 })
+    .skip(currentPage * pageSize)
+    .limit(pageSize)
+    .toArray();
+
+  for (const review of rows) {
+    const rating = Number.isInteger(review.rating) && review.rating >= 1 && review.rating <= 5
+      ? String(review.rating) + ' من 5 نجوم'
+      : 'لم يحدد تقييمًا نجميًا';
+    const createdAt = review.createdAt ? new Date(review.createdAt) : null;
+    const date = createdAt && Number.isFinite(createdAt.getTime())
+      ? createdAt.toLocaleDateString('ar-SA')
+      : '—';
+    const visibility = review.visible === false ? 'مخفي من الموقع' : 'ظاهر في الموقع';
+    const message = [
+      '⭐ تقييمات العملاء — إجمالي ' + total,
+      'الاسم: ' + String(review.name || 'بدون اسم').slice(0, 80),
+      'التعليق: ' + String(review.comment || '—').slice(0, 900),
+      'التقييم: ' + rating,
+      'الحالة: ' + visibility,
+      'التاريخ: ' + date,
+      'رقم الطلب: ' + String(review.orderNumber || '—').slice(0, 60)
+    ].join('\n');
+    await sendTelegramMessage(chatId, message, {
+      reply_markup: {
+        inline_keyboard: [[{
+          text: '🗑 حذف هذا التقييم',
+          callback_data: 'review-delete:' + String(review._id) + ':' + currentPage
+        }]]
+      }
+    });
+  }
+
+  const keyboard: Array<Array<{ text: string; callback_data: string }>> = [];
+  if (currentPage > 0) keyboard.push([{ text: '→ السابق', callback_data: 'review-page:' + (currentPage - 1) }]);
+  if (currentPage < pageCount - 1) keyboard.push([{ text: 'التالي ←', callback_data: 'review-page:' + (currentPage + 1) }]);
+  keyboard.push([{
+    text: '📊 العدد: ' + total + ' | صفحة ' + (currentPage + 1) + '/' + pageCount,
+    callback_data: 'review-page:' + currentPage
+  }]);
+  if (notice) keyboard.unshift([{ text: 'تمت العملية', callback_data: 'review-page:' + currentPage }]);
+  keyboard.push([{ text: '↩ رجوع إلى تعديلات أخرى', callback_data: 'footer-settings-menu' }]);
+  keyboard.push([{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]);
+
+  await sendTelegramMessage(chatId,
+    (notice ? notice + '\n\n' : '') + 'انتهت صفحة التقييمات ' + (currentPage + 1) + ' من ' + pageCount + '.',
+    { reply_markup: { inline_keyboard: keyboard } }
+  );
+}
+
 async function showFooterSettings(db: Db, chatId: number) {
-  const settings = await db.collection<{ _id: string; vatNumber?: string; barcodeFileId?: string }>('store_settings')
-    .findOne({ _id: 'footer' });
+  const [settings, reviewCount] = await Promise.all([
+    db.collection<{ _id: string; vatNumber?: string; barcodeFileId?: string }>('store_settings')
+      .findOne({ _id: 'footer' }),
+    db.collection('customer_reviews').countDocuments({ isDemo: { $ne: true } })
+  ]);
   const vatNumber = settings?.vatNumber || 'غير مضاف';
   const barcodeStatus = settings?.barcodeFileId ? 'تمت إضافته' : 'غير مضاف';
   await sendTelegramMessage(chatId,
@@ -571,6 +653,7 @@ async function showFooterSettings(db: Db, chatId: number) {
           [{ text: '🖼️ السلايدر', callback_data: 'footer-setting:slider' }],
           [{ text: 'السياسات', callback_data: 'footer-setting:policies' }, { text: 'خدمات العملاء', callback_data: 'footer-setting:customer-service' }],
           [{ text: '📞 الاتصال', callback_data: 'footer-setting:contact' }],
+          [{ text: '⭐ تقييمات العملاء (' + reviewCount + ')', callback_data: 'footer-setting:reviews' }],
           [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
         ]
       }
@@ -648,6 +731,57 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'footer-setting' && id === 'barcode') {
     await showFooterBarcodeMenu(db, chatId);
+    return;
+  }
+  if (action === 'footer-setting' && id === 'reviews') {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
+    await showReviewPage(db, chatId, 0);
+    return;
+  }
+  if (action === 'review-page') {
+    await showReviewPage(db, chatId, Number(id || 0));
+    return;
+  }
+  if (action === 'review-delete') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف التقييم غير صالح.');
+    const page = Number(field || 0);
+    const review = await db.collection('customer_reviews').findOne({
+      _id: new ObjectId(id),
+      isDemo: { $ne: true }
+    });
+    if (!review) {
+      await showReviewPage(db, chatId, page, 'التقييم غير موجود أو سبق حذفه.');
+      return;
+    }
+    await sendTelegramMessage(chatId,
+      'تأكيد حذف تقييم العميل؟\n\nالاسم: ' + String(review.name || 'بدون اسم').slice(0, 80) +
+      '\nالتعليق: ' + String(review.comment || '—').slice(0, 900) +
+      '\n\nسيُحذف من قاعدة البيانات ولن يظهر في الموقع.',
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🗑 تأكيد الحذف', callback_data: 'review-confirm-delete:' + id + ':' + page }],
+            [{ text: 'إلغاء والعودة للتقييمات', callback_data: 'review-page:' + page }],
+            [{ text: '↩ رجوع إلى تعديلات أخرى', callback_data: 'footer-settings-menu' }]
+          ]
+        }
+      }
+    );
+    return;
+  }
+  if (action === 'review-confirm-delete') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف التقييم غير صالح.');
+    const page = Number(field || 0);
+    const result = await db.collection('customer_reviews').deleteOne({
+      _id: new ObjectId(id),
+      isDemo: { $ne: true }
+    });
+    await showReviewPage(
+      db,
+      chatId,
+      page,
+      result.deletedCount ? '✅ تم حذف التقييم من قاعدة البيانات.' : 'التقييم غير موجود أو سبق حذفه.'
+    );
     return;
   }
   if (action === 'footer-setting' && id === 'slider') {
