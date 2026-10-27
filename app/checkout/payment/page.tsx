@@ -6,6 +6,9 @@ import { useCart } from '@/components/CartProvider';
 import { formatPrice, products } from '@/lib/products';
 
 type CheckoutDraft = {
+  orderId?: string;
+  orderNumber?: string;
+  notificationSent?: boolean;
   fullName?: string;
   phone?: string;
   email?: string;
@@ -73,6 +76,7 @@ export default function CheckoutPaymentPage() {
           <span className="section-kicker">الخطوة الثانية من إتمام الطلب</span>
           <h1>طريقة الدفع</h1>
           <p>راجع المبلغ المستحق، ثم أكمل الدفع من خلال بوابة دفع آمنة.</p>
+          {draft.orderNumber ? <p className="checkout-order-number">رقم الطلب: <strong>{draft.orderNumber}</strong></p> : null}
         </div>
         <div className="checkout-step-indicator"><span>٢</span><div><strong>طرق الدفع</strong><small>الخطوة الثانية من ٢</small></div></div>
       </div>
@@ -97,6 +101,12 @@ export default function CheckoutPaymentPage() {
             </div>
             <span className="payment-pending-tag"><span /> بوابة الدفع قيد الربط</span>
           </div>
+
+          {draft.notificationSent === false ? (
+            <div className="checkout-alert checkout-alert-error" role="status">
+              <span>!</span><div><strong>تم تسجيل الطلب، لكن إشعار تيليجرام لم يُرسل.</strong><p>رقم الطلب محفوظ ويمكن مراجعته من قسم «طلبات العملاء» بعد تفعيل البوت.</p></div>
+            </div>
+          ) : null}
 
           {draft.installment === 'yes' ? (
             <div className="checkout-alert checkout-alert-error"><span>!</span><div><strong>طلب تقسيط محدد</strong><p>اختيار التقسيط محفوظ، لكن مزود التقسيط وشروطه لم يتم تحديدهما بعد. لا تُعرض خطة أو أقساط فعلية قبل ربط المزود.</p></div></div>
