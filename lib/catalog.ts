@@ -25,14 +25,25 @@ export type StoredProduct = Document & {
 
 export async function ensureDefaultCategories(db: Db) {
   const collection = db.collection<StoreCategory>('categories');
+  await collection.createIndex({ name: 1 }, { unique: true });
+  await collection.createIndex({ seedName: 1 }, { unique: true, sparse: true });
   for (const category of seedCategories) {
+    const seeded = await collection.findOne({ seedName: category.name });
+    if (seeded) continue;
+    const existingLegacy = await collection.findOne({ name: category.name });
+    if (existingLegacy) {
+      await collection.updateOne(
+        { _id: existingLegacy._id },
+        { $set: { seedName: category.name } }
+      );
+      continue;
+    }
     await collection.updateOne(
-      { name: category.name },
-      { $setOnInsert: { name: category.name, description: category.description, createdAt: new Date(), updatedAt: new Date() } },
+      { seedName: category.name },
+      { $setOnInsert: { name: category.name, seedName: category.name, description: category.description, createdAt: new Date(), updatedAt: new Date() } },
       { upsert: true }
     );
   }
-  await collection.createIndex({ name: 1 }, { unique: true });
   await collection.createIndex({ createdAt: -1 });
 }
 
