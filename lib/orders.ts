@@ -26,6 +26,8 @@ export type StoreOrder = Document & {
   createdAt: Date;
   updatedAt: Date;
   notes?: string;
+  customerNotificationKey?: string;
+  cancellationReason?: string;
 };
 
 export function makeOrderNumber(id: ObjectId, date = new Date()) {
@@ -55,6 +57,9 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     `المنتجات:\n${itemText}`,
     `الإجمالي: ${total} ر.س`,
     `الحالة: ${status}`,
+    ...(order.status === 'cancelled' && typeof order.cancellationReason === 'string' && order.cancellationReason.trim()
+      ? [`سبب الإلغاء: ${order.cancellationReason.trim()}`]
+      : []),
     `المصدر: ${order.source === 'telegram_manual' ? 'أضيف من البوت' : 'المتجر الإلكتروني'}`
   ].join('\n');
 }
