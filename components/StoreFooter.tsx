@@ -93,20 +93,20 @@ export default function StoreFooter() {
           <div className="store-footer-brand">
             <span className="stream-footer-mark">أ</span>
             <strong>أرض الجوال</strong>
-            <p>متجرك للجوالات وملحقاتها.</p>
+            <p>متجر متخصص في الجوالات وملحقاتها، مع أقسام تساعدك على الوصول إلى المنتجات بسهولة.</p>
             <small>© {new Date().getFullYear()} أرض الجوال. جميع الحقوق محفوظة.</small>
           </div>
-
-          <nav className="store-footer-column" aria-label="السياسات">
-            <h2>السياسات</h2>
-            {PAGE_LINKS.policies.map((page) => (
-              <button type="button" key={page.key} onClick={() => setSelectedKey(page.key)}>{page.title}</button>
-            ))}
-          </nav>
 
           <nav className="store-footer-column" aria-label="خدمات العملاء">
             <h2>خدمات العملاء</h2>
             {PAGE_LINKS['customer-service'].map((page) => (
+              <button type="button" key={page.key} onClick={() => setSelectedKey(page.key)}>{page.title}</button>
+            ))}
+          </nav>
+
+          <nav className="store-footer-column" aria-label="السياسات">
+            <h2>السياسات</h2>
+            {PAGE_LINKS.policies.map((page) => (
               <button type="button" key={page.key} onClick={() => setSelectedKey(page.key)}>{page.title}</button>
             ))}
           </nav>
