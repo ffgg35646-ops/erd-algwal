@@ -221,8 +221,9 @@ async function listOrdersForEditing(db: Db, chatId: number, orderId: string) {
 
 async function handleCallback(db: Db, callback: TelegramCallback) {
   await telegramApi('answerCallbackQuery', { callback_query_id: callback.id });
-  const chatId = callback.message?.chat.id;
-  if (!chatId || !callback.data) return;
+  const chat = callback.message?.chat;
+  const chatId = chat?.id;
+  if (!chatId || chat?.type !== 'private' || chatId !== callback.from.id || !callback.data) return;
 
   const [action, id, status] = callback.data.split(':');
 
