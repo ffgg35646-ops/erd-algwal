@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
 
 type TelegramUser = { id: number; first_name?: string; username?: string };
 type TelegramPhoto = { file_id: string; file_unique_id: string; width: number; height: number };
-type TelegramChat = { id: number };
+type TelegramChat = { id: number; type?: 'private' | 'group' | 'supergroup' | 'channel' };
 type TelegramMessage = { message_id: number; from?: TelegramUser; chat: TelegramChat; text?: string; photo?: TelegramPhoto[] };
 type TelegramCallback = { id: string; from: TelegramUser; data?: string; message?: TelegramMessage };
 type TelegramUpdate = { update_id: number; message?: TelegramMessage; callback_query?: TelegramCallback };
@@ -123,19 +123,12 @@ async function startFlow(db: Db, userId: number, chatId: number, workflow: Admin
 }
 
 async function showCustomerOrders(db: Db, chatId: number) {
-  const orders = await getRecentOrders(db, 10);
-  const unseen = await unreadOrderCount(db);
-  if (unseen > 0) {
-    const displayedWebsiteOrderIds = orders
-      .filter((order) => order.source === 'website')
-      .map((order) => order._id);
-    if (displayedWebsiteOrderIds.length) {
-      await db.collection('orders').updateMany(
-        { _id: { $in: displayedWebsiteOrderIds }, source: 'website', adminSeenAt: null },
-        { $set: { adminSeenAt: new Date() } }
-      );
-    }
-  }
+  const unseenOrders = await db.collection<StoreOrder>('orders')
+    .find({ source: 'website', adminSeenAt: null })
+    .sort({ createdAt: -1 })
+    .limit(10)
+    .toArray();
+  const orders = unseenOrders.length ? unseenOrders : await getRecentOrders(db, 10);
 
   if (!orders.length) {
     await sendTelegramMessage(chatId, '🔔 لا توجد طلبات عملاء حتى الآن.', { reply_markup: adminReplyKeyboard(0) });
@@ -160,9 +153,19 @@ async function showCustomerOrders(db: Db, chatId: number) {
       callback_data: `edit-order:${order._id.toHexString()}`
     }])
   };
-  await sendTelegramMessage(chatId, `🧾 طلبات العملاء (آخر ${orders.length})\\n\\n${summary}\\n\\nاضغط على رقم طلب لو عايز تعرض تفاصيله وتغيّر حالته.`, {
+  await sendTelegramMessage(chatId, `🧾 ${unseenOrders.length ? 'الطلبات الجديدة غير المقروءة' : 'آخر الطلبات'} (${orders.length})\\n\\n${summary}\\n\\nاضغط على رقم طلب لو عايز تعرض تفاصيله وتغيّر حالته.`, {
     reply_markup: keyboard
   });
+
+  const displayedWebsiteOrderIds = orders
+    .filter((order) => order.source === 'website')
+    .map((order) => order._id);
+  if (displayedWebsiteOrderIds.length) {
+    await db.collection('orders').updateMany(
+      { _id: { $in: displayedWebsiteOrderIds }, source: 'website', adminSeenAt: null },
+      { $set: { adminSeenAt: new Date() } }
+    );
+  }
   await sendMainMenu(db, chatId, 'تم عرض الطلبات. تم تحديث عدّاد الطلبات التي شاهدتها.');
 }
 
@@ -488,6 +491,7 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
   const chatId = message?.chat.id;
   const text = message?.text?.trim();
   if (!message || !from || !chatId) return;
+  if (message.chat.type !== 'private' || chatId !== from.id) return;
   if (!isAuthorized(from.id)) return;
 
   if (text === '/start' || text === '/menu' || text === MAIN_MENU_TEXT) {
