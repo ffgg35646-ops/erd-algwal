@@ -17,11 +17,11 @@ export default function ProductDetails({ product }: { product: Product }) {
 
   useEffect(() => {
     if (gallery.length < 2) return;
-    const timer = window.setInterval(() => {
+    const timer = window.setTimeout(() => {
       setActiveImageIndex((current) => (current + 1) % gallery.length);
     }, 10_000);
-    return () => window.clearInterval(timer);
-  }, [gallery.length]);
+    return () => window.clearTimeout(timer);
+  }, [gallery.length, activeImageIndex]);
 
   function handleAdd() {
     addToCart(product.id, quantity);
