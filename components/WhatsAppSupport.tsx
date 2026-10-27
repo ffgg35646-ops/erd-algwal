@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 type StoreSettings = { whatsappNumber?: string };
 
 function normalizePhone(value: string) {
-  return value.replace(/\\D/g, '');
+  return value.replace(/\D/g, '');
 }
 
 export default function WhatsAppSupport() {
@@ -21,7 +21,7 @@ export default function WhatsAppSupport() {
         const data = await response.json() as StoreSettings;
         if (active) setPhone(normalizePhone(data.whatsappNumber || ''));
       } catch {
-        // The support control remains available even if settings cannot be refreshed.
+        // The button remains in place if settings cannot be refreshed.
       }
     };
     void refresh();
@@ -34,30 +34,17 @@ export default function WhatsAppSupport() {
     };
   }, []);
 
-  const href = phone ? `https://wa.me/${phone}` : '';
+  const href = phone ? 'https://wa.me/' + phone : '';
 
   return (
     <div className="whatsapp-support-wrap" dir="rtl">
       {unavailable ? <div className="whatsapp-support-note" role="status">رقم دعم واتساب لم يحدده المتجر بعد.</div> : null}
       {href ? (
-        <a
-          className="whatsapp-support-button"
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="تواصل مع دعم أرض الجوال على واتساب"
-          title="تواصل معنا واتساب"
-        >
+        <a className="whatsapp-support-button" href={href} target="_blank" rel="noopener noreferrer" aria-label="تواصل مع دعم أرض الجوال على واتساب" title="تواصل معنا واتساب">
           <WhatsAppIcon />
         </a>
       ) : (
-        <button
-          type="button"
-          className="whatsapp-support-button"
-          onClick={() => setUnavailable(true)}
-          aria-label="تواصل مع دعم أرض الجوال على واتساب"
-          title="تواصل معنا واتساب"
-        >
+        <button type="button" className="whatsapp-support-button" onClick={() => setUnavailable(true)} aria-label="تواصل مع دعم أرض الجوال على واتساب" title="تواصل معنا واتساب">
           <WhatsAppIcon />
         </button>
       )}
@@ -68,7 +55,8 @@ export default function WhatsAppSupport() {
 function WhatsAppIcon() {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path fill="currentColor" d="M16.03 3.2A12.7 12.7 0 0 0 5.15 22.45L3.4 28.8l6.53-1.71A12.7 12.7 0 1 0 16.03 3.2Zm0 23.1a10.4 10.4 0 0 1-5.3-1.45l-.38-.23-3.88 1.02 1.04-3.78-.25-.4a10.42 10.42 0 1 1 8.77 4.84Zm5.72-7.8c-.31-.16-1.83-.9-2.11-1-.28-.1-.49-.16-.69.16-.2.31-.79 1- .97 1.2-.18.21-.36.23-.67.08-.31-.16-1.3-.48-2.48-1.52-.92-.82-1.54-1.83-1.72-2.14-.18-.31-.02-.48.14-.63.14-.14.31-.36.46-.54.15-.18.2-.31.3-.51.1-.21.05-.39-.03-.55-.08-.15-.69-1.67-.95-2.29-.25-.6-.5-.52-.69-.53l-.59-.01c-.2 0-.54.08-.82.39-.28.31-1.07 1.05-1.07 2.57s1.1 2.98 1.26 3.18c.15.21 2.17 3.31 5.26 4.64.73.31 1.3.5 1.75.64.73.23 1.4.2 1.93.12.59-.09 1.83-.75 2.09-1.47.26-.72.26-1.33.18-1.47-.08-.13-.28-.21-.59-.36Z"/>
+      <path d="M16 3.2A12.5 12.5 0 0 0 5.3 22.2L3.6 28.4l6.4-1.7A12.5 12.5 0 1 0 16 3.2Z" />
+      <path d="M11.1 9.3c-.3-.6-.6-.6-.9-.6h-.7c-.3 0-.7.1-1 .5-.4.4-1.3 1.2-1.3 3s1.3 3.5 1.4 3.7c.2.2 2.5 4 6.2 5.4 3 .1 3.6.1 4.8-.6.9-.4 1.6-1.3 1.7-2.1.2-.8.2-1.5.1-1.7-.1-.1-.4-.3-.9-.5-.4-.2-2.4-1.2-2.8-1.3-.4-.2-.6-.2-.9.2-.3.4-1 1.3-1.2 1.5-.2.3-.4.3-.8.1-.4-.2-1.7-.6-3.2-1.9-1.2-1-1.9-2.3-2.1-2.7-.2-.4 0-.6.2-.8.2-.2.4-.4.6-.7.2-.2.3-.4.4-.6.1-.3 0-.5 0-.7-.1-.2-.9-2.2-1.2-2.8Z" />
     </svg>
   );
 }
