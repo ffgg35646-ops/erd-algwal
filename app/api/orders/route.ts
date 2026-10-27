@@ -1,9 +1,10 @@
 import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
-import { products } from '@/lib/products';
+import { products as seedProducts } from '@/lib/products';
+import { findStoredProduct, type StoredProduct } from '@/lib/catalog';
 import { sendNewOrderToAdmin, makeOrderNumber, type StoreOrder } from '@/lib/orders';
-import { ensureTelegramIndexes } from '@/lib/telegram';
+import { adminReplyKeyboard, ensureTelegramIndexes, sendTelegramMessage } from '@/lib/telegram';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,13 +30,13 @@ function text(value: unknown, maxLength = 500) {
 }
 
 function validPhone(value: string) {
-  const normalized = value.replace(/[\s()-]/g, '');
-  return /^(?:\+?966|0)?5\d{8}$/.test(normalized) ? normalized : '';
+  const normalized = value.replace(/[\\s()-]/g, '');
+  return /^(?:\\+?966|0)?5\\d{8}$/.test(normalized) ? normalized : '';
 }
 
 function validEmail(value: string) {
   if (!value) return true;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
+  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value) && value.length <= 254;
 }
 
 export async function POST(request: NextRequest) {
@@ -63,44 +64,13 @@ export async function POST(request: NextRequest) {
   const installment = body.installment === 'yes';
   const acceptedPolicies = body.acceptedPolicies === true;
 
-  if (fullName.length < 2) {
-    return NextResponse.json({ ok: false, error: 'اكتب الاسم الكامل.' }, { status: 400 });
-  }
-  if (!phone) {
-    return NextResponse.json({ ok: false, error: 'رقم الجوال السعودي غير صحيح.' }, { status: 400 });
-  }
-  if (!validEmail(email)) {
-    return NextResponse.json({ ok: false, error: 'البريد الإلكتروني غير صحيح.' }, { status: 400 });
-  }
-  if (!region || !city || !neighborhood || !street) {
-    return NextResponse.json({ ok: false, error: 'أكمل عنوان التوصيل.' }, { status: 400 });
-  }
-  if (!acceptedPolicies) {
-    return NextResponse.json({ ok: false, error: 'الموافقة على سياسة المتجر مطلوبة.' }, { status: 400 });
-  }
+  if (fullName.length < 2) return NextResponse.json({ ok: false, error: 'اكتب الاسم الكامل.' }, { status: 400 });
+  if (!phone) return NextResponse.json({ ok: false, error: 'رقم الجوال السعودي غير صحيح.' }, { status: 400 });
+  if (!validEmail(email)) return NextResponse.json({ ok: false, error: 'البريد الإلكتروني غير صحيح.' }, { status: 400 });
+  if (!region || !city || !neighborhood || !street) return NextResponse.json({ ok: false, error: 'أكمل عنوان التوصيل.' }, { status: 400 });
+  if (!acceptedPolicies) return NextResponse.json({ ok: false, error: 'الموافقة على سياسة المتجر مطلوبة.' }, { status: 400 });
   if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) {
     return NextResponse.json({ ok: false, error: 'قائمة المنتجات غير صالحة.' }, { status: 400 });
-  }
-
-  const orderItems: StoreOrder['items'] = [];
-  for (const line of body.items) {
-    const productId = text(line?.productId, 100);
-    const product = products.find((item) => item.id === productId);
-    const quantity = Number(line?.quantity);
-    if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > 50) {
-      return NextResponse.json({ ok: false, error: 'أحد المنتجات أو الكميات غير صالح.' }, { status: 400 });
-    }
-    const existing = orderItems.find((item) => item.name === product.name);
-    if (existing) {
-      existing.quantity += quantity;
-    } else {
-      orderItems.push({ name: product.name, quantity, unitPrice: product.price });
-    }
-  }
-
-  const total = orderItems.reduce((sum, item) => sum + Number(item.unitPrice || 0) * item.quantity, 0);
-  if (!Number.isFinite(total) || total <= 0) {
-    return NextResponse.json({ ok: false, error: 'تعذر حساب إجمالي الطلب.' }, { status: 400 });
   }
 
   try {
@@ -119,9 +89,40 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const orderItems: StoreOrder['items'] = [];
+    for (const line of body.items) {
+      const productId = text(line?.productId, 100);
+      const quantity = Number(line?.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 50) {
+        return NextResponse.json({ ok: false, error: 'أحد المنتجات أو الكميات غير صالح.' }, { status: 400 });
+      }
+
+      let product: { name: string; price: number } | null = null;
+      const seedProduct = seedProducts.find((item) => item.id === productId);
+      if (seedProduct) {
+        product = { name: seedProduct.name, price: seedProduct.price };
+      } else if (ObjectId.isValid(productId)) {
+        const stored = await findStoredProduct(db, productId);
+        if (stored) product = { name: stored.name, price: stored.price };
+      }
+
+      if (!product || !Number.isFinite(product.price) || product.price <= 0) {
+        return NextResponse.json({ ok: false, error: 'أحد المنتجات لم يعد متاحًا. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
+      }
+
+      const existing = orderItems.find((item) => item.name === product!.name && item.unitPrice === product!.price);
+      if (existing) existing.quantity += quantity;
+      else orderItems.push({ name: product.name, quantity, unitPrice: product.price });
+    }
+
+    const total = orderItems.reduce((sum, item) => sum + Number(item.unitPrice || 0) * item.quantity, 0);
+    if (!Number.isFinite(total) || total <= 0) {
+      return NextResponse.json({ ok: false, error: 'تعذر حساب إجمالي الطلب.' }, { status: 400 });
+    }
+
     const now = new Date();
     const _id = new ObjectId();
-    const order: StoreOrder & { checkoutRequestId: string } = {
+    const order: StoreOrder & { checkoutRequestId: string; acceptedPoliciesAt: Date; adminSeenAt: null } = {
       _id,
       orderNumber: makeOrderNumber(_id, now),
       checkoutRequestId: submissionId,
@@ -140,19 +141,28 @@ export async function POST(request: NextRequest) {
       installment,
       createdAt: now,
       updatedAt: now,
-      ...(notes ? { notes } : {}),
+      adminSeenAt: null,
       acceptedPoliciesAt: now,
-      telegramNotificationSent: false
+      telegramNotificationSent: false,
+      ...(notes ? { notes } : {})
     };
 
     await orders.insertOne(order);
+
     let notificationSent = false;
     try {
       await sendNewOrderToAdmin(order);
+      const adminId = process.env.TELEGRAM_ADMIN_ID;
+      if (adminId) {
+        const unreadCount = await orders.countDocuments({ source: 'website', adminSeenAt: null });
+        await sendTelegramMessage(Number(adminId), 'لديك طلبات جديدة. يمكنك فتح «طلبات العملاء» من القائمة لعرضها.', {
+          reply_markup: adminReplyKeyboard(unreadCount)
+        });
+      }
       notificationSent = true;
       await orders.updateOne({ _id }, { $set: { telegramNotificationSent: true, telegramNotifiedAt: new Date() } });
     } catch (error) {
-      console.error('Order was saved but Telegram notification failed:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('Order saved but Telegram notification failed:', error instanceof Error ? error.message : 'Unknown error');
     }
 
     return NextResponse.json({
