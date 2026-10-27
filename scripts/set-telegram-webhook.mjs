@@ -1,3 +1,11 @@
+import { existsSync } from 'node:fs';
+
+for (const envFile of ['.env.local', '.env']) {
+  if (existsSync(envFile) && typeof process.loadEnvFile === 'function') {
+    try { process.loadEnvFile(envFile); } catch { /* Existing shell variables or malformed optional file: continue to validation. */ }
+  }
+}
+
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
 const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
