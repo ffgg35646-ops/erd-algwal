@@ -60,7 +60,7 @@ export function adminReplyKeyboard(unreadCount = 0) {
   return {
     keyboard: [
       [{ text: ordersLabel }],
-      [{ text: 'إضافة طلب' }, { text: 'تعديل الطلبات' }],
+      [{ text: 'إضافة طلب' }, { text: 'تعديل الطلب' }],
       [{ text: 'إضافة منتج' }]
     ],
     resize_keyboard: true,
