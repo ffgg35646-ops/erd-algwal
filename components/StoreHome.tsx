@@ -97,11 +97,6 @@ export default function StoreHome() {
             <button type="button" className="store-search-clear" onClick={() => setSearch('')} aria-label="مسح البحث">×</button>
           ) : null}
         </label>
-        <div className="store-search-hint" aria-live="polite">
-          {term
-            ? 'نتائج البحث: ' + searchedProducts.length + ' منتج'
-            : 'تصفح حسب الأقسام • ' + products.length + ' منتج'}
-        </div>
       </section>
 
       <div className="category-stream" id="categories">
