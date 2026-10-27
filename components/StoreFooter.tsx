@@ -61,7 +61,13 @@ export default function StoreFooter() {
     }
     void refresh();
     const timer = window.setInterval(() => { void refresh(); }, 30_000);
-    return () => { alive = false; window.clearInterval(timer); };
+    const handleFocus = () => { void refresh(); };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   useEffect(() => {
