@@ -24,6 +24,8 @@ export default function CustomerReviews() {
       if (data.prompt) {
         setPrompt((previous) => previous?.orderId === data.prompt.orderId ? previous : data.prompt);
         setMessage('');
+      } else {
+        setPrompt(null);
       }
     } catch { /* Keep the storefront usable when the network is unavailable. */ }
   }, []);
@@ -51,7 +53,7 @@ export default function CustomerReviews() {
     try {
       const response = await fetch('/api/reviews', {
         method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token, name, comment, ...(rating ? { rating } : {}) })
+        body: JSON.stringify({ token, orderId: prompt.orderId, name, comment, ...(rating ? { rating } : {}) })
       });
       const data = await response.json();
       if (!response.ok || !data.ok) throw new Error(data.error || 'تعذر إرسال التعليق.');
@@ -66,7 +68,7 @@ export default function CustomerReviews() {
   return (
     <section className="customer-reviews" aria-labelledby="customer-reviews-title">
       <div className="customer-reviews-heading">
-        <div><span className="reviews-kicker">تجارب العملاء</span><h2 id="customer-reviews-title">آراء العملاء</h2><p>يسعدنا نعرف رأيك في تجربتك مع أرض الجوال.</p></div>
+        <div><span className="reviews-kicker">آراء وتجارب العملاء</span><h2 id="customer-reviews-title">آراء العملاء</h2><p>يسعدنا نعرف رأيك في تجربتك مع أرض الجوال.</p></div>
         <span className="reviews-count">{reviews.length} تعليق</span>
       </div>
       {reviews.length ? <div className="reviews-track">
