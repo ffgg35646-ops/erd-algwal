@@ -64,7 +64,7 @@ const CANCEL_TEXT = '/cancel';
 
 function isAuthorized(adminId: number) {
   const configured = process.env.TELEGRAM_ADMIN_ID;
-  return Boolean(configured && /^\\d+$/.test(configured) && String(adminId) === configured);
+  return Boolean(configured && /^\d+$/.test(configured) && String(adminId) === configured);
 }
 
 function isSecretValid(received: string | null, expected: string) {
@@ -88,11 +88,11 @@ function normalizeAmount(value: string) {
   const arabicDigits = value
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
     .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
-  return Number(arabicDigits.replace(/[٬,\\s]/g, '').replace(/[^\\d.]/g, ''));
+  return Number(arabicDigits.replace(/[٬,\s]/g, '').replace(/[^\d.]/g, ''));
 }
 
 function parseList(value: string) {
-  return [...new Set(value.split(/[،,\\n]/).map((item) => item.trim()).filter(Boolean))].slice(0, 30);
+  return [...new Set(value.split(/[،,\n]/).map((item) => item.trim()).filter(Boolean))].slice(0, 30);
 }
 
 async function unreadOrderCount(db: Db) {
@@ -144,8 +144,8 @@ async function showCustomerOrders(db: Db, chatId: number) {
       `الجوال: ${customer.phone || '—'}`,
       `الإجمالي: ${total} ر.س`,
       `الحالة: ${orderStatusLabel(order.status)}`
-    ].join('\\n');
-  }).join('\\n\\n──────────────\\n\\n');
+    ].join('\n');
+  }).join('\n\n──────────────\n\n');
 
   const keyboard = {
     inline_keyboard: orders.map((order) => [{
@@ -153,7 +153,7 @@ async function showCustomerOrders(db: Db, chatId: number) {
       callback_data: `edit-order:${order._id.toHexString()}`
     }])
   };
-  await sendTelegramMessage(chatId, `🧾 ${unseenOrders.length ? 'الطلبات الجديدة غير المقروءة' : 'آخر الطلبات'} (${orders.length})\\n\\n${summary}\\n\\nاضغط على رقم طلب لو عايز تعرض تفاصيله وتغيّر حالته.`, {
+  await sendTelegramMessage(chatId, `🧾 ${unseenOrders.length ? 'الطلبات الجديدة غير المقروءة' : 'آخر الطلبات'} (${orders.length})\n\n${summary}\n\nاضغط على رقم طلب لو عايز تعرض تفاصيله وتغيّر حالته.`, {
     reply_markup: keyboard
   });
 
@@ -214,7 +214,7 @@ async function listOrdersForEditing(db: Db, chatId: number, orderId: string) {
     await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
     return;
   }
-  await sendTelegramMessage(chatId, `تفاصيل الطلب\\n\\n${formatOrderForAdmin(order as unknown as Record<string, unknown>)}\\n\\nاختر حالة الطلب:`, {
+  await sendTelegramMessage(chatId, `تفاصيل الطلب\n\n${formatOrderForAdmin(order as unknown as Record<string, unknown>)}\n\nاختر حالة الطلب:`, {
     reply_markup: statusInlineKeyboard(orderId)
   });
 }
@@ -240,7 +240,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       categoryId: section._id.toHexString(),
       categoryName: section.name,
       images: []
-    }, `القسم: ${section.name}\\n\\nاكتب اسم المنتج.`);
+    }, `القسم: ${section.name}\n\nاكتب اسم المنتج.`);
     return;
   }
 
@@ -257,7 +257,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await startFlow(db, callback.from.id, chatId, 'rename_section', 'rename_section', {
       categoryId: section._id.toHexString(),
       categoryName: section.name
-    }, `القسم الحالي: ${section.name}\\n\\nاكتب الاسم الجديد فقط.`);
+    }, `القسم الحالي: ${section.name}\n\nاكتب الاسم الجديد فقط.`);
     return;
   }
 
@@ -277,7 +277,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       return;
     }
     const order = await db.collection<StoreOrder>('orders').findOne({ _id: new ObjectId(id) });
-    await sendTelegramMessage(chatId, `✅ تم تعديل حالة الطلب ${order?.orderNumber || id}\\nالحالة الجديدة: ${ORDER_STATUS_LABELS[nextStatus]}.`);
+    await sendTelegramMessage(chatId, `✅ تم تعديل حالة الطلب ${order?.orderNumber || id}\nالحالة الجديدة: ${ORDER_STATUS_LABELS[nextStatus]}.`);
     await sendMainMenu(db, chatId);
     return;
   }
@@ -286,7 +286,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
 }
 
 async function saveCategory(db: Db, name: string) {
-  const normalized = name.trim().replace(/\\s+/g, ' ');
+  const normalized = name.trim().replace(/\s+/g, ' ');
   if (normalized.length < 2 || normalized.length > 80) throw new Error('اسم القسم يجب أن يكون من حرفين إلى 80 حرفًا.');
   const sections = await db.collection<StoreCategory>('categories').find({}).toArray();
   const duplicate = sections.some((section) => section.name.trim().toLocaleLowerCase('ar') === normalized.toLocaleLowerCase('ar'));
@@ -321,7 +321,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
   } as Omit<StoredProduct, '_id'>);
 
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-  await sendTelegramMessage(chatId, `✅ تم حفظ المنتج بنجاح\\n\\nاسم المنتج: ${data.name}\\nالقسم: ${section.name}\\nالألوان: ${(data.colors || []).join('، ') || 'غير محدد'}\\nمساحات التخزين: ${(data.storageOptions || []).join('، ') || 'غير محدد'}\\nالسعر: ${Number(data.price).toLocaleString('ar-SA')} ر.س\\nعدد الصور: ${data.images.length}\\n\\nسيظهر في القسم على المتجر خلال تحديث بيانات المنصة.`, {
+  await sendTelegramMessage(chatId, `✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ${data.name}\nالقسم: ${section.name}\nالألوان: ${(data.colors || []).join('، ') || 'غير محدد'}\nمساحات التخزين: ${(data.storageOptions || []).join('، ') || 'غير محدد'}\nالسعر: ${Number(data.price).toLocaleString('ar-SA')} ر.س\nعدد الصور: ${data.images.length}\n\nسيظهر في القسم على المتجر خلال تحديث بيانات المنصة.`, {
     reply_markup: adminReplyKeyboard(await unreadOrderCount(db))
   });
   return Boolean(result.insertedId);
@@ -385,7 +385,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       await sendTelegramMessage(chatId, 'تعذر تحديد القسم. ارجع إلى القائمة وحاول مجددًا.');
       return;
     }
-    const normalized = text.replace(/\\s+/g, ' ');
+    const normalized = text.replace(/\s+/g, ' ');
     if (normalized.length < 2 || normalized.length > 80) {
       await sendTelegramMessage(chatId, 'الاسم يجب أن يكون من حرفين إلى 80 حرفًا.');
       return;
@@ -505,14 +505,14 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
     return;
   }
 
-  const normalizedText = (text || '').replace(/^🔔\\s*/, '').replace(/\\s*\\(\\d+\\+?\\)$/, '');
+  const normalizedText = (text || '').replace(/^🔔\s*/, '').replace(/\s*\(\d+\+?\)$/, '');
   if (normalizedText === MENU_ORDERS) {
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
     await showCustomerOrders(db, chatId);
     return;
   }
   if (text === MENU_ADD_SECTION) {
-    await startFlow(db, from.id, chatId, 'add_section', 'section_name', {}, 'إضافة قسم/طلب جديد\\n\\nأرسل الاسم فقط. سيظهر هذا الاسم في قائمة أقسام المنتجات. اكتب /cancel للإلغاء.');
+    await startFlow(db, from.id, chatId, 'add_section', 'section_name', {}, 'إضافة قسم/طلب جديد\n\nأرسل الاسم فقط. سيظهر هذا الاسم في قائمة أقسام المنتجات. اكتب /cancel للإلغاء.');
     return;
   }
   if (text === MENU_EDIT_SECTION) {
