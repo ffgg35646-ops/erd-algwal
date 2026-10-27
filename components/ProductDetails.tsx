@@ -33,6 +33,12 @@ export default function ProductDetails({ product }: { product: Product }) {
           <div className="detail-rule" />
           <h2>عن المنتج</h2>
           <p className="detail-description">{product.description}</p>
+          {product.colors?.length ? (
+            <section className="detail-options"><h2>الألوان المتاحة</h2><div className="detail-option-chips">{product.colors.map((color) => <span key={color}>{color}</span>)}</div></section>
+          ) : null}
+          {product.storageOptions?.length ? (
+            <section className="detail-options"><h2>مساحات التخزين</h2><div className="detail-option-chips">{product.storageOptions.map((storage) => <span key={storage}>{storage}</span>)}</div></section>
+          ) : null}
           <h2>مميزات المنتج</h2>
           <ul className="spec-list">{product.specifications.map((specification) => <li key={specification}><span>✓</span>{specification}</li>)}</ul>
           <div className="detail-actions">
