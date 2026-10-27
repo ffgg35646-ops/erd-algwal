@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import './globals.css';
 import { CartProvider } from '@/components/CartProvider';
 import SiteHeader from '@/components/SiteHeader';
+import WhatsAppSupport from '@/components/WhatsAppSupport';
 
 export const metadata: Metadata = {
   title: 'أرض الجوال | متجر الجوالات والإكسسوارات',
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <CartProvider>
           <SiteHeader />
           {children}
+          <WhatsAppSupport />
         </CartProvider>
       </body>
     </html>
