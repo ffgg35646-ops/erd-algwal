@@ -105,7 +105,7 @@ export default function StoreBannerSlider() {
 
   if (!banners.length) return (
     <section className="store-promo-slider container" aria-label="العروض والإعلانات">
-      <div className="store-promo-empty" role="status"><span>أرض الجوال</span><strong>مساحة العروض والإعلانات</strong><p>تظهر صور السلايدر هنا بمجرد إضافتها من البوت: تعديلات أخرى ← السلايدر ← إضافة صورة.</p></div>
+      <div className="store-promo-empty" role="status"><span>عروض المتجر</span><strong>مساحة العروض والإعلانات</strong><p>تظهر صور السلايدر هنا بمجرد إضافتها من البوت: تعديلات أخرى ← السلايدر ← إضافة صورة.</p></div>
     </section>
   );
   const active = banners[activeIndex];

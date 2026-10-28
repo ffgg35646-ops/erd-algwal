@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: ProductPageProps) {
   const { id } = await params;
   const product = await resolveProduct(id);
   return {
-    title: product ? product.name + ' | أرض الجوال' : 'المنتج غير موجود | أرض الجوال'
+    title: product ? product.name : 'المنتج غير موجود'
   };
 }
 

@@ -125,14 +125,14 @@ export default function StoreFooter() {
 
   return (
     <>
-      <footer className="store-site-footer">
+      <footer id="store-site-footer" className="store-site-footer">
         <div className="store-footer-inner container">
           <div className="store-footer-brand">
-            <span className="stream-footer-mark store-footer-logo" aria-label="شعار أرض الجوال"><svg viewBox="0 0 44 44" aria-hidden="true" focusable="false"><rect x="10" y="5" width="23" height="34" rx="5.5" fill="none" stroke="currentColor" strokeWidth="2.1"/><path d="M16 10h11M18 33h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M35 5.5l2.2 5.2 5.2 2.2-5.2 2.2-2.2 5.2-2.2-5.2-5.2-2.2 5.2-2.2z" fill="currentColor" transform="translate(-1 0) scale(.9)"/></svg></span>
+            <span className="stream-footer-mark store-footer-logo" aria-label="شعار المتجر"><svg viewBox="0 0 44 44" aria-hidden="true" focusable="false"><rect x="10" y="5" width="23" height="34" rx="5.5" fill="none" stroke="currentColor" strokeWidth="2.1"/><path d="M16 10h11M18 33h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M35 5.5l2.2 5.2 5.2 2.2-5.2 2.2-2.2 5.2-2.2-5.2-5.2-2.2 5.2-2.2z" fill="currentColor" transform="translate(-1 0) scale(.9)"/></svg></span>
             <strong>أرض الجوال</strong>
             <p className="store-footer-vat">الرقم الضريبي: {vatNumber ? <bdi dir="ltr">{vatNumber}</bdi> : <span>لم يُضف رقم ضريبي</span>}</p>
             <p>متجر متخصص في الجوالات وملحقاتها، مع أقسام تساعدك على الوصول إلى المنتجات بسهولة.</p>
-            <small>© {new Date().getFullYear()} أرض الجوال. جميع الحقوق محفوظة.</small>
+            <small>© {new Date().getFullYear()} المتجر. جميع الحقوق محفوظة.</small>
           </div>
 
           <nav className="store-footer-column" aria-label="خدمات العملاء">
@@ -157,12 +157,12 @@ export default function StoreFooter() {
           <div className="store-footer-column store-footer-barcode">
             <h2>الباركود</h2>
             {barcodeImageUrl ? (
-              <img src={barcodeImageUrl} alt="باركود أرض الجوال" width={150} height={150} loading="lazy" />
+              <img src={barcodeImageUrl} alt="باركود المتجر" width={150} height={150} loading="lazy" />
             ) : barcodeRemoved ? (
               <span className="store-footer-muted">تم حذف الباركود من الإدارة.</span>
             ) : (
-              <div className="footer-demo-barcode" aria-label="باركود أرض الجوال">
-                <svg viewBox="0 0 180 112" role="img" aria-label="باركود أرض الجوال"><rect width="180" height="112" rx="8" fill="#fff"/><g fill="#202020">{Array.from({length: 42}, (_, i) => <rect key={i} x={7 + i * 3.95} y={7 + (i % 3)} width={i % 7 === 0 ? 2.8 : i % 4 === 0 ? 2.2 : 1.25} height={i % 5 === 0 ? 68 : i % 3 === 0 ? 76 : 62} />)}</g><rect x="56" y="31" width="68" height="28" rx="5" fill="#fff" stroke="#b28b37" strokeWidth="1.5"/><text x="90" y="49" fontSize="12" fontWeight="800" fill="#97712e" textAnchor="middle">أرض الجوال</text></svg>
+              <div className="footer-demo-barcode" aria-label="باركود المتجر">
+                <svg viewBox="0 0 180 112" role="img" aria-label="باركود المتجر"><rect width="180" height="112" rx="8" fill="#fff"/><g fill="#202020">{Array.from({length: 42}, (_, i) => <rect key={i} x={7 + i * 3.95} y={7 + (i % 3)} width={i % 7 === 0 ? 2.8 : i % 4 === 0 ? 2.2 : 1.25} height={i % 5 === 0 ? 68 : i % 3 === 0 ? 76 : 62} />)}</g><rect x="56" y="31" width="68" height="28" rx="5" fill="#fff" stroke="#b28b37" strokeWidth="1.5"/><text x="90" y="49" fontSize="12" fontWeight="800" fill="#97712e" textAnchor="middle">المتجر</text></svg>
               </div>
             )}
           </div>
@@ -182,7 +182,7 @@ export default function StoreFooter() {
           <section className="store-page-modal" role="dialog" aria-modal="true" aria-labelledby="store-page-modal-title">
             <div className="store-page-modal-head">
               <div>
-                <span>أرض الجوال</span>
+                <span>المتجر</span>
                 <h2 id="store-page-modal-title">{selectedPage.title}</h2>
               </div>
               <button type="button" className="store-page-modal-close" aria-label="إغلاق" onClick={() => setSelectedKey(null)}>×</button>

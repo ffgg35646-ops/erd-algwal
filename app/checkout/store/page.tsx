@@ -335,7 +335,7 @@ export default function StoreCheckoutPage() {
           <div className="empty-cart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg></div>
           <h2>سلتك فاضية</h2>
           <p>أضف المنتجات اللي تحتاجها، وبعدها ارجع لإدخال بيانات التوصيل.</p>
-          <Link href="/#products" className="primary-button">تصفح المنتجات</Link>
+          <Link href="/#categories" className="primary-button">تصفح المنتجات</Link>
         </section>
       ) : (
         <div className="checkout-layout">

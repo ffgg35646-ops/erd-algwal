@@ -8,7 +8,7 @@ import StoreFooter from '@/components/StoreFooter';
 
 export const metadata: Metadata = {
   title: 'أرض الجوال | متجر الجوالات والإكسسوارات',
-  description: 'تصفح الجوالات وملحقاتها في متجر أرض الجوال.',
+  description: 'أرض الجوال — تصفح الجوالات والأجهزة وملحقاتها واختر المنتجات التي تناسبك.',
   applicationName: 'أرض الجوال'
 };
 

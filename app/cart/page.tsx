@@ -21,7 +21,7 @@ export default function CartPage() {
   return (
     <main className="container cart-page">
       <div className="breadcrumbs"><Link href="/">الرئيسية</Link><span>/</span><span>سلة المشتريات</span></div>
-      <div className="cart-page-heading"><div><span className="section-kicker">اختياراتك محفوظة</span><h1>سلة المشتريات</h1></div><Link href="/#products" className="text-link">مواصلة التسوق ←</Link></div>
+      <div className="cart-page-heading"><div><span className="section-kicker">اختياراتك محفوظة</span><h1>سلة المشتريات</h1></div><Link href="/#categories" className="text-link">مواصلة التسوق ←</Link></div>
 
       {!hydrated ? (
         <div className="cart-loading">جاري تحميل سلتك...</div>
@@ -30,7 +30,7 @@ export default function CartPage() {
           <div className="empty-cart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg></div>
           <h2>سلتك لسه فاضية</h2>
           <p>تصفح المنتجات واضغط على علامة السلة لإضافة اللي يعجبك.</p>
-          <Link href="/#products" className="primary-button">ابدأ التسوق</Link>
+          <Link href="/#categories" className="primary-button">ابدأ التسوق</Link>
         </div>
       ) : (
         <div className="cart-layout">
@@ -63,7 +63,7 @@ export default function CartPage() {
             <div className="summary-divider" />
             <div className="summary-total"><span>الإجمالي</span><strong>{formatPrice(total)}</strong></div>
             <p className="cart-next-step">راجع بيانات السلة، ثم أكمل بيانات التوصيل لإرسال طلبك.</p>
-            <div className="checkout-summary-actions"><Link href="/checkout" className="primary-button">إتمام الطلب <span aria-hidden="true">←</span></Link><Link href="/#products" className="outline-button summary-back">إضافة منتجات أخرى</Link></div>
+            <div className="checkout-summary-actions"><Link href="/checkout" className="primary-button">إتمام الطلب <span aria-hidden="true">←</span></Link><Link href="/#categories" className="outline-button summary-back">إضافة منتجات أخرى</Link></div>
           </aside>
         </div>
       )}
