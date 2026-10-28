@@ -86,7 +86,7 @@ export default function StoreFooter() {
   }, [selectedKey]);
 
   const whatsappDigits = whatsappNumber.replace(/\D/g, '');
-  const whatsappLink = !whatsappNumber.includes('..') && /^\d{10,15}$/.test(whatsappDigits) ? 'https://wa.me/' + whatsappDigits : '';
+  const whatsappLink = !whatsappNumber.includes('..') && /^\d{10,15}$/.test(whatsappDigits) ? 'https://wa.me/' + whatsappDigits : 'https://wa.me/201090466376';
 
   const selectedPage = useMemo(() => {
     if (!selectedKey) return null;
