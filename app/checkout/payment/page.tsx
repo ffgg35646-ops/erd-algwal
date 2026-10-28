@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { useCart } from '@/components/CartProvider';
+import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
 
 type CheckoutDraft = {
@@ -39,10 +39,10 @@ export default function CheckoutPaymentPage() {
     }
   }, []);
 
-  const lines = useMemo(() => Object.entries(cart).map(([id, quantity]) => ({
-    product: products.find((item) => item.id === id),
-    quantity
-  })).filter((line) => Boolean(line.product)), [cart]);
+  const lines = useMemo(() => Object.entries(cart).map(([cartKey, quantity]) => {
+    const { productId, color } = parseCartItemKey(cartKey);
+    return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
+  }).filter((line) => Boolean(line.product)), [cart]);
 
   const total = lines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
   const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
@@ -128,10 +128,10 @@ export default function CheckoutPaymentPage() {
             <div><small>عنوان التوصيل</small><strong>{[draft.neighborhood, draft.city, draft.region].filter(Boolean).join('، ') || '—'}</strong></div>
           </div>
           <div className="checkout-order-items">
-            {lines.map(({ product, quantity }) => product ? (
-              <div className="checkout-order-item" key={product.id}>
+            {lines.map(({ cartKey, product, color, quantity }) => product ? (
+              <div className="checkout-order-item" key={cartKey}>
                 <img src={product.image} alt={product.name} />
-                <div><strong>{product.name}</strong><small>الكمية: {quantity}</small></div>
+                <div><strong>{product.name}</strong>{color ? <small>اللون: {color}</small> : null}<small>الكمية: {quantity}</small></div>
                 <b>{formatPrice(product.price * quantity)}</b>
               </div>
             ) : null)}
