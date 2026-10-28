@@ -10,40 +10,46 @@ type StoreBanner = {
 
 const DEFAULT_BANNERS: StoreBanner[] = [
   {
-    "id": "default-1",
-    "imageUrl": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1600&q=85",
-    "alt": "هواتف ذكية"
+    id: 'default-1',
+    imageUrl: 'https://images.unsplash.com/photo-1726732946451-98690db97aae?auto=format&fit=crop&crop=entropy&w=1800&h=600&q=85',
+    alt: 'تشكيلة آيفون بألوان مختلفة'
   },
   {
-    "id": "default-2",
-    "imageUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1600&q=85",
-    "alt": "تشكيلة الجوالات"
+    id: 'default-2',
+    imageUrl: 'https://images.unsplash.com/photo-1608547492981-3327ee04cafd?auto=format&fit=crop&crop=entropy&w=1800&h=600&q=85',
+    alt: 'آيفون بتصميم أنيق'
   },
   {
-    "id": "default-3",
-    "imageUrl": "https://images.unsplash.com/photo-1610945265064-0e34e5519bb?auto=format&fit=crop&w=1600&q=85",
-    "alt": "تصاميم الهواتف"
+    id: 'default-3',
+    imageUrl: 'https://images.unsplash.com/photo-1639546196487-972721434b13?auto=format&fit=crop&crop=entropy&w=1800&h=600&q=85',
+    alt: 'سماعات AirPods'
   },
   {
-    "id": "default-4",
-    "imageUrl": "https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=1600&q=85",
-    "alt": "هواتف حديثة"
+    id: 'default-4',
+    imageUrl: 'https://images.unsplash.com/photo-1602507234750-44911b524317?auto=format&fit=crop&crop=entropy&w=1800&h=600&q=85',
+    alt: 'سماعات لاسلكية وملحقاتها'
   },
   {
-    "id": "default-5",
-    "imageUrl": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1600&q=85",
-    "alt": "عالم الجوالات"
+    id: 'default-5',
+    imageUrl: 'https://images.unsplash.com/photo-1624096104992-9b4fa3a279dd?auto=format&fit=crop&crop=entropy&w=1800&h=600&q=85',
+    alt: 'ساعة ذكية'
   },
   {
-    "id": "default-6",
-    "imageUrl": "https://images.unsplash.com/photo-1603891128711-11b4b03bb138?auto=format&fit=crop&w=1600&q=85",
-    "alt": "إكسسوارات الجوال"
+    id: 'default-6',
+    imageUrl: 'https://images.unsplash.com/photo-1621715225783-b361297d0e8f?auto=format&fit=crop&crop=entropy&w=1800&h=600&q=85',
+    alt: 'جهاز آيباد'
+  },
+  {
+    id: 'default-7',
+    imageUrl: 'https://images.unsplash.com/photo-1578950435899-d1c1bf932ab2?auto=format&fit=crop&crop=entropy&w=1800&h=600&q=85',
+    alt: 'جهاز ماك بوك'
   }
 ];
 
 export default function StoreBannerSlider() {
   const [banners, setBanners] = useState<StoreBanner[]>(DEFAULT_BANNERS);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [fallbackAttempts, setFallbackAttempts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     let alive = true;
@@ -97,10 +103,18 @@ export default function StoreBannerSlider() {
         {banners.map((banner, index) => (
           <div className="store-promo-slide" key={banner.id} aria-hidden={index !== activeIndex}>
             <img
-              src={banner.imageUrl}
+              src={
+                (fallbackAttempts[banner.id] || 0) === 0
+                  ? banner.imageUrl
+                  : DEFAULT_BANNERS[(index + (fallbackAttempts[banner.id] || 1) - 1) % DEFAULT_BANNERS.length].imageUrl
+              }
               alt={banner.alt}
               loading={index === activeIndex ? 'eager' : 'lazy'}
               fetchPriority={index === activeIndex ? 'high' : 'auto'}
+              onError={() => setFallbackAttempts((current) => {
+                const attempts = current[banner.id] || 0;
+                return attempts >= DEFAULT_BANNERS.length ? current : { ...current, [banner.id]: attempts + 1 };
+              })}
             />
           </div>
         ))}
