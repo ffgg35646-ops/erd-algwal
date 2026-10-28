@@ -1331,8 +1331,8 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
   if (session.workflow === 'add_product') {
     if (session.step === 'product_name') {
       if (value.length < 2 || value.length > 120) return void await sendTelegramMessage(chatId, 'اسم المنتج يجب أن يكون من حرفين إلى 120 حرفًا.');
-      session.data.name = value; session.step = 'product_colors'; await saveSession(db, session);
-      await sendTelegramMessage(chatId, 'اكتب الألوان المتاحة مفصولة بفاصلة، مثال: أسود، أبيض، أزرق. أو «تخطي».');
+      session.data.name = value; session.data.colors = []; session.step = 'product_colors'; await saveSession(db, session);
+      await sendTelegramMessage(chatId, productColorPrompt([]), { reply_markup: productColorKeyboard([]) });
       return;
     }
     if (session.step === 'product_colors') {
