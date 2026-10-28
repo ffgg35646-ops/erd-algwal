@@ -13,10 +13,54 @@ const DEMO_REVIEW_NAMES = [
   'فيصل الشهري', 'منيرة السبيعي', 'مشعل الشمري', 'لولوة المالكي'
 ];
 
+const INITIAL_REVIEW_LAYOUT_ITEMS = [
+  { comment: 'التصفح مرتب ووصلت للجهاز اللي أدور عليه بسرعة.', rating: 5 },
+  { comment: 'تفاصيل الأجهزة والسعات واضحة وتساعد على الاختيار.', rating: 5 },
+  { comment: 'واجهة المتجر مريحة على الجوال والتنقل بين الأقسام سهل.', rating: 5 },
+  { comment: 'خيارات الألوان والتخزين واضحة قبل ما أقرر.', rating: 4 },
+  { comment: 'صفحة المنتج تعرض المعلومات بشكل مختصر ومنظم.', rating: 5 },
+  { comment: 'أعجبني ترتيب الجوالات والملحقات وسهولة الوصول لها.', rating: 5 },
+  { comment: 'واجهة بسيطة وما احتجت وقت طويل عشان ألقى اللي أبيه.', rating: 5 },
+  { comment: 'الصور وتفاصيل المنتجات تساعد على المقارنة.', rating: 4 },
+  { comment: 'خطوات الطلب واضحة وسهلة المتابعة.', rating: 5 },
+  { comment: 'ترتيب الأسعار ومعلومات الأجهزة واضح.', rating: 5 },
+  { comment: 'التصفح لطيف وكل شيء قريب وسهل الوصول له.', rating: 5 },
+  { comment: 'الأقسام مرتبة والتفاصيل مكتوبة بطريقة مريحة.', rating: 5 }
+] as const;
+
+const REVIEW_LAYOUT_SEED_MARKER = 'customer_reviews_layout_preview_seed_v1';
+
 export async function GET(request: NextRequest) {
   try {
     const db = await getDb();
-    const reviews = await db.collection('customer_reviews')
+    const reviewCollection = db.collection('customer_reviews');
+
+    // Insert the initial layout examples only once. They are ordinary removable
+    // review records, so deleting them in the Telegram admin stays permanent.
+    try {
+      const seed = await db.collection<{ _id: string; createdAt?: Date; purpose?: string }>('store_settings').updateOne(
+        { _id: REVIEW_LAYOUT_SEED_MARKER },
+        { $setOnInsert: { createdAt: new Date(), purpose: 'initial customer review layout' } },
+        { upsert: true }
+      );
+      if (seed.upsertedCount === 1 && await reviewCollection.countDocuments({}) === 0) {
+        const seedTime = Date.now();
+        await reviewCollection.insertMany(INITIAL_REVIEW_LAYOUT_ITEMS.map((item, index) => ({
+          _id: new ObjectId(),
+          name: DEMO_REVIEW_NAMES[index],
+          comment: item.comment,
+          rating: item.rating,
+          isDemo: true,
+          visible: true,
+          createdAt: new Date(seedTime - index * 1000)
+        })));
+      }
+    } catch (seedError) {
+      // Existing reviews should still load if this one-time layout setup cannot run.
+      console.error('Initial customer review setup skipped:', seedError instanceof Error ? seedError.message : 'Unknown error');
+    }
+
+    const reviews = await reviewCollection
       .find({ visible: { $ne: false } })
       .sort({ createdAt: -1 }).limit(60).toArray();
 
