@@ -93,7 +93,7 @@ export default function CheckoutPaymentPage() {
 
           <div className="payment-secure-panel">
             <div className="payment-secure-heading"><span className="secure-lock">⌑</span><div><strong>تسوق إلكتروني آمن</strong><small>حماية بيانات الدفع عبر مزود متخصص</small></div></div>
-            <p>في صفحة الدفع الفعلية، سيطلب مزود الدفع اسم حامل البطاقة ورقم البطاقة ورمز CVV. لن يحفظ متجر المتجر هذه البيانات في MongoDB أو في المتصفح، ولن تُرسل إلى بوت تيليجرام.</p>
+            <p>في صفحة الدفع الفعلية، سيطلب مزود الدفع اسم حامل البطاقة ورقم البطاقة ورمز CVV. لن يحفظ متجر أرض الجوال هذه البيانات في MongoDB أو في المتصفح، ولن تُرسل إلى بوت تيليجرام.</p>
             <div className="payment-field-preview">
               <div><span>اسم حامل البطاقة</span><b>يُدخل في بوابة الدفع الآمنة</b></div>
               <div><span>رقم البطاقة</span><b>يُدخل في بوابة الدفع الآمنة</b></div>
