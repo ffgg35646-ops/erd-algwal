@@ -753,7 +753,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
 
   if (action === 'product-color') {
     const session = await db.collection<AdminSession>('telegram_sessions').findOne({ telegramUserId: callback.from.id });
-    if (!session || !['product_colors', 'edit_product_colors'].includes(session.step)) {
+    if (!session || (session.step !== 'product_colors' && session.step !== 'edit_product_colors')) {
       await sendTelegramMessage(chatId, 'انتهت جلسة اختيار الألوان. افتح تعديل المنتج وادخل إلى الألوان مرة أخرى.');
       return;
     }
