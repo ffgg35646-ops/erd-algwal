@@ -141,7 +141,7 @@ export default function StoreHome() {
                   </div>
                 ) : (
                   <div className="category-product-slider" aria-label={'منتجات ' + category.name}>
-                    {category.products.map((product) => (
+                    {category.products.slice(0, 4).map((product) => (
                       <StripProductCard key={product.id} product={product} />
                     ))}
                   </div>
@@ -162,6 +162,12 @@ export default function StoreHome() {
       </div>
 
       <CustomerReviews />
+      <section className="store-documents" aria-label="التوثيقات والاعتمادات">
+        <div className="store-documents-inner">
+          <h2>التوثيقات والاعتمادات</h2>
+          <div className="store-documents-list"><div className="store-document-placeholder">تُضاف وثائق واعتمادات المتجر هنا</div></div>
+        </div>
+      </section>
     </main>
   );
 }
