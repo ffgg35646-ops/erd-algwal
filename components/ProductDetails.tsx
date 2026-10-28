@@ -102,7 +102,7 @@ export default function ProductDetails({ product }: { product: Product }) {
         <div className="detail-information detail-glass-panel">
           <span className="product-category detail-category-chip"><span aria-hidden="true">▦</span>{product.category}</span>
           <h1>{product.name}</h1>
-          {product.shortDescription ? <p className="detail-lead"><span aria-hidden="true">✦</span>{product.shortDescription}</p> : null}
+          {product.shortDescription && product.shortDescription !== product.description ? <p className="detail-lead"><span aria-hidden="true">✦</span>{product.shortDescription}</p> : null}
           <div className="detail-price-line"><strong>{formatPrice(product.price)}</strong>{product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}<span className="detail-price-caption">شامل السعر المعروض</span></div>
           <div className="detail-rule" />
           {availableColors.length ? (
