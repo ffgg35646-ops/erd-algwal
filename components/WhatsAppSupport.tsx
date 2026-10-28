@@ -45,11 +45,11 @@ export default function WhatsAppSupport() {
       {unavailable ? <div className="whatsapp-support-note" role="status">رقم دعم واتساب لم يحدده المتجر بعد.</div> : null}
       {href ? (
         <a className="whatsapp-support-button" href={href} target="_blank" rel="noopener noreferrer" aria-label="تواصل مع دعم أرض الجوال على واتساب" title="تواصل معنا واتساب">
-          <WhatsAppIcon />
+          <WhatsAppIcon /><span>تواصل معنا</span>
         </a>
       ) : (
         <button type="button" className="whatsapp-support-button" onClick={() => setUnavailable(true)} aria-label="تواصل مع دعم أرض الجوال على واتساب" title="تواصل معنا واتساب">
-          <WhatsAppIcon />
+          <WhatsAppIcon /><span>تواصل معنا</span>
         </button>
       )}
     </div>
