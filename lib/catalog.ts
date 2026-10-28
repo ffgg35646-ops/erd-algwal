@@ -72,11 +72,7 @@ export function serializeStoredProduct(product: StoredProduct): Product & {
     storageOptions: product.storageOptions || [],
     shortDescription: product.details,
     description: product.details,
-    specifications: [
-      ...(product.colors?.length ? [`الألوان: ${product.colors.join('، ')}`] : []),
-      ...(product.storageOptions?.length ? [`مساحات التخزين: ${product.storageOptions.join('، ')}`] : []),
-      `القسم: ${product.category}`
-    ]
+    specifications: []
   };
 }
 
