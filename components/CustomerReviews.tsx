@@ -2,11 +2,109 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
-type Review = { id: string; name: string; comment: string; rating?: number; createdAt: string };
+type Review = { id: string; name: string; comment: string; rating?: number; createdAt: string; isDemo?: boolean };
+const EXAMPLE_REVIEWS: Review[] = [
+  {
+    "id": "sample-1",
+    "name": "نموذج عرض",
+    "comment": "التصميم سريع وواضح، وسهل ألقى الجوال المناسب.",
+    "rating": 4,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-2",
+    "name": "نموذج عرض",
+    "comment": "خطوات الطلب بسيطة، والتواصل واضح من البداية.",
+    "rating": 5,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-3",
+    "name": "نموذج عرض",
+    "comment": "عرض تفاصيل المنتجات مرتب وسهل القراءة.",
+    "rating": 5,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-4",
+    "name": "نموذج عرض",
+    "comment": "التنقل بين الأقسام مريح وسريع.",
+    "rating": 4,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-5",
+    "name": "نموذج عرض",
+    "comment": "السلة واضحة ومراجعة الطلب سهلة.",
+    "rating": 5,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-6",
+    "name": "نموذج عرض",
+    "comment": "طريقة عرض الأسعار تساعد في المقارنة.",
+    "rating": 5,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-7",
+    "name": "نموذج عرض",
+    "comment": "أعجبني وضوح خيارات الأجهزة وملحقاتها.",
+    "rating": 4,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-8",
+    "name": "نموذج عرض",
+    "comment": "تفاصيل الطلب مرتبة وما فيها تعقيد.",
+    "rating": 5,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-9",
+    "name": "نموذج عرض",
+    "comment": "واجهة المتجر خفيفة حتى على الجوال.",
+    "rating": 5,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-10",
+    "name": "نموذج عرض",
+    "comment": "الصور الكبيرة تسهل اختيار المنتج.",
+    "rating": 4,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-11",
+    "name": "نموذج عرض",
+    "comment": "الوصول لخدمة العملاء واضح وسهل.",
+    "rating": 5,
+    "createdAt": "",
+    "isDemo": true
+  },
+  {
+    "id": "sample-12",
+    "name": "نموذج عرض",
+    "comment": "تجربة التصفح بسيطة ومنظمة.",
+    "rating": 5,
+    "createdAt": "",
+    "isDemo": true
+  }
+];
 type Prompt = { orderId: string; orderNumber: string } | null;
 
 export default function CustomerReviews() {
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<Review[]>(EXAMPLE_REVIEWS);
   const [token, setToken] = useState('');
   const [prompt, setPrompt] = useState<Prompt>(null);
   const [name, setName] = useState('');
@@ -20,7 +118,7 @@ export default function CustomerReviews() {
       const response = await fetch('/api/reviews' + (currentToken ? '?token=' + encodeURIComponent(currentToken) : ''), { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok || !data.ok) return;
-      setReviews(Array.isArray(data.reviews) ? data.reviews : []);
+      setReviews(Array.isArray(data.reviews) && data.reviews.length ? data.reviews : EXAMPLE_REVIEWS);
       if (data.prompt) {
         setPrompt((previous) => previous?.orderId === data.prompt.orderId ? previous : data.prompt);
         setMessage('');
@@ -74,7 +172,7 @@ export default function CustomerReviews() {
       {reviews.length ? <div className="reviews-track">
         {reviews.map((review) => <article className="review-card" key={review.id}>
           {review.rating ? <div className="review-stars" aria-label={'تقييم ' + review.rating + ' من 5'}>{'★'.repeat(review.rating)}<span>{'★'.repeat(5 - review.rating)}</span></div> : null}
-          <p>{review.comment}</p><strong>{review.name}</strong>
+          <p>{review.comment}</p><strong>{review.isDemo ? 'مثال توضيحي – ليس تقييم عميل' : review.name}</strong>
         </article>)}
       </div> : <div className="reviews-empty">آراء عملائنا تظهر هنا بعد إرسالها.</div>}
       {message ? <p className="review-feedback" role="status">{message}</p> : null}

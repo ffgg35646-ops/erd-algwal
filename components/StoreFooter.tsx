@@ -103,7 +103,7 @@ export default function StoreFooter() {
           <div className="store-footer-brand">
             <span className="stream-footer-mark">أ</span>
             <strong>أرض الجوال</strong>
-            {vatNumber ? <p className="store-footer-vat">الرقم الضريبي: <bdi dir="ltr">{vatNumber}</bdi></p> : null}
+            <p className="store-footer-vat">الرقم الضريبي: {vatNumber ? <bdi dir="ltr">{vatNumber}</bdi> : <span>يُضاف من الإدارة</span>}</p>
             <p>متجر متخصص في الجوالات وملحقاتها، مع أقسام تساعدك على الوصول إلى المنتجات بسهولة.</p>
             <small>© {new Date().getFullYear()} أرض الجوال. جميع الحقوق محفوظة.</small>
           </div>
@@ -126,9 +126,9 @@ export default function StoreFooter() {
             <h2>تواصل معنا</h2>
             <p>نسعد بخدمتك ومتابعة استفساراتك.</p>
             {whatsappNumber ? (
-              <a href={'https://wa.me/' + whatsappNumber} target="_blank" rel="noreferrer">واتساب المتجر <span aria-hidden="true">↗</span></a>
+              <a href={'https://wa.me/' + whatsappNumber} target="_blank" rel="noreferrer"><span className="footer-whatsapp-icon" aria-hidden="true">☎</span> واتساب المتجر</a>
             ) : (
-              <span className="store-footer-muted">يمكنك التواصل معنا من خلال أيقونة واتساب بالموقع.</span>
+              <span className="store-footer-muted"><span className="footer-whatsapp-icon" aria-hidden="true">☎</span> رقم واتساب يُضاف من الإدارة</span>
             )}
           </div>
 

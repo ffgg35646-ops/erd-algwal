@@ -8,8 +8,41 @@ type StoreBanner = {
   alt: string;
 };
 
+const DEFAULT_BANNERS: StoreBanner[] = [
+  {
+    "id": "default-1",
+    "imageUrl": "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1600&q=85",
+    "alt": "هواتف ذكية"
+  },
+  {
+    "id": "default-2",
+    "imageUrl": "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1600&q=85",
+    "alt": "تشكيلة الجوالات"
+  },
+  {
+    "id": "default-3",
+    "imageUrl": "https://images.unsplash.com/photo-1610945265064-0e34e5519bb?auto=format&fit=crop&w=1600&q=85",
+    "alt": "تصاميم الهواتف"
+  },
+  {
+    "id": "default-4",
+    "imageUrl": "https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=1600&q=85",
+    "alt": "هواتف حديثة"
+  },
+  {
+    "id": "default-5",
+    "imageUrl": "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1600&q=85",
+    "alt": "عالم الجوالات"
+  },
+  {
+    "id": "default-6",
+    "imageUrl": "https://images.unsplash.com/photo-1603891128711-11b4b03bb138?auto=format&fit=crop&w=1600&q=85",
+    "alt": "إكسسوارات الجوال"
+  }
+];
+
 export default function StoreBannerSlider() {
-  const [banners, setBanners] = useState<StoreBanner[]>([]);
+  const [banners, setBanners] = useState<StoreBanner[]>(DEFAULT_BANNERS);
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -20,8 +53,8 @@ export default function StoreBannerSlider() {
         if (!response.ok) return;
         const data = await response.json() as { banners?: StoreBanner[] };
         if (!alive || !Array.isArray(data.banners)) return;
-        setBanners(data.banners);
-        setActiveIndex((current) => data.banners!.length ? current % data.banners!.length : 0);
+        setBanners(data.banners.length ? data.banners : DEFAULT_BANNERS);
+        setActiveIndex((current) => (data.banners!.length || DEFAULT_BANNERS.length) ? current % (data.banners!.length || DEFAULT_BANNERS.length) : 0);
       } catch {
         // Leave the existing slider visible during brief connection failures.
       }
