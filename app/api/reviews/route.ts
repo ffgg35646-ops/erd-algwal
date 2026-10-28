@@ -28,7 +28,7 @@ const INITIAL_REVIEW_LAYOUT_ITEMS = [
   { comment: 'الأقسام مرتبة والتفاصيل مكتوبة بطريقة مريحة.', rating: 5 }
 ] as const;
 
-const REVIEW_LAYOUT_SEED_MARKER = 'customer_reviews_layout_preview_seed_v1';
+const REVIEW_LAYOUT_SEED_MARKER = 'customer_reviews_layout_preview_seed_v2';
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         { $setOnInsert: { createdAt: new Date(), purpose: 'initial customer review layout' } },
         { upsert: true }
       );
-      if (seed.upsertedCount === 1 && await reviewCollection.countDocuments({}) === 0) {
+      if (seed.upsertedCount === 1 && await reviewCollection.countDocuments({ visible: { $ne: false } }) === 0) {
         const seedTime = Date.now();
         await reviewCollection.insertMany(INITIAL_REVIEW_LAYOUT_ITEMS.map((item, index) => ({
           _id: new ObjectId(),
