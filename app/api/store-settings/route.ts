@@ -14,7 +14,7 @@ type FooterSettings = {
   updatedAt?: Date;
 };
 
-const DEFAULT_WHATSAPP_NUMBER = '010593953..';
+const DEFAULT_WHATSAPP_NUMBER = '201090466376';
 const DEFAULT_VAT_NUMBER = '4353454564';
 
 export async function GET() {
@@ -34,7 +34,7 @@ export async function GET() {
     ]);
     const whatsappNumber = contact?.whatsappNumberRemoved
       ? ''
-      : typeof contact?.whatsappNumber === 'string' ? contact.whatsappNumber : DEFAULT_WHATSAPP_NUMBER;
+      : typeof contact?.whatsappNumber === 'string' && contact.whatsappNumber !== '010593953..' ? contact.whatsappNumber : DEFAULT_WHATSAPP_NUMBER;
     const vatNumber = footer?.vatNumberRemoved
       ? ''
       : typeof footer?.vatNumber === 'string' ? footer.vatNumber : DEFAULT_VAT_NUMBER;
