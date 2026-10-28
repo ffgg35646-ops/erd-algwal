@@ -235,7 +235,7 @@ async function listProductsForEdit(db: Db, chatId: number) {
     reply_markup: {
       inline_keyboard: [
         ...products.map((product) => [{
-          text: (product.name + ' — ' + product.price.toLocaleString('ar-SA') + ' ر.س').slice(0, 60),
+          text: (product.name + ' — ' + product.price.toLocaleString('en-US') + ' ر.س').slice(0, 60),
           callback_data: 'edit-product:' + product._id.toHexString()
         }]),
         [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
@@ -312,7 +312,7 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
     'القسم: ' + product.category,
     'الألوان: ' + ((product.colors || []).join('، ') || 'غير محدد'),
     'مساحات التخزين: ' + ((product.storageOptions || []).join('، ') || 'غير محدد'),
-    'السعر: ' + product.price.toLocaleString('ar-SA') + ' ر.س',
+    'السعر: ' + product.price.toLocaleString('en-US') + ' ر.س',
     'عدد الصور: ' + (product.images || []).length,
     '',
     'اختر الخانة التي تريد تعديلها. زر الحذف موجود بالأسفل.'
@@ -432,7 +432,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
   });
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
   await sendTelegramMessage(chatId, result.insertedId
-    ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).join('، ') || 'غير محدد') + '\nالسعر: ' + data.price.toLocaleString('ar-SA') + ' ر.س\nعدد الصور: ' + data.images.length + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
+    ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).join('، ') || 'غير محدد') + '\nالسعر: ' + data.price.toLocaleString('en-US') + ' ر.س\nعدد الصور: ' + data.images.length + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
     : 'تعذر حفظ المنتج.', { reply_markup: adminReplyKeyboard(await unreadOrderCount(db)) });
   return Boolean(result.insertedId);
 }
