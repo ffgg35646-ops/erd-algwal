@@ -85,9 +85,12 @@ const FOOTER_PAGE_DEFINITIONS: Record<string, { title: string; group: 'policies'
 
 type StoreBannerRecord = {
   _id: ObjectId;
-  fileId: string;
+  fileId?: string;
+  imageUrl?: string;
+  alt?: string;
   createdAt: Date;
   createdByTelegramId?: number;
+  createdBySystem?: boolean;
 };
 
 function isAuthorized(adminId: number) {
@@ -529,7 +532,7 @@ async function showBannersForDelete(db: Db, chatId: number) {
     const banner = banners[index];
     await telegramApi('sendPhoto', {
       chat_id: chatId,
-      photo: banner.fileId,
+      photo: banner.fileId || banner.imageUrl || '',
       caption: 'صورة السلايدر رقم ' + (index + 1),
       reply_markup: {
         inline_keyboard: [[{
