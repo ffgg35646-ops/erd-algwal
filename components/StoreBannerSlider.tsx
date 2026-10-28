@@ -101,24 +101,29 @@ export default function StoreBannerSlider() {
   return (
     <section className="store-promo-slider container" aria-label="العروض والإعلانات">
       <div className="store-promo-frame">
-        {banners.map((banner, index) => (
-          <div className="store-promo-slide" key={banner.id} aria-hidden={index !== activeIndex}>
-            <img
-              src={
-                (fallbackAttempts[banner.id] || 0) === 0
-                  ? banner.imageUrl
-                  : DEFAULT_BANNERS[(index + (fallbackAttempts[banner.id] || 1) - 1) % DEFAULT_BANNERS.length].imageUrl
-              }
-              alt={banner.alt}
-              loading={index === activeIndex ? 'eager' : 'lazy'}
-              fetchPriority={index === activeIndex ? 'high' : 'auto'}
-              onError={() => setFallbackAttempts((current) => {
-                const attempts = current[banner.id] || 0;
-                return attempts >= DEFAULT_BANNERS.length ? current : { ...current, [banner.id]: attempts + 1 };
-              })}
-            />
-          </div>
-        ))}
+        <div
+          className="store-promo-track"
+          style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+        >
+          {banners.map((banner, index) => (
+            <div className="store-promo-slide" key={banner.id} aria-hidden={index !== activeIndex}>
+              <img
+                src={
+                  (fallbackAttempts[banner.id] || 0) === 0
+                    ? banner.imageUrl
+                    : DEFAULT_BANNERS[(index + (fallbackAttempts[banner.id] || 1) - 1) % DEFAULT_BANNERS.length].imageUrl
+                }
+                alt={banner.alt}
+                loading={index === activeIndex ? 'eager' : 'lazy'}
+                fetchPriority={index === activeIndex ? 'high' : 'auto'}
+                onError={() => setFallbackAttempts((current) => {
+                  const attempts = current[banner.id] || 0;
+                  return attempts >= DEFAULT_BANNERS.length ? current : { ...current, [banner.id]: attempts + 1 };
+                })}
+              />
+            </div>
+          ))}
+        </div>
         {banners.length > 1 ? (
           <>
             <button type="button" className="store-promo-arrow store-promo-prev" onClick={() => show(activeIndex - 1)} aria-label="العرض السابق">‹</button>
