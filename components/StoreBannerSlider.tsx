@@ -49,6 +49,8 @@ const DEFAULT_BANNERS: StoreBanner[] = [
 export default function StoreBannerSlider() {
   const [banners, setBanners] = useState<StoreBanner[]>(DEFAULT_BANNERS);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [trackIndex, setTrackIndex] = useState(1);
+  const [trackTransitionEnabled, setTrackTransitionEnabled] = useState(true);
   const [fallbackAttempts, setFallbackAttempts] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -62,6 +64,7 @@ export default function StoreBannerSlider() {
         const nextBanners = data.banners.length ? data.banners : data.managed ? [] : DEFAULT_BANNERS;
         setBanners(nextBanners);
         setActiveIndex((current) => nextBanners.length ? current % nextBanners.length : 0);
+
       } catch {
         // Leave the existing slider visible during brief connection failures.
       }
@@ -81,10 +84,24 @@ export default function StoreBannerSlider() {
   useEffect(() => {
     if (banners.length < 2) return;
     const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % banners.length);
+      const nextIndex = (activeIndex + 1) % banners.length;
+      setActiveIndex(nextIndex);
+      setTrackTransitionEnabled(true);
+      setTrackIndex(activeIndex === banners.length - 1 ? banners.length + 1 : nextIndex + 1);
     }, 6_000);
     return () => window.clearInterval(timer);
+  }, [banners.length, activeIndex]);
+
+  useEffect(() => {
+    setTrackTransitionEnabled(false);
+    setTrackIndex(banners.length > 1 ? activeIndex + 1 : 0);
   }, [banners.length]);
+
+  useEffect(() => {
+    if (trackTransitionEnabled) return;
+    const frame = window.requestAnimationFrame(() => setTrackTransitionEnabled(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [trackTransitionEnabled]);
 
   if (!banners.length) return (
     <section className="store-promo-slider container" aria-label="العروض والإعلانات">
@@ -95,34 +112,78 @@ export default function StoreBannerSlider() {
   if (!active) return null;
 
   function show(index: number) {
-    setActiveIndex((index + banners.length) % banners.length);
+    const nextIndex = (index + banners.length) % banners.length;
+    setActiveIndex(nextIndex);
+    setTrackTransitionEnabled(true);
+    if (banners.length < 2) {
+      setTrackIndex(0);
+      return;
+    }
+    if (activeIndex === banners.length - 1 && nextIndex === 0) {
+      setTrackIndex(banners.length + 1);
+    } else if (activeIndex === 0 && nextIndex === banners.length - 1) {
+      setTrackIndex(0);
+    } else {
+      setTrackIndex(nextIndex + 1);
+    }
   }
+
+  const sliderItems = banners.length > 1
+    ? [
+        { banner: banners[banners.length - 1], key: 'clone-prev-' + banners[banners.length - 1].id },
+        ...banners.map((banner) => ({ banner, key: banner.id })),
+        { banner: banners[0], key: 'clone-next-' + banners[0].id }
+      ]
+    : banners.map((banner) => ({ banner, key: banner.id }));
+
+  const displayedTrackIndex = banners.length > 1 ? trackIndex : 0;
 
   return (
     <section className="store-promo-slider container" aria-label="العروض والإعلانات">
       <div className="store-promo-frame">
         <div
           className="store-promo-track"
-          style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+          style={{
+            transform: `translateX(-${displayedTrackIndex * 100}%)`,
+            transition: trackTransitionEnabled ? undefined : 'none'
+          }}
+          onTransitionEnd={(event) => {
+            if (event.propertyName !== 'transform' || banners.length < 2) return;
+            if (trackIndex === 0) {
+              setTrackTransitionEnabled(false);
+              setTrackIndex(banners.length);
+            } else if (trackIndex === banners.length + 1) {
+              setTrackTransitionEnabled(false);
+              setTrackIndex(1);
+            }
+          }}
         >
-          {banners.map((banner, index) => (
-            <div className="store-promo-slide" key={banner.id} aria-hidden={index !== activeIndex}>
-              <img
-                src={
-                  (fallbackAttempts[banner.id] || 0) === 0
-                    ? banner.imageUrl
-                    : DEFAULT_BANNERS[(index + (fallbackAttempts[banner.id] || 1) - 1) % DEFAULT_BANNERS.length].imageUrl
-                }
-                alt={banner.alt}
-                loading={index === activeIndex ? 'eager' : 'lazy'}
-                fetchPriority={index === activeIndex ? 'high' : 'auto'}
-                onError={() => setFallbackAttempts((current) => {
-                  const attempts = current[banner.id] || 0;
-                  return attempts >= DEFAULT_BANNERS.length ? current : { ...current, [banner.id]: attempts + 1 };
-                })}
-              />
-            </div>
-          ))}
+          {sliderItems.map((item, index) => {
+            const { banner } = item;
+            const originalIndex = banners.findIndex((candidate) => candidate.id === banner.id);
+            const fallbackIndex = originalIndex >= 0 ? originalIndex : (index === 0 ? banners.length - 1 : 0);
+            const attempts = fallbackAttempts[banner.id] || 0;
+            return (
+              <div className="store-promo-slide" key={item.key} aria-hidden={index !== displayedTrackIndex}>
+                <img
+                  src={
+                    attempts === 0
+                      ? banner.imageUrl
+                      : DEFAULT_BANNERS[(fallbackIndex + attempts - 1) % DEFAULT_BANNERS.length].imageUrl
+                  }
+                  alt={banner.alt}
+                  loading={index === displayedTrackIndex ? 'eager' : 'lazy'}
+                  fetchPriority={index === displayedTrackIndex ? 'high' : 'auto'}
+                  onError={() => setFallbackAttempts((current) => {
+                    const currentAttempts = current[banner.id] || 0;
+                    return currentAttempts >= DEFAULT_BANNERS.length
+                      ? current
+                      : { ...current, [banner.id]: currentAttempts + 1 };
+                  })}
+                />
+              </div>
+            );
+          })}
         </div>
         {banners.length > 1 ? (
           <>
