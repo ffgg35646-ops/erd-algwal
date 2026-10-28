@@ -8,7 +8,9 @@ import CustomerNotifications from '@/components/CustomerNotifications';
 export default function SiteHeader() {
   const { itemCount, catalogCategories, catalogProducts } = useCart();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
-  const categoryNames = Array.from(new Set([...catalogCategories.map((category) => category.name), ...catalogProducts.map((product) => product.category)])).filter(Boolean);
+  const categoryNames = catalogCategories.length
+    ? catalogCategories.map((category) => category.name)
+    : Array.from(new Set(catalogProducts.map((product) => product.category))).filter(Boolean);
 
   return (
     <header className="site-header">
