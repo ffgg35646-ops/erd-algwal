@@ -101,9 +101,18 @@ export default function ProductDetails({ product }: { product: Product }) {
         </div>
         <div className="detail-information detail-glass-panel">
           <span className="product-category detail-category-chip"><span aria-hidden="true">▦</span>{product.category}</span>
-          <h1>{product.name}</h1>
+          <div className="detail-product-summary">
+            <div className="detail-product-name-card">
+              <span className="detail-summary-label"><span aria-hidden="true">✦</span> المنتج</span>
+              <h1>{product.name}</h1>
+            </div>
+            <div className="detail-product-price-card">
+              <span className="detail-summary-label"><span aria-hidden="true">ر.س</span> السعر</span>
+              <strong>{formatPrice(product.price)}</strong>
+              {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
+            </div>
+          </div>
           {product.shortDescription && product.shortDescription !== product.description ? <p className="detail-lead"><span aria-hidden="true">✦</span>{product.shortDescription}</p> : null}
-          <div className="detail-price-line"><strong>{formatPrice(product.price)}</strong>{product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}<span className="detail-price-caption">شامل السعر المعروض</span></div>
           <div className="detail-rule" />
           {availableColors.length ? (
             <section className="detail-options detail-color-options" aria-label="اختيار لون المنتج">
