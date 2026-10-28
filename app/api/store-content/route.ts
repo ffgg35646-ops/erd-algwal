@@ -61,7 +61,7 @@ export async function GET() {
 
   try {
     const db = await getDb();
-    const docs = await db.collection('store_pages')
+    const docs = await db.collection<{ _id: string; content?: string; updatedAt?: Date }>('store_pages')
       .find({ _id: { $in: keys } })
       .toArray();
     const saved = new Map(docs.map((doc) => [String(doc._id), doc] as const));
