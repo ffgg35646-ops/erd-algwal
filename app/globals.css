@@ -2267,8 +2267,6 @@ html, body, .store-home, .category-stream, .category-stream-section { background
 /* Product card footer: Details + navbar-style cart action grouped at the left. */
 .strip-product-bottom { direction:rtl; }
 .strip-product-actions { display:flex; align-items:center; justify-content:flex-start; gap:10px; flex:0 0 auto; }
-.strip-details-link { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 9px; color:#8f6b2c; font-size:13px; font-weight:750; white-space:nowrap; text-decoration:none; }
-.strip-details-link:hover { color:#5f461d; text-decoration:underline; text-underline-offset:3px; }
 .strip-product-actions .strip-add-button { display:inline-flex; align-items:center; justify-content:center; flex:0 0 44px; width:44px; height:44px; padding:0; border:1px solid #d8c49b; border-radius:13px; background:linear-gradient(145deg,#fffdf8,#f4ead4); color:#8c6828; box-shadow:0 3px 9px rgba(115,83,26,.1); }
 .strip-product-actions .strip-add-button svg { display:block; width:25px; height:25px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .strip-product-actions .strip-add-button > span { font-size:23px; font-weight:700; line-height:1; }
@@ -2276,7 +2274,6 @@ html, body, .store-home, .category-stream, .category-stream-section { background
 .strip-product-actions .strip-add-button.is-added { border-color:#8f6b2c; background:#8f6b2c; color:#fff; }
 @media(max-width:760px) {
   .strip-product-actions { gap:6px; }
-  .strip-details-link { min-height:40px; padding:0 5px; font-size:12px; }
   .strip-product-actions .strip-add-button { flex-basis:42px; width:42px; height:42px; }
   .strip-product-actions .strip-add-button svg { width:24px; height:24px; }
 }
