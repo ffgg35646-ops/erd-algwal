@@ -1154,7 +1154,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     if (!phone) return void await sendTelegramMessage(chatId, 'رقم واتساب غير صالح. أرسله مع مفتاح الدولة، أو اكتب رقمًا سعوديًا مثل 05XXXXXXXX.');
     await db.collection<{ _id: string; whatsappNumber?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
       { _id: 'contact' },
-      { $set: { whatsappNumber: phone, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
+      { $set: { whatsappNumber: phone, whatsappNumberRemoved: false, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
       { upsert: true }
     );
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
