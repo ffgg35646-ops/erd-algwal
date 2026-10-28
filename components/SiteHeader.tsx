@@ -1,11 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import { useCart } from '@/components/CartProvider';
 import CustomerNotifications from '@/components/CustomerNotifications';
 
 export default function SiteHeader() {
-  const { itemCount } = useCart();
+  const { itemCount, catalogCategories, catalogProducts } = useCart();
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const categoryNames = Array.from(new Set([...catalogCategories.map((category) => category.name), ...catalogProducts.map((product) => product.category)])).filter(Boolean);
 
   return (
     <header className="site-header">
@@ -19,9 +22,19 @@ export default function SiteHeader() {
         </Link>
 
         <nav className="main-nav" aria-label="التنقل الرئيسي">
-          <Link href="/">الرئيسية</Link>
-          <Link href="/#categories">الأقسام</Link>
-          <Link href="/#products">المنتجات</Link>
+          <Link href="/" className="nav-glass-button" onClick={() => setCategoriesOpen(false)}>الرئيسية</Link>
+          <div className="nav-category-menu">
+            <button type="button" className="nav-glass-button nav-category-trigger" aria-expanded={categoriesOpen} aria-controls="site-category-dropdown" onClick={() => setCategoriesOpen((value) => !value)}>
+              الأقسام <span aria-hidden="true">{categoriesOpen ? '⌃' : '⌄'}</span>
+            </button>
+            {categoriesOpen ? (
+              <div id="site-category-dropdown" className="nav-category-dropdown">
+                {categoryNames.length ? categoryNames.map((name) => (
+                  <Link key={name} href={'/#category-' + encodeURIComponent(name)} onClick={() => setCategoriesOpen(false)}>{name}</Link>
+                )) : <span>لم تُضف أقسام بعد</span>}
+              </div>
+            ) : null}
+          </div>
         </nav>
 
         <div className="header-actions">

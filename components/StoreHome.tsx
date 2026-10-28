@@ -112,7 +112,7 @@ export default function StoreHome() {
           const symbol = categorySymbols[category.name] || '✦';
 
           return (
-            <section className="category-stream-section" key={category.id || category.name} aria-label={'قسم ' + category.name}>
+            <section className="category-stream-section" id={'category-' + category.name} key={category.id || category.name} aria-label={'قسم ' + category.name}>
               <div className="category-stream-heading">
                 <button
                   type="button"
