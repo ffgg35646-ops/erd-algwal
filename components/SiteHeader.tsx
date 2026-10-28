@@ -8,6 +8,7 @@ import CustomerNotifications from '@/components/CustomerNotifications';
 export default function SiteHeader() {
   const { itemCount, catalogCategories, catalogProducts } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState('');
 
   const categoryNames = catalogCategories.length
@@ -16,6 +17,12 @@ export default function SiteHeader() {
 
   useEffect(() => {
     setSearch(new URLSearchParams(window.location.search).get('q') || '');
+  }, []);
+
+  useEffect(() => {
+    const openCategories = () => setMenuOpen(true);
+    window.addEventListener('store-open-categories', openCategories);
+    return () => window.removeEventListener('store-open-categories', openCategories);
   }, []);
 
   useEffect(() => {
@@ -77,7 +84,7 @@ export default function SiteHeader() {
 
           <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><span>أرض الجوال</span></Link>
 
-          <form className="header-search" role="search" onSubmit={submitSearch}>
+          <form className={"header-search" + (searchOpen ? " is-open" : "")} role="search" onSubmit={submitSearch}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
             <input
               type="search"
@@ -86,12 +93,26 @@ export default function SiteHeader() {
               placeholder="ابحث في أرض الجوال عن منتج أو فئة..."
               aria-label="ابحث عن منتج"
             />
+            <button type="submit" className="header-search-submit">بحث</button>
             {search ? (
               <button type="button" className="header-search-clear" aria-label="مسح البحث" onClick={() => updateSearch('')}>×</button>
             ) : null}
           </form>
 
           <div className="header-actions">
+            <button
+              type="button"
+              className="mobile-search-toggle"
+              aria-label={searchOpen ? 'إغلاق البحث' : 'فتح البحث'}
+              aria-expanded={searchOpen}
+              onClick={() => setSearchOpen((current) => !current)}
+            >
+              {searchOpen ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
+              )}
+            </button>
             <CustomerNotifications />
             <Link href="/cart" className="header-cart" aria-label={'سلة المشتريات، ' + itemCount + ' قطعة'}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
