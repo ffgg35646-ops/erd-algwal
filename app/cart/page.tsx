@@ -2,17 +2,17 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { useCart } from '@/components/CartProvider';
+import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
 
 export default function CartPage() {
   const { cart, hydrated, setQuantity, removeFromCart, catalogProducts: products } = useCart();
 
   const lines = useMemo(
-    () => Object.entries(cart).map(([id, quantity]) => ({
-      product: products.find((item) => item.id === id),
-      quantity
-    })).filter((line) => Boolean(line.product)),
+    () => Object.entries(cart).map(([cartKey, quantity]) => {
+      const { productId, color } = parseCartItemKey(cartKey);
+      return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
+    }).filter((line) => Boolean(line.product)),
     [cart]
   );
 
@@ -35,20 +35,21 @@ export default function CartPage() {
       ) : (
         <div className="cart-layout">
           <section className="cart-items" aria-label="المنتجات في السلة">
-            {lines.map(({ product, quantity }) => product ? (
-              <article className="cart-line" key={product.id}>
+            {lines.map(({ cartKey, color, product, quantity }) => product ? (
+              <article className="cart-line" key={cartKey}>
                 <Link href={'/products/' + product.id} className="cart-line-image"><img src={product.image} alt={product.name} loading="lazy" /></Link>
                 <div className="cart-line-info">
                   <span className="product-category">{product.category}</span>
                   <Link href={'/products/' + product.id} className="cart-line-name">{product.name}</Link>
                   <strong>{formatPrice(product.price)}</strong>
-                  <button type="button" className="remove-line" onClick={() => removeFromCart(product.id)}>حذف المنتج</button>
+                  {color ? <span className="cart-line-color">اللون: {color}</span> : null}
+                  <button type="button" className="remove-line" onClick={() => removeFromCart(cartKey)}>حذف المنتج</button>
                 </div>
                 <div className="cart-line-controls">
                   <div className="quantity-control">
-                    <button type="button" onClick={() => setQuantity(product.id, quantity - 1)} aria-label="تقليل الكمية">−</button>
+                    <button type="button" onClick={() => setQuantity(cartKey, quantity - 1)} aria-label="تقليل الكمية">−</button>
                     <span>{quantity}</span>
-                    <button type="button" onClick={() => setQuantity(product.id, quantity + 1)} aria-label="زيادة الكمية">+</button>
+                    <button type="button" onClick={() => setQuantity(cartKey, quantity + 1)} aria-label="زيادة الكمية">+</button>
                   </div>
                   <strong className="line-total">{formatPrice(product.price * quantity)}</strong>
                 </div>
