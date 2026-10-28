@@ -93,6 +93,7 @@ export default function SiteHeader() {
               placeholder="ابحث في أرض الجوال عن منتج أو فئة..."
               aria-label="ابحث عن منتج"
             />
+            <button type="submit" className="header-search-submit">بحث</button>
             {search ? (
               <button type="button" className="header-search-clear" aria-label="مسح البحث" onClick={() => updateSearch('')}>×</button>
             ) : null}
