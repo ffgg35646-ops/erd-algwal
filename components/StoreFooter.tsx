@@ -2,6 +2,28 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
+type FooterLinkIconName = 'shipping' | 'payment-methods' | 'ordering' | 'faq' | 'privacy' | 'terms' | 'returns';
+
+function FooterLinkIcon({ name }: { name: FooterLinkIconName }) {
+  const common = { viewBox: '0 0 24 24', 'aria-hidden': true as const, focusable: false as const };
+  switch (name) {
+    case 'shipping':
+      return <svg {...common}><path d="M3 6h11v11H3zM14 10h4l3 4v3h-7" /><circle cx="7.5" cy="18.5" r="2" /><circle cx="17.5" cy="18.5" r="2" /></svg>;
+    case 'payment-methods':
+      return <svg {...common}><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="M3 10h18M7 15h4" /></svg>;
+    case 'ordering':
+      return <svg {...common}><path d="M5 8h14l-1 12H6L5 8Z" /><path d="M9 9V6a3 3 0 0 1 6 0v3M9 13h6" /></svg>;
+    case 'faq':
+      return <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M9.6 9a2.5 2.5 0 1 1 4.3 1.8c-1.1 1-1.9 1.3-1.9 2.7M12 17h.01" /></svg>;
+    case 'privacy':
+      return <svg {...common}><path d="M12 3 20 6v5c0 5-3.3 8.2-8 10-4.7-1.8-8-5-8-10V6l8-3Z" /><rect x="9" y="10" width="6" height="5" rx="1" /><path d="M10 10V8.5a2 2 0 0 1 4 0V10" /></svg>;
+    case 'terms':
+      return <svg {...common}><path d="M6 3h8l4 4v14H6z" /><path d="M14 3v5h4M9 12h6M9 16h6" /></svg>;
+    case 'returns':
+      return <svg {...common}><path d="M9 7 5 11l4 4M5 11h8a6 6 0 1 1-5.2 9" /><path d="M5 4v7" /></svg>;
+  }
+}
+
 type StorePage = {
   key: string;
   title: string;
@@ -116,14 +138,14 @@ export default function StoreFooter() {
           <nav className="store-footer-column" aria-label="خدمات العملاء">
             <h2>خدمات العملاء</h2>
             {PAGE_LINKS['customer-service'].map((page) => (
-              <button type="button" key={page.key} onClick={() => setSelectedKey(page.key)}>{page.title}</button>
+              <button type="button" key={page.key} onClick={() => setSelectedKey(page.key)}><span className="store-footer-link-icon" aria-hidden="true"><FooterLinkIcon name={page.key} /></span><span>{page.title}</span></button>
             ))}
           </nav>
 
           <nav className="store-footer-column" aria-label="السياسات">
             <h2>السياسات</h2>
             {PAGE_LINKS.policies.map((page) => (
-              <button type="button" key={page.key} onClick={() => setSelectedKey(page.key)}>{page.title}</button>
+              <button type="button" key={page.key} onClick={() => setSelectedKey(page.key)}><span className="store-footer-link-icon" aria-hidden="true"><FooterLinkIcon name={page.key} /></span><span>{page.title}</span></button>
             ))}
           </nav>
 
