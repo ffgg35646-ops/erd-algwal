@@ -72,7 +72,7 @@ export async function sendTelegramMessage(
   } else if (Array.isArray(suppliedMarkup.keyboard)) {
     const rows = suppliedMarkup.keyboard;
     const hasMenuShortcut = rows.some((row) => row.some((button) => button.text === 'رجوع إلى القائمة الرئيسية'));
-    const hasMainMenuItems = rows.some((row) => row.some((button) => ['طلبات العملاء', 'إضافة طلب', 'تعديل الطلب', 'إضافة منتج', 'تعديل المنتج'].includes(button.text.replace(/^🔔\\s*/, '').replace(/\\s*\\(\\d+\\+?\\)$/, ''))));
+    const hasMainMenuItems = rows.some((row) => row.some((button) => ['طلبات العملاء', 'إضافة طلب', 'تعديل الطلب', 'إضافة قسم', 'تعديل قسم', 'إضافة منتج', 'تعديل المنتج', 'تعديلات أخرى'].includes(button.text.replace(/^🔔\\s*/, '').replace(/\\s*\\(\\d+\\+?\\)$/, ''))));
     if (!hasMenuShortcut && !hasMainMenuItems) {
       replyMarkup = {
         ...suppliedMarkup,
@@ -100,10 +100,9 @@ export function adminReplyKeyboard(unreadCount = 0) {
   return {
     keyboard: [
       [{ text: ordersLabel }],
-      [{ text: 'إضافة طلب' }, { text: 'تعديل الطلب' }],
+      [{ text: 'إضافة قسم' }, { text: 'تعديل قسم' }],
       [{ text: 'إضافة منتج' }, { text: 'تعديل المنتج' }],
-      [{ text: 'آراء العملاء' }],
-      [{ text: 'الاتصال' }]
+      [{ text: 'تعديلات أخرى' }]
     ],
     resize_keyboard: true,
     is_persistent: true,
@@ -112,7 +111,7 @@ export function adminReplyKeyboard(unreadCount = 0) {
 }
 
 export function statusInlineKeyboard(orderId: string) {
-  const statuses: OrderStatus[] = ['confirmed', 'preparing', 'shipped', 'completed', 'cancelled'];
+  const statuses: OrderStatus[] = ['confirmed', 'shipped', 'completed', 'cancelled'];
   return {
     inline_keyboard: statuses.map((status) => [{
       text: ORDER_STATUS_LABELS[status],
@@ -127,4 +126,7 @@ export async function ensureTelegramIndexes(db: Db) {
   await db.collection('orders').createIndex({ createdAt: -1 });
   await db.collection('orders').createIndex({ orderNumber: 1 }, { unique: true, sparse: true });
   await db.collection('orders').createIndex({ checkoutRequestId: 1 }, { unique: true, sparse: true });
+  await db.collection('orders').createIndex({ customerNotificationKey: 1 });
+  await db.collection('customer_notifications').createIndex({ customerNotificationKey: 1, createdAt: -1 });
+  await db.collection('customer_notifications').createIndex({ customerNotificationKey: 1, readAt: 1, createdAt: -1 });
 }

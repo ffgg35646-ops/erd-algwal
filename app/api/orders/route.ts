@@ -23,6 +23,7 @@ type CheckoutBody = {
   notes?: string;
   installment?: 'yes' | 'no';
   acceptedPolicies?: boolean;
+  customerNotificationKey?: string;
   items?: Array<{ productId?: string; quantity?: number }>;
 };
 
@@ -50,11 +51,16 @@ export async function POST(request: NextRequest) {
 
   const submissionId = text(body.submissionId, 80);
   const reviewToken = text(body.reviewToken, 120);
-  if (!/^[a-f0-9-]{36}$/i.test(reviewToken)) {
-    return NextResponse.json({ ok: false, error: 'تعذر تجهيز رابط التقييم. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
+  if (reviewToken && !/^[a-f0-9-]{36}$/i.test(reviewToken)) {
+    return NextResponse.json({ ok: false, error: 'رابط التقييم غير صالح. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
   }
   if (!/^[0-9a-f-]{36}$/i.test(submissionId)) {
     return NextResponse.json({ ok: false, error: 'معرّف الطلب غير صالح. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
+  }
+
+  const customerNotificationKey = text(body.customerNotificationKey, 36);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(customerNotificationKey)) {
+    return NextResponse.json({ ok: false, error: 'تعذر تفعيل إشعارات المتصفح. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
   }
 
   const fullName = text(body.fullName, 120);
@@ -85,6 +91,7 @@ export async function POST(request: NextRequest) {
 
     const previous = await orders.findOne({ checkoutRequestId: submissionId });
     if (previous) {
+      await orders.updateOne({ _id: previous._id }, { $set: { customerNotificationKey } });
       return NextResponse.json({
         ok: true,
         orderId: previous._id.toHexString(),
@@ -127,11 +134,12 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     const _id = new ObjectId();
-    const order: StoreOrder & { checkoutRequestId: string; reviewToken: string; acceptedPoliciesAt: Date; adminSeenAt: null } = {
+    const order: StoreOrder & { checkoutRequestId: string; acceptedPoliciesAt: Date; adminSeenAt: null; customerNotificationKey: string; reviewToken?: string } = {
       _id,
       orderNumber: makeOrderNumber(_id, now),
       checkoutRequestId: submissionId,
-      reviewToken,
+      ...(reviewToken ? { reviewToken } : {}),
+      customerNotificationKey,
       source: 'website',
       customer: {
         name: fullName,

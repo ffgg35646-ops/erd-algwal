@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useCart } from '@/components/CartProvider';
 import { formatPrice, type Product } from '@/lib/products';
+import StoreBannerSlider from '@/components/StoreBannerSlider';
 import CustomerReviews from '@/components/CustomerReviews';
 
 const categorySymbols: Record<string, string> = {
@@ -80,6 +81,7 @@ export default function StoreHome() {
 
   return (
     <main className="store-home">
+      <StoreBannerSlider />
       <section className="store-search-shell" aria-label="البحث عن المنتجات">
         <label className="store-search-bar">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -97,6 +99,11 @@ export default function StoreHome() {
             <button type="button" className="store-search-clear" onClick={() => setSearch('')} aria-label="مسح البحث">×</button>
           ) : null}
         </label>
+        <div className="store-search-hint" aria-live="polite">
+          {term
+            ? 'نتائج البحث: ' + searchedProducts.length + ' منتج'
+            : 'تصفح حسب الأقسام • ' + products.length + ' منتج'}
+        </div>
       </section>
 
       <div className="category-stream" id="categories">
@@ -163,12 +170,6 @@ export default function StoreHome() {
       </div>
 
       <CustomerReviews />
-
-      <footer className="stream-footer">
-        <span className="stream-footer-mark">أ</span>
-        <strong>أرض الجوال</strong>
-        <span>© {new Date().getFullYear()} جميع الحقوق محفوظة</span>
-      </footer>
     </main>
   );
 }
