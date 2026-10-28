@@ -57,10 +57,11 @@ export default function StoreBannerSlider() {
       try {
         const response = await fetch('/api/store-banners', { cache: 'no-store' });
         if (!response.ok) return;
-        const data = await response.json() as { banners?: StoreBanner[] };
+        const data = await response.json() as { banners?: StoreBanner[]; managed?: boolean };
         if (!alive || !Array.isArray(data.banners)) return;
-        setBanners(data.banners.length ? data.banners : DEFAULT_BANNERS);
-        setActiveIndex((current) => (data.banners!.length || DEFAULT_BANNERS.length) ? current % (data.banners!.length || DEFAULT_BANNERS.length) : 0);
+        const nextBanners = data.banners.length ? data.banners : data.managed ? [] : DEFAULT_BANNERS;
+        setBanners(nextBanners);
+        setActiveIndex((current) => nextBanners.length ? current % nextBanners.length : 0);
       } catch {
         // Leave the existing slider visible during brief connection failures.
       }
