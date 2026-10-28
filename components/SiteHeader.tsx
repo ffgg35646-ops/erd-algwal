@@ -54,7 +54,7 @@ export default function SiteHeader() {
     <>
       <div className="store-utility-bar">
         <div className="container store-utility-inner">
-          <span>تسوق بسهولة • خيارات متنوعة من الأجهزة والملحقات</span>
+          <span>أرض الجوال • الجوالات والأجهزة وملحقاتها</span>
           <div className="store-utility-options">
             <a href="/#store-site-footer">خدمة العملاء</a>
             <span>الأسعار بالريال السعودي</span>
@@ -75,13 +75,15 @@ export default function SiteHeader() {
             <span>جميع الأقسام</span>
           </button>
 
+          <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><span>أرض الجوال</span></Link>
+
           <form className="header-search" role="search" onSubmit={submitSearch}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
             <input
               type="search"
               value={search}
               onChange={(event) => updateSearch(event.target.value)}
-              placeholder="ابحث عن المنتجات أو الماركات أو الفئات..."
+              placeholder="ابحث في أرض الجوال عن منتج أو فئة..."
               aria-label="ابحث عن منتج"
             />
             {search ? (
@@ -103,6 +105,15 @@ export default function SiteHeader() {
           </div>
         </div>
       </header>
+
+      <nav className="store-category-bar" aria-label="أقسام المتجر">
+        <div className="container store-category-links">
+          <Link href="/" className="store-category-link">الرئيسية</Link>
+          {categoryNames.map((name) => (
+            <Link key={name} href={'/#category-' + encodeURIComponent(name)} className="store-category-link">{name}</Link>
+          ))}
+        </div>
+      </nav>
 
       {menuOpen ? (
         <div className="store-drawer-layer">
