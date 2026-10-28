@@ -1722,3 +1722,20 @@ html, body, .store-home, .category-stream, .category-stream-section { background
 @keyframes reviews-marquee-automatic { from { transform:translateX(0); } to { transform:translateX(50%); } }
 @media(prefers-reduced-motion:reduce) { .reviews-marquee-track { animation:none; } }
 @media(max-width:600px) { .reviews-marquee-group .review-card { flex-basis:78vw; width:78vw; } .reviews-marquee-track { animation-duration:32s; } }
+
+
+/* Wider storefront banner and uninterrupted automatic reviews. */
+.store-promo-slider.container { width:min(1600px,calc(100% - 20px)); max-width:none; }
+.store-promo-frame { aspect-ratio:3.1 / 1; min-height:300px; max-height:560px; }
+.store-promo-slide img { object-fit:cover; }
+.reviews-track { direction:ltr; overflow:hidden; }
+.reviews-marquee-track { animation:reviews-marquee-automatic 58s linear infinite; }
+@keyframes reviews-marquee-automatic { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+@media(max-width:900px) {
+  .store-promo-frame { aspect-ratio:2.55 / 1; min-height:260px; }
+}
+@media(max-width:600px) {
+  .store-promo-slider.container { width:calc(100% - 12px); }
+  .store-promo-frame { aspect-ratio:2 / 1; min-height:220px; max-height:320px; border-radius:14px; }
+  .reviews-marquee-track { animation-duration:58s; }
+}
