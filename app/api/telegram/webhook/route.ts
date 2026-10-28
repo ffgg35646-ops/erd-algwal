@@ -71,6 +71,23 @@ const SAVE_FOOTER_TEXT = 'حفظ النص';
 const REWRITE_FOOTER_TEXT = 'إعادة الكتابة';
 const MAIN_MENU_TEXT = 'رجوع إلى القائمة الرئيسية';
 const SAVE_PRODUCT_TEXT = 'حفظ المنتج';
+
+const PRODUCT_COLOR_OPTIONS = [
+  { key: 'black', name: 'أسود', icon: '⚫' },
+  { key: 'white', name: 'أبيض', icon: '⚪' },
+  { key: 'red', name: 'أحمر', icon: '🔴' },
+  { key: 'yellow', name: 'أصفر', icon: '🟡' },
+  { key: 'blue', name: 'أزرق', icon: '🔵' },
+  { key: 'green', name: 'أخضر', icon: '🟢' },
+  { key: 'purple', name: 'بنفسجي', icon: '🟣' },
+  { key: 'pink', name: 'وردي', icon: '🩷' },
+  { key: 'brown', name: 'بني', icon: '🟤' },
+  { key: 'orange', name: 'برتقالي', icon: '🟠' },
+  { key: 'gray', name: 'رمادي', icon: '🩶' },
+  { key: 'gold', name: 'ذهبي', icon: '🟨' },
+  { key: 'silver', name: 'فضي', icon: '🔘' },
+  { key: 'natural-titanium', name: 'تيتانيوم طبيعي', icon: '◻️' }
+] as const;
 const CANCEL_TEXT = '/cancel';
 
 const FOOTER_PAGE_DEFINITIONS: Record<string, { title: string; group: 'policies' | 'customer-service' }> = {
@@ -225,6 +242,44 @@ async function listProductsForEdit(db: Db, chatId: number) {
       ]
     }
   });
+}
+
+function productColorKeyboard(selectedColors: string[] = []) {
+  const options = PRODUCT_COLOR_OPTIONS.map((option) => ({
+    text: (selectedColors.includes(option.name) ? '✓ ' : '') + option.icon + ' ' + option.name,
+    callback_data: 'product-color:toggle:' + option.key
+  }));
+  const rows: Array<Array<{ text: string; callback_data: string }>> = [];
+  for (let index = 0; index < options.length; index += 2) {
+    rows.push(options.slice(index, index + 2));
+  }
+  rows.push([
+    { text: '🧹 مسح الاختيار', callback_data: 'product-color:clear' },
+    { text: '✅ حفظ الألوان', callback_data: 'product-color:done' }
+  ]);
+  rows.push([{ text: '↩ القائمة الرئيسية', callback_data: 'main-menu' }]);
+  return { inline_keyboard: rows };
+}
+
+function productColorPrompt(selectedColors: string[] = []) {
+  return '🎨 اختر الألوان المتوفرة للمنتج بالضغط على دوائر الألوان. يمكنك تحديد أكثر من لون، ثم اضغط «حفظ الألوان».\n\nالألوان المختارة: ' + (selectedColors.join('، ') || 'لم يتم اختيار ألوان بعد.');
+}
+
+async function refreshProductColorMessage(chatId: number, messageId: number | undefined, selectedColors: string[]) {
+  if (messageId) {
+    try {
+      await telegramApi('editMessageText', {
+        chat_id: chatId,
+        message_id: messageId,
+        text: productColorPrompt(selectedColors),
+        reply_markup: productColorKeyboard(selectedColors)
+      });
+      return;
+    } catch (error) {
+      console.error('Could not refresh product color picker:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+  await sendTelegramMessage(chatId, productColorPrompt(selectedColors), { reply_markup: productColorKeyboard(selectedColors) });
 }
 
 function editProductKeyboard(id: string) {
