@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useCart } from '@/components/CartProvider';
 import { formatPrice, type Product } from '@/lib/products';
 import StoreBannerSlider from '@/components/StoreBannerSlider';
@@ -65,6 +65,10 @@ export default function StoreHome() {
       ...extraNames.map((name) => ({ id: name, name, description: 'تصفح منتجات القسم' }))
     ];
   }, [categories, products]);
+
+  useEffect(() => {
+    if (selectedCategory && !allCategories.some((category) => category.name === selectedCategory)) setSelectedCategory('');
+  }, [allCategories, selectedCategory]);
 
   const sections = useMemo(
     () => allCategories
