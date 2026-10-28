@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 
 type Review = { id: string; name: string; comment: string; rating?: number; createdAt: string; isDemo?: boolean };
 const EXAMPLE_REVIEWS: Review[] = [
@@ -105,6 +105,7 @@ type Prompt = { orderId: string; orderNumber: string } | null;
 
 export default function CustomerReviews() {
   const [reviews, setReviews] = useState<Review[]>(EXAMPLE_REVIEWS);
+  const trackRef = useRef<HTMLDivElement | null>(null);
   const [token, setToken] = useState('');
   const [prompt, setPrompt] = useState<Prompt>(null);
   const [name, setName] = useState('');
@@ -143,6 +144,32 @@ export default function CustomerReviews() {
     return () => window.clearInterval(timer);
   }, [load]);
 
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || reviews.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let paused = false;
+    const onEnter = () => { paused = true; };
+    const onLeave = () => { paused = false; };
+    track.addEventListener('mouseenter', onEnter);
+    track.addEventListener('mouseleave', onLeave);
+    track.addEventListener('focusin', onEnter);
+    track.addEventListener('focusout', onLeave);
+    const interval = window.setInterval(() => {
+      if (paused || !track) return;
+      const limit = track.scrollWidth - track.clientWidth;
+      if (limit <= 0) return;
+      const next = track.scrollLeft - 1;
+      track.scrollLeft = Math.abs(track.scrollLeft) >= limit - 2 ? 0 : next;
+    }, 35);
+    return () => {
+      window.clearInterval(interval);
+      track.removeEventListener('mouseenter', onEnter);
+      track.removeEventListener('mouseleave', onLeave);
+      track.removeEventListener('focusin', onEnter);
+      track.removeEventListener('focusout', onLeave);
+    };
+  }, [reviews.length]);
+
   async function submitReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!prompt || saving) return;
@@ -169,7 +196,7 @@ export default function CustomerReviews() {
         <div><span className="reviews-kicker">آراء وتجارب العملاء</span><h2 id="customer-reviews-title">آراء العملاء</h2><p>يسعدنا نعرف رأيك في تجربتك مع أرض الجوال.</p></div>
         <span className="reviews-count">{reviews.length} تعليق</span>
       </div>
-      {reviews.length ? <div className="reviews-track">
+      {reviews.length ? <div className="reviews-track" ref={trackRef}>
         {reviews.map((review) => <article className="review-card" key={review.id}>
           {review.rating ? <div className="review-stars" aria-label={'تقييم ' + review.rating + ' من 5'}>{'★'.repeat(review.rating)}<span>{'★'.repeat(5 - review.rating)}</span></div> : null}
           <p>{review.comment}</p><strong>{review.isDemo ? 'مثال توضيحي – ليس تقييم عميل' : review.name}</strong>
