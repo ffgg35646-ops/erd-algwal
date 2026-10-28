@@ -751,6 +751,67 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   if (!chatId || chat.type !== 'private' || chatId !== callback.from.id || !callback.data) return;
   const [action, id, field] = callback.data.split(':');
 
+  if (action === 'product-color') {
+    const session = await db.collection<AdminSession>('telegram_sessions').findOne({ telegramUserId: callback.from.id });
+    if (!session || !['product_colors', 'edit_product_colors'].includes(session.step)) {
+      await sendTelegramMessage(chatId, 'انتهت جلسة اختيار الألوان. افتح تعديل المنتج وادخل إلى الألوان مرة أخرى.');
+      return;
+    }
+    const selectedColors = Array.isArray(session.data.colors) ? [...session.data.colors] : [];
+    if (id === 'toggle' && field) {
+      const option = PRODUCT_COLOR_OPTIONS.find((entry) => entry.key === field);
+      if (!option) return void await sendTelegramMessage(chatId, 'اللون المحدد غير معروف.');
+      session.data.colors = selectedColors.includes(option.name)
+        ? selectedColors.filter((color) => color !== option.name)
+        : [...selectedColors, option.name];
+      await saveSession(db, session);
+      await refreshProductColorMessage(chatId, callback.message?.message_id, session.data.colors);
+      return;
+    }
+    if (id === 'clear') {
+      session.data.colors = [];
+      await saveSession(db, session);
+      await refreshProductColorMessage(chatId, callback.message?.message_id, []);
+      return;
+    }
+    if (id === 'done') {
+      const savedColors = session.data.colors || [];
+      try {
+        if (callback.message?.message_id) {
+          await telegramApi('editMessageText', {
+            chat_id: chatId,
+            message_id: callback.message.message_id,
+            text: '✅ تم حفظ الألوان: ' + (savedColors.join('، ') || 'بدون ألوان.'),
+            reply_markup: { inline_keyboard: [] }
+          });
+        }
+      } catch (error) {
+        console.error('Could not close product color picker:', error instanceof Error ? error.message : 'Unknown error');
+      }
+      if (session.workflow === 'add_product' && session.step === 'product_colors') {
+        session.step = 'product_storage';
+        await saveSession(db, session);
+        await sendTelegramMessage(chatId, 'اكتب مساحات التخزين، مثال: 128GB، 256GB، 512GB. أو «تخطي».');
+        return;
+      }
+      if (session.workflow === 'edit_product' && session.step === 'edit_product_colors' && session.data.productId && isObjectId(session.data.productId)) {
+        const result = await db.collection<StoredProduct>('products').updateOne(
+          { _id: new ObjectId(session.data.productId) },
+          { $set: { colors: savedColors, updatedAt: new Date() } }
+        );
+        await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+        if (!result.matchedCount) {
+          await sendMainMenu(db, chatId, 'لم يتم العثور على المنتج.');
+          return;
+        }
+        await showProductEditMenu(db, chatId, session.data.productId);
+        return;
+      }
+    }
+    await sendTelegramMessage(chatId, 'تعذر حفظ اختيار الألوان. ارجع إلى القائمة الرئيسية ثم حاول مرة أخرى.');
+    return;
+  }
+
   if (action === 'slider-menu') {
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
     await showSliderMenu(chatId);
