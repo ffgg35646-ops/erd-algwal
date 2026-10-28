@@ -1796,10 +1796,11 @@ html, body, .store-home, .category-stream, .category-stream-section { background
 .detail-page .quantity-control { min-width:101px; height:40px; border-color:rgba(174,145,84,.28); border-radius:13px; background:rgba(255,255,255,.84); }
 .detail-page .quantity-control button { width:27px; height:27px; border-radius:9px; background:#f7f2e6; color:#8b692d; }
 .detail-page .quantity-control button:hover { background:#ead9b2; color:#634918; }
-.detail-page .detail-add-button { flex:0 1 auto; min-height:40px; padding:0 16px; border:1px solid rgba(255,255,255,.45); border-radius:12px; background:linear-gradient(130deg,#9b752f,#c09a4e 55%,#99712b); box-shadow:0 5px 12px rgba(134,98,32,.17),inset 0 1px 0 rgba(255,255,255,.24); color:#fff; font-size:12px; font-weight:850; transition:transform .18s ease,box-shadow .18s ease,filter .18s ease; }
+.detail-page .detail-add-button { display:inline-flex; flex:0 1 auto; flex-direction:row; direction:rtl; align-items:center; justify-content:center; gap:9px; min-height:40px; padding:0 16px; border:1px solid rgba(255,255,255,.45); border-radius:12px; background:linear-gradient(130deg,#9b752f,#c09a4e 55%,#99712b); box-shadow:0 5px 12px rgba(134,98,32,.17),inset 0 1px 0 rgba(255,255,255,.24); color:#fff; font-size:12px; font-weight:850; transition:transform .18s ease,box-shadow .18s ease,filter .18s ease; }
 .detail-page .detail-add-button:hover { transform:translateY(-1px); box-shadow:0 8px 15px rgba(134,98,32,.22),inset 0 1px 0 rgba(255,255,255,.3); filter:saturate(1.05); }
 .detail-page .detail-add-button:active { transform:translateY(0); }
-.detail-page .detail-add-button span { margin-inline-end:4px; font-size:15px; }
+.detail-page .detail-add-label { margin:0; font-size:12px; line-height:1.35; }
+.detail-page .detail-add-cart-icon { display:block; width:22px; height:22px; flex:0 0 22px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 .detail-page .detail-storage-note { margin:12px 0 8px; color:#8e887b; font-size:10px; line-height:1.8; }
 .detail-page .detail-storage-note span { color:#b18a3c; }
 .detail-page .text-link { color:#97722f; font-size:11px; }
