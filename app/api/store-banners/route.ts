@@ -65,7 +65,7 @@ export async function GET() {
     const existingCount = await bannerCollection.countDocuments({});
 
     // Seed once so these online placeholder images can later be deleted from the Telegram admin bot.
-    const seedClaim = await db.collection('store_settings').updateOne(
+    const seedClaim = await db.collection<{ _id: string; createdAt?: Date; purpose?: string }>('store_settings').updateOne(
       { _id: SLIDER_SEED_MARKER_ID },
       { $setOnInsert: { createdAt: new Date(), purpose: 'one-time slider image seed' } },
       { upsert: true }
