@@ -346,7 +346,7 @@ export default function StoreCheckoutPage() {
                 </label>
                 <label className="checkout-field">
                   <span>رقم الجوال <b>*</b></span>
-                  <input name="phone" value={form.phone} onChange={(event) => setField('phone', normalizeSaudiPhoneInput(event.target.value))} placeholder="05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" maxLength={10} required />
+                  <input name="phone" value={form.phone} onChange={(event) => setField('phone', normalizeSaudiPhoneInput(event.target.value))} placeholder="05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" pattern="05[0-9]{8}" minLength={10} maxLength={10} title="اكتب رقمًا يبدأ بـ05 ويتكوّن من 10 أرقام فقط" required />
                   <small>رقم سعودي يبدأ عادةً بـ 05.</small>
                 </label>
                 <label className="checkout-field">
