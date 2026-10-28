@@ -1889,3 +1889,144 @@ html, body, .store-home, .category-stream, .category-stream-section { background
 @media (prefers-reduced-motion: reduce) {
   .customer-reviews .reviews-marquee-track { animation: none !important; }
 }
+
+
+/* Product title and price: stronger, balanced info pills with clearer section typography. */
+.detail-page .detail-product-summary {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,.92fr);
+  gap:10px;
+  margin-top:13px;
+}
+.detail-page .detail-product-name-card,
+.detail-page .detail-product-price-card {
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  justify-content:center;
+  gap:6px;
+  padding:13px 15px;
+  border:1px solid rgba(185,146,71,.26);
+  border-radius:16px;
+  background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(249,245,234,.94));
+  box-shadow:0 6px 15px rgba(58,45,19,.055),inset 0 1px 0 rgba(255,255,255,.98);
+}
+.detail-page .detail-product-name-card {
+  border-inline-start:3px solid #b99247;
+}
+.detail-page .detail-product-price-card {
+  align-items:flex-start;
+  border-inline-start:3px solid #b99247;
+  background:linear-gradient(145deg,#fffdf7,#f5ecd5);
+}
+.detail-page .detail-summary-label {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:#88703d;
+  font-size:11px;
+  font-weight:850;
+  line-height:1.5;
+}
+.detail-page .detail-summary-label > span {
+  display:grid;
+  min-width:21px;
+  height:21px;
+  place-items:center;
+  padding-inline:4px;
+  border:1px solid rgba(185,146,71,.2);
+  border-radius:7px;
+  background:#f3ead6;
+  color:#98712d;
+  font-size:10px;
+  font-weight:900;
+}
+.detail-page .detail-product-name-card h1 {
+  margin:0;
+  color:#2e2a22;
+  font-size:clamp(21px,2.1vw,29px);
+  font-weight:900;
+  letter-spacing:-.35px;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+.detail-page .detail-product-price-card strong {
+  color:#8e6928;
+  font-size:clamp(18px,1.9vw,25px);
+  font-weight:900;
+  line-height:1.5;
+  direction:ltr;
+  unicode-bidi:plaintext;
+  font-variant-numeric:lining-nums tabular-nums;
+  letter-spacing:.1px;
+}
+.detail-page .detail-product-price-card del {
+  color:#a59a84;
+  font-size:11px;
+  font-weight:650;
+}
+.detail-page .detail-lead {
+  margin-top:13px;
+  color:#625c50;
+  font-size:13px;
+  font-weight:650;
+  line-height:2;
+}
+.detail-page .detail-copy-block,
+.detail-page .detail-spec-block {
+  margin-top:18px;
+}
+.detail-page .detail-copy-block h2,
+.detail-page .detail-spec-block h2 {
+  gap:9px;
+  margin-bottom:10px;
+  color:#393226;
+  font-size:15px;
+  font-weight:900;
+  letter-spacing:-.1px;
+  line-height:1.7;
+}
+.detail-page .detail-copy-block h2 span,
+.detail-page .detail-spec-block h2 span {
+  width:27px;
+  height:27px;
+  border:1px solid rgba(183,140,52,.2);
+  border-radius:9px;
+  background:linear-gradient(145deg,#f7efd9,#eee0ba);
+  color:#8c6725;
+  font-size:14px;
+}
+.detail-page .detail-description {
+  color:#5e594f;
+  font-size:13px;
+  font-weight:550;
+  line-height:2.15;
+  letter-spacing:0;
+}
+.detail-page .detail-spec-block .spec-list li {
+  color:#514c42;
+  font-size:11px;
+  font-weight:650;
+  line-height:1.9;
+}
+.detail-page .detail-category-chip { font-weight:850; }
+@media(max-width:650px) {
+  .detail-page .detail-product-summary {
+    grid-template-columns:minmax(0,1fr) minmax(0,.9fr);
+    gap:8px;
+    margin-top:11px;
+  }
+  .detail-page .detail-product-name-card,
+  .detail-page .detail-product-price-card {
+    gap:5px;
+    padding:11px 10px;
+    border-radius:13px;
+  }
+  .detail-page .detail-product-name-card h1 { font-size:21px; }
+  .detail-page .detail-product-price-card strong { font-size:18px; }
+  .detail-page .detail-summary-label { font-size:10px; }
+  .detail-page .detail-lead { font-size:12px; font-weight:650; }
+  .detail-page .detail-copy-block h2,
+  .detail-page .detail-spec-block h2 { font-size:14px; }
+  .detail-page .detail-description { font-size:12px; line-height:2.05; }
+}
