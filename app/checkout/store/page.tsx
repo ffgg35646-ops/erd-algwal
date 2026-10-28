@@ -56,7 +56,7 @@ function normalizeSaudiPhoneInput(value: string) {
   const westernDigits = value
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
     .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
-  return westernDigits.replace(/[^0-9]/g, '').slice(0, 10);
+  return westernDigits.replace(/[^0-9]/g, '');
 }
 
 function regionLabel(name: string) {
@@ -346,7 +346,7 @@ export default function StoreCheckoutPage() {
                 </label>
                 <label className="checkout-field">
                   <span>رقم الجوال <b>*</b></span>
-                  <input name="phone" value={form.phone} onChange={(event) => setField('phone', normalizeSaudiPhoneInput(event.target.value))} placeholder="05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" pattern="05[0-9]{8}" minLength={10} maxLength={10} title="اكتب رقمًا يبدأ بـ05 ويتكوّن من 10 أرقام فقط" required />
+                  <input name="phone" value={form.phone} onChange={(event) => setField('phone', normalizeSaudiPhoneInput(event.target.value))} placeholder="05XXXXXXXX" inputMode="numeric" autoComplete="off" pattern="05[0-9]{8}" minLength={10} title="اكتب رقمًا يبدأ بـ05 ويتكوّن من 10 أرقام فقط" required />
                   <small>رقم سعودي يبدأ عادةً بـ 05.</small>
                 </label>
                 <label className="checkout-field">
