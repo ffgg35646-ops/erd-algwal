@@ -2262,3 +2262,33 @@ html, body, .store-home, .category-stream, .category-stream-section { background
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+
+
+/* Small matching icons inside footer customer-service and policy buttons only. */
+.store-footer-column[aria-label="خدمات العملاء"] button,
+.store-footer-column[aria-label="السياسات"] button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.store-footer-link-icon {
+  display: inline-flex;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  align-items: center;
+  justify-content: center;
+  color: currentColor;
+}
+.store-footer-link-icon svg {
+  display: block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
