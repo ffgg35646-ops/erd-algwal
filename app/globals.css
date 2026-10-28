@@ -5176,9 +5176,27 @@ body {
   .mobile-bottom-nav-item svg { width: 20px; height: 20px; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  @media (max-width: 600px) {
-    .store-promo-track { transition: none !important; }
-    .strip-product-image img { transition: none !important; }
+@media (prefers-reduced-motion: reduce) and (max-width: 600px) {
+  .store-promo-track { transition: none !important; }
+  .strip-product-image img { transition: none !important; }
+}
+
+
+@media (max-width: 600px) {
+  .header-search .header-search-clear {
+    display: grid;
+    flex: 0 0 34px;
+    place-items: center;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #e9edf2;
+    color: #354152;
+    font-size: 19px;
+    line-height: 1;
   }
 }
