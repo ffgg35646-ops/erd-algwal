@@ -7,11 +7,17 @@ export const dynamic = 'force-dynamic';
 
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 
+const DEMO_REVIEW_NAMES = [
+  'فهد العتيبي', 'نورة القحطاني', 'عبدالله الحربي', 'سارة الدوسري',
+  'تركي الغامدي', 'ريم المطيري', 'خالد الزهراني', 'الجوهرة العنزي',
+  'فيصل الشهري', 'منيرة السبيعي', 'مشعل الشمري', 'لولوة المالكي'
+];
+
 export async function GET(request: NextRequest) {
   try {
     const db = await getDb();
     const reviews = await db.collection('customer_reviews')
-      .find({ visible: { $ne: false }, isDemo: { $ne: true } })
+      .find({ visible: { $ne: false } })
       .sort({ createdAt: -1 }).limit(60).toArray();
 
     const token = clean(request.nextUrl.searchParams.get('token'), 120);
@@ -30,8 +36,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    let demoNameIndex = 0;
     return NextResponse.json({ ok: true, reviews: reviews.map((r) => ({
-      id: String(r._id), name: r.name, comment: r.comment, isDemo: r.isDemo === true,
+      id: String(r._id), name: r.isDemo === true ? DEMO_REVIEW_NAMES[demoNameIndex++ % DEMO_REVIEW_NAMES.length] : r.name, comment: r.comment, isDemo: r.isDemo === true,
       ...(Number.isInteger(r.rating) && r.rating >= 1 && r.rating <= 5 ? { rating: r.rating } : {}),
       createdAt: r.createdAt
     })), prompt });
