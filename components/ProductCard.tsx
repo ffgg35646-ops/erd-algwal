@@ -33,13 +33,18 @@ export default function ProductCard({ product }: { product: Product }) {
             <strong>{formatPrice(product.price)}</strong>
             {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
           </div>
-          <button className={'add-cart-button' + (added ? ' is-added' : '')} type="button" onClick={handleAdd} aria-label={'إضافة ' + product.name + ' إلى السلة'}>
-            {added ? (
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
-            ) : (
+          <div className="product-card-actions">
+            <button className={'add-cart-button' + (added ? ' is-added' : '')} type="button" onClick={handleAdd} aria-label={'إضافة ' + product.name + ' إلى السلة'}>
+              {added ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg>
+              )}
+            </button>
+            <Link href="/cart" className="product-card-cart-link" aria-label="الانتقال إلى سلة المشتريات" title="عرض السلة">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg>
-            )}
-          </button>
+            </Link>
+          </div>
         </div>
       </div>
     </article>
