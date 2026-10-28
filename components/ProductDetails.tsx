@@ -112,7 +112,7 @@ export default function ProductDetails({ product }: { product: Product }) {
               {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
             </div>
           </div>
-          {product.shortDescription && product.shortDescription !== product.description ? <p className="detail-lead"><span aria-hidden="true">✦</span>{product.shortDescription}</p> : null}
+          {product.shortDescription && product.shortDescription !== product.description && product.shortDescription.trim() !== 'اختيار عملي للاستخدام اليومي.' ? <p className="detail-lead"><span aria-hidden="true">✦</span>{product.shortDescription}</p> : null}
           <div className="detail-rule" />
           {availableColors.length ? (
             <section className="detail-options detail-color-options" aria-label="اختيار لون المنتج">
