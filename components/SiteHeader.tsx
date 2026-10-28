@@ -16,7 +16,7 @@ export default function SiteHeader() {
     <header className="site-header">
       <div className="container header-inner">
         <Link href="/" className="brand" aria-label="أرض الجوال - الرئيسية">
-          <span className="brand-mark" aria-hidden="true">أ</span>
+          <span className="brand-mark store-brand-logo"><svg viewBox="0 0 44 44" aria-hidden="true" focusable="false"><rect x="10" y="5" width="23" height="34" rx="5.5" fill="none" stroke="currentColor" strokeWidth="2.1"/><path d="M16 10h11M18 33h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M35 5.5l2.2 5.2 5.2 2.2-5.2 2.2-2.2 5.2-2.2-5.2-5.2-2.2 5.2-2.2z" fill="currentColor" transform="translate(-1 0) scale(.9)"/></svg></span>
           <span className="brand-copy">
             <strong>أرض الجوال</strong>
             <small>اختيارك الذكي للجوال</small>

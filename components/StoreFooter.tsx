@@ -37,9 +37,10 @@ const FALLBACK_TEXT: Record<string, string> = {
 export default function StoreFooter() {
   const [pages, setPages] = useState<StorePage[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [whatsappNumber, setWhatsappNumber] = useState('');
-  const [vatNumber, setVatNumber] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('010593953..');
+  const [vatNumber, setVatNumber] = useState('4353454564');
   const [barcodeImageUrl, setBarcodeImageUrl] = useState('');
+  const [barcodeRemoved, setBarcodeRemoved] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -54,10 +55,11 @@ export default function StoreFooter() {
           if (alive && Array.isArray(data.pages)) setPages(data.pages);
         }
         if (settingsResponse.ok) {
-          const data = await settingsResponse.json() as { whatsappNumber?: string; vatNumber?: string; barcodeImageUrl?: string };
+          const data = await settingsResponse.json() as { whatsappNumber?: string; vatNumber?: string; barcodeImageUrl?: string; barcodeRemoved?: boolean };
           if (alive && typeof data.whatsappNumber === 'string') setWhatsappNumber(data.whatsappNumber);
           if (alive && typeof data.vatNumber === 'string') setVatNumber(data.vatNumber);
           if (alive && typeof data.barcodeImageUrl === 'string') setBarcodeImageUrl(data.barcodeImageUrl);
+          if (alive) setBarcodeRemoved(data.barcodeRemoved === true);
         }
       } catch {
         // Keep the fallback links working if settings cannot be loaded.
@@ -83,6 +85,10 @@ export default function StoreFooter() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [selectedKey]);
 
+  const whatsappDigits = whatsappNumber.replace(/\D/g, '');
+  const whatsappLink = !whatsappNumber.includes('..') && /^\d{10,15}$/.test(whatsappDigits) ? 'https://wa.me/' + whatsappDigits : '';
+  const displayWhatsapp = /^20\d{10}$/.test(whatsappDigits) ? '+20 ' + whatsappDigits.slice(2) : whatsappNumber;
+
   const selectedPage = useMemo(() => {
     if (!selectedKey) return null;
     return pages.find((page) => page.key === selectedKey) || {
@@ -101,9 +107,9 @@ export default function StoreFooter() {
       <footer className="store-site-footer">
         <div className="store-footer-inner container">
           <div className="store-footer-brand">
-            <span className="stream-footer-mark">أ</span>
+            <span className="stream-footer-mark store-footer-logo" aria-label="شعار أرض الجوال"><svg viewBox="0 0 44 44" aria-hidden="true" focusable="false"><rect x="10" y="5" width="23" height="34" rx="5.5" fill="none" stroke="currentColor" strokeWidth="2.1"/><path d="M16 10h11M18 33h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M35 5.5l2.2 5.2 5.2 2.2-5.2 2.2-2.2 5.2-2.2-5.2-5.2-2.2 5.2-2.2z" fill="currentColor" transform="translate(-1 0) scale(.9)"/></svg></span>
             <strong>أرض الجوال</strong>
-            <p className="store-footer-vat">الرقم الضريبي: {vatNumber ? <bdi dir="ltr">{vatNumber}</bdi> : <span>مثال مؤقت: 000000000000000 – غير صالح للاستخدام الضريبي</span>}</p>
+            <p className="store-footer-vat">الرقم الضريبي: {vatNumber ? <bdi dir="ltr">{vatNumber}</bdi> : <span>لم يُضف رقم ضريبي</span>}</p>
             <p>متجر متخصص في الجوالات وملحقاتها، مع أقسام تساعدك على الوصول إلى المنتجات بسهولة.</p>
             <small>© {new Date().getFullYear()} أرض الجوال. جميع الحقوق محفوظة.</small>
           </div>
@@ -125,27 +131,25 @@ export default function StoreFooter() {
           <div className="store-footer-column store-footer-contact">
             <h2>تواصل معنا</h2>
             <p>نسعد بخدمتك ومتابعة استفساراتك.</p>
-            {whatsappNumber ? (
-              <a href={'https://wa.me/' + whatsappNumber} target="_blank" rel="noreferrer"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span> واتساب المتجر</a>
+            {whatsappLink ? (
+              <a href={whatsappLink} target="_blank" rel="noreferrer"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span> واتساب المتجر <bdi dir="ltr">{displayWhatsapp}</bdi></a>
+            ) : whatsappNumber ? (
+              <span className="store-footer-muted"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span> واتساب: <bdi dir="ltr">{whatsappNumber}</bdi></span>
             ) : (
-              <span className="store-footer-muted"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span> مثال مؤقت: 966500000000 – غير مفعّل</span>
+              <span className="store-footer-muted"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span> لم يُضف رقم واتساب بعد</span>
             )}
           </div>
 
           <div className="store-footer-column store-footer-barcode">
             <h2>الباركود</h2>
             {barcodeImageUrl ? (
-              <img
-                src={barcodeImageUrl}
-                alt="باركود أرض الجوال"
-                width={150}
-                height={150}
-                loading="lazy"
-              />
+              <img src={barcodeImageUrl} alt="باركود أرض الجوال" width={150} height={150} loading="lazy" />
+            ) : barcodeRemoved ? (
+              <span className="store-footer-muted">تم حذف الباركود من الإدارة.</span>
             ) : (
-              <div className="footer-demo-barcode" aria-label="نموذج باركود توضيحي غير صالح للمسح">
-                <svg viewBox="0 0 120 70" aria-hidden="true"><rect width="120" height="70" fill="#fff"/>{Array.from({length: 26}, (_, i) => <rect key={i} x={4+i*4.3} y="7" width={i%3===0?3:1.8} height={i%4===0?51:43} fill="#242424"/>)}</svg>
-                <small>نموذج مؤقت – يُستبدل من الإدارة</small>
+              <div className="footer-demo-barcode" aria-label="باركود تصميمي مؤقت">
+                <svg viewBox="0 0 180 112" role="img" aria-label="باركود زخرفي مؤقت لأرض الجوال"><rect width="180" height="112" rx="8" fill="#fff"/><g fill="#202020">{Array.from({length: 42}, (_, i) => <rect key={i} x={7 + i * 3.95} y={7 + (i % 3)} width={i % 7 === 0 ? 2.8 : i % 4 === 0 ? 2.2 : 1.25} height={i % 5 === 0 ? 68 : i % 3 === 0 ? 76 : 62} />)}</g><rect x="56" y="31" width="68" height="28" rx="5" fill="#fff" stroke="#b28b37" strokeWidth="1.5"/><text x="90" y="49" fontSize="12" fontWeight="800" fill="#97712e" textAnchor="middle">أرض الجوال</text><text x="90" y="99" fontSize="8" fill="#555" textAnchor="middle">نموذج تصميم مؤقت</text></svg>
+                <small>باركود تصميمي مؤقت — يستبدل من البوت</small>
               </div>
             )}
           </div>

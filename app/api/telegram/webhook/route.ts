@@ -127,7 +127,8 @@ function digits(value: string) {
 function normalizeWhatsAppNumber(value: string) {
   let phone = digits(value);
   if (phone.startsWith('00')) phone = phone.slice(2);
-  if (phone.startsWith('05') && phone.length === 10) phone = '966' + phone.slice(1);
+  if (phone.startsWith('01') && phone.length === 11) phone = '20' + phone.slice(1);
+  else if (phone.startsWith('05') && phone.length === 10) phone = '966' + phone.slice(1);
   else if (phone.startsWith('5') && phone.length === 9) phone = '966' + phone;
   if (phone.length < 8 || phone.length > 15) return '';
   return phone;
@@ -638,12 +639,12 @@ async function showReviewPage(db: Db, chatId: number, page = 0, notice = '') {
 
 async function showFooterSettings(db: Db, chatId: number) {
   const [settings, reviewCount] = await Promise.all([
-    db.collection<{ _id: string; vatNumber?: string; barcodeFileId?: string }>('store_settings')
+    db.collection<{ _id: string; vatNumber?: string; vatNumberRemoved?: boolean; barcodeFileId?: string; barcodeRemoved?: boolean }>('store_settings')
       .findOne({ _id: 'footer' }),
     db.collection('customer_reviews').countDocuments({})
   ]);
-  const vatNumber = settings?.vatNumber || 'غير مضاف';
-  const barcodeStatus = settings?.barcodeFileId ? 'تمت إضافته' : 'غير مضاف';
+  const vatNumber = settings?.vatNumberRemoved ? 'محذوف' : settings?.vatNumber || '4353454564';
+  const barcodeStatus = settings?.barcodeFileId ? 'تمت إضافته' : settings?.barcodeRemoved ? 'محذوف' : 'باركود تصميمي مؤقت ظاهر في المتجر';
   await sendTelegramMessage(chatId,
     'تعديلات أخرى — بيانات الفوتر\n\nالرقم الضريبي: ' + vatNumber + '\nالباركود: ' + barcodeStatus + '\n\nاختر العنصر الذي تريد تعديله:',
     {
@@ -716,7 +717,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     return;
   }
   if (action === 'footer-setting' && id === 'vat') {
-    const settings = await db.collection<{ _id: string; vatNumber?: string }>('store_settings')
+    const settings = await db.collection<{ _id: string; vatNumber?: string; vatNumberRemoved?: boolean }>('store_settings')
       .findOne({ _id: 'footer' });
     await startFlow(
       db,
@@ -725,7 +726,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       'footer_settings',
       'footer_vat_number',
       { footerSettingKey: 'vat' },
-      'تعديل الرقم الضريبي الظاهر أسفل اسم المتجر في الفوتر.\n\nالرقم الحالي: ' + (settings?.vatNumber || 'غير مضاف') + '\n\nأرسل الرقم الجديد بالأرقام فقط (من 5 إلى 30 رقمًا)، أو أرسل «مسح» لحذفه. اكتب /cancel للإلغاء.'
+      'تعديل الرقم الضريبي الظاهر أسفل اسم المتجر في الفوتر.\n\nالرقم الحالي: ' + (settings?.vatNumberRemoved ? 'محذوف' : settings?.vatNumber || '4353454564') + '\n\nأرسل الرقم الجديد بالأرقام فقط (من 5 إلى 30 رقمًا)، أو أرسل «مسح» لحذفه. اكتب /cancel للإلغاء.'
     );
     return;
   }
@@ -833,7 +834,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   if (action === 'footer-barcode-delete') {
     const result = await db.collection<{ _id: string; barcodeFileId?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
       { _id: 'footer' },
-      { $unset: { barcodeFileId: '' }, $set: { updatedAt: new Date(), updatedByTelegramId: callback.from.id } }
+      { $unset: { barcodeFileId: '' }, $set: { barcodeRemoved: true, updatedAt: new Date(), updatedByTelegramId: callback.from.id } }
     );
     await sendTelegramMessage(chatId,
       result.modifiedCount ? '✅ تم حذف الباركود من الفوتر.' : 'لا يوجد باركود محفوظ لحذفه.'
@@ -1039,7 +1040,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     if (value === 'مسح' || value === 'حذف') {
       const result = await db.collection<{ _id: string; vatNumber?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
         { _id: 'footer' },
-        { $unset: { vatNumber: '' }, $set: { updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } }
+        { $set: { vatNumber: '', vatNumberRemoved: true, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } }
       );
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
       await sendMainMenu(db, chatId, result.modifiedCount ? '✅ تم حذف الرقم الضريبي من الفوتر.' : 'لا يوجد رقم ضريبي محفوظ لحذفه.');
@@ -1055,7 +1056,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     }
     await db.collection<{ _id: string; vatNumber?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
       { _id: 'footer' },
-      { $set: { vatNumber, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
+      { $set: { vatNumber, vatNumberRemoved: false, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
       { upsert: true }
     );
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
@@ -1071,7 +1072,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     const photo = message.photo[message.photo.length - 1];
     await db.collection<{ _id: string; barcodeFileId?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
       { _id: 'footer' },
-      { $set: { barcodeFileId: photo.file_id, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
+      { $set: { barcodeFileId: photo.file_id, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId }, $unset: { barcodeRemoved: '' } },
       { upsert: true }
     );
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
