@@ -38,6 +38,15 @@ export default function CustomerNotifications() {
     setKey(getCustomerNotificationKey());
   }, []);
 
+  useEffect(() => {
+    const openFromMobileNav = () => {
+      setIsOpen(true);
+      setToast(null);
+    };
+    window.addEventListener('store-open-customer-notifications', openFromMobileNav);
+    return () => window.removeEventListener('store-open-customer-notifications', openFromMobileNav);
+  }, []);
+
   const refresh = useCallback(async () => {
     if (!key) return;
 
