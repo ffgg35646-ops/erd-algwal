@@ -2292,3 +2292,71 @@ html, body, .store-home, .category-stream, .category-stream-section { background
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+
+/* Direct cart shortcuts inside product cards. */
+.product-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+.product-card-cart-link {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  flex-shrink: 0;
+  border: 1px solid #d6d7d9;
+  border-radius: 12px;
+  background: linear-gradient(135deg,#fbf7ed,#eeeeef);
+  color: #92702f;
+  transition: background .18s, border-color .18s, transform .18s;
+}
+.product-card-cart-link:hover {
+  border-color: #b99247;
+  background: linear-gradient(135deg,#f6ecd2,#e3e4e6);
+}
+.product-card-cart-link svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.strip-product-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+.strip-go-cart-button {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  flex: 0 0 25px;
+  border: 1px solid #d6d7d9;
+  border-radius: 50%;
+  background: linear-gradient(135deg,#fbf7ed,#eeeeef);
+  color: #92702f;
+  transition: background .18s, border-color .18s, transform .18s;
+}
+.strip-go-cart-button:hover {
+  border-color: #b99247;
+  background: linear-gradient(135deg,#f6ecd2,#e3e4e6);
+}
+.strip-go-cart-button svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.product-card-cart-link:active,
+.strip-go-cart-button:active { transform: scale(.95); }
