@@ -765,7 +765,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
         ? selectedColors.filter((color) => color !== option.name)
         : [...selectedColors, option.name];
       await saveSession(db, session);
-      await refreshProductColorMessage(chatId, callback.message?.message_id, session.data.colors);
+      await refreshProductColorMessage(chatId, callback.message?.message_id, session.data.colors || []);
       return;
     }
     if (id === 'clear') {
