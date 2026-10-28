@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { useCart } from '@/components/CartProvider';
+import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
 import { getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
@@ -134,10 +134,10 @@ export default function StoreCheckoutPage() {
     return () => { alive = false; };
   }, [form.regionId, cities.length]);
 
-  const cartLines = useMemo(() => Object.entries(cart).map(([id, quantity]) => ({
-    product: products.find((item) => item.id === id),
-    quantity
-  })).filter((line) => Boolean(line.product)), [cart]);
+  const cartLines = useMemo(() => Object.entries(cart).map(([cartKey, quantity]) => {
+    const { productId, color } = parseCartItemKey(cartKey);
+    return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
+  }).filter((line) => Boolean(line.product)), [cart]);
 
   const total = cartLines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
   const selectedRegion = regions.find((region) => String(region.region_id) === form.regionId);
@@ -197,9 +197,10 @@ export default function StoreCheckoutPage() {
       return;
     }
 
-    const items = cartLines.map(({ product, quantity }) => ({
+    const items = cartLines.map(({ product, quantity, color }) => ({
       productId: product!.id,
-      quantity
+      quantity,
+      ...(color ? { color } : {})
     }));
     const payload = {
       fullName: form.fullName.trim(),
@@ -239,11 +240,12 @@ export default function StoreCheckoutPage() {
         regionId: form.regionId,
         cityId: form.cityId,
         regionName: selectedRegion.name_ar,
-        items: cartLines.map(({ product, quantity }) => ({
+        items: cartLines.map(({ product, quantity, color }) => ({
           productId: product!.id,
           name: product!.name,
           unitPrice: product!.price,
-          quantity
+          quantity,
+          ...(color ? { color } : {})
         })),
         total,
         currency: 'SAR',
@@ -441,10 +443,10 @@ export default function StoreCheckoutPage() {
           <aside className="checkout-order-summary">
             <h2>ملخص طلبك</h2>
             <div className="checkout-order-items">
-              {cartLines.map(({ product, quantity }) => product ? (
-                <div className="checkout-order-item" key={product.id}>
+              {cartLines.map(({ cartKey, product, color, quantity }) => product ? (
+                <div className="checkout-order-item" key={cartKey}>
                   <img src={product.image} alt={product.name} />
-                  <div><strong>{product.name}</strong><small>الكمية: {quantity}</small></div>
+                  <div><strong>{product.name}</strong>{color ? <small>اللون: {color}</small> : null}<small>الكمية: {quantity}</small></div>
                   <b>{formatPrice(product.price * quantity)}</b>
                 </div>
               ) : null)}
