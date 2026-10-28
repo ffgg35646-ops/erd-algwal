@@ -5,6 +5,7 @@ export type OrderItem = {
   name: string;
   quantity: number;
   unitPrice?: number;
+  color?: string;
 };
 
 export type StoreOrder = Document & {
@@ -46,7 +47,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
   const itemText = items.slice(0, 8).map((item) => {
     const name = String(item.name || 'منتج');
     const quantity = Number(item.quantity || 1);
-    return `• ${name} × ${quantity}`;
+    return `• ${name}${item.color ? ' — اللون: ' + String(item.color) : ''} × ${quantity}`;
   }).join('\n') || '• تفاصيل المنتجات غير متاحة';
   const total = Number(order.total || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
   return [
