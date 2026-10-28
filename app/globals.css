@@ -20,3 +20,5 @@ undefined
 
 /* Native horizontal scrolling handles the review animation without shifting its hit targets. */
 .reviews-track { animation: none; scroll-behavior: auto; }
+
+.footer-whatsapp-svg { display: block; width: 17px; height: 17px; }
