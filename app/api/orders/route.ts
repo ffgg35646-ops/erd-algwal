@@ -24,7 +24,7 @@ type CheckoutBody = {
   installment?: 'yes' | 'no';
   acceptedPolicies?: boolean;
   customerNotificationKey?: string;
-  items?: Array<{ productId?: string; quantity?: number }>;
+  items?: Array<{ productId?: string; quantity?: number; color?: string }>;
 };
 
 function text(value: unknown, maxLength = 500) {
@@ -109,22 +109,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: false, error: 'أحد المنتجات أو الكميات غير صالح.' }, { status: 400 });
       }
 
-      let product: { name: string; price: number } | null = null;
+      let product: { name: string; price: number; colors?: string[] } | null = null;
+      const selectedColor = text(line?.color, 60);
       const seedProduct = seedProducts.find((item) => item.id === productId);
       if (seedProduct) {
-        product = { name: seedProduct.name, price: seedProduct.price };
+        product = { name: seedProduct.name, price: seedProduct.price, colors: seedProduct.colors || [] };
       } else if (ObjectId.isValid(productId)) {
         const stored = await findStoredProduct(db, productId);
-        if (stored) product = { name: stored.name, price: stored.price };
+        if (stored) product = { name: stored.name, price: stored.price, colors: stored.colors || [] };
+      }
+
+      if (selectedColor && !product?.colors?.includes(selectedColor)) {
+        return NextResponse.json({ ok: false, error: 'اللون المختار غير متاح لهذا المنتج. حدّث السلة واختر لونًا متاحًا.' }, { status: 400 });
       }
 
       if (!product || !Number.isFinite(product.price) || product.price <= 0) {
         return NextResponse.json({ ok: false, error: 'أحد المنتجات لم يعد متاحًا. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
       }
 
-      const existing = orderItems.find((item) => item.name === product!.name && item.unitPrice === product!.price);
+      const existing = orderItems.find((item) => item.name === product!.name && item.unitPrice === product!.price && (item.color || '') === selectedColor);
       if (existing) existing.quantity += quantity;
-      else orderItems.push({ name: product.name, quantity, unitPrice: product.price });
+      else orderItems.push({ name: product.name, quantity, unitPrice: product.price, ...(selectedColor ? { color: selectedColor } : {}) });
     }
 
     const total = orderItems.reduce((sum, item) => sum + Number(item.unitPrice || 0) * item.quantity, 0);
