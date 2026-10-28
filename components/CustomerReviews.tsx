@@ -158,8 +158,8 @@ export default function CustomerReviews() {
       if (paused || !track) return;
       const limit = track.scrollWidth - track.clientWidth;
       if (limit <= 0) return;
-      const next = track.scrollLeft - 1;
-      track.scrollLeft = Math.abs(track.scrollLeft) >= limit - 2 ? 0 : next;
+      const next = Math.abs(track.scrollLeft) >= limit - 2 ? 0 : track.scrollLeft - 1;
+      track.scrollLeft = next;
     }, 35);
     return () => {
       window.clearInterval(interval);

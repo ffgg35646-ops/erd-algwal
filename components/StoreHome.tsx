@@ -47,6 +47,7 @@ function matchesSearch(product: Product, term: string) {
 export default function StoreHome() {
   const { catalogProducts: products, catalogCategories: categories } = useCart();
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const term = normalizeSearchValue(search);
 
@@ -58,7 +59,7 @@ export default function StoreHome() {
   const allCategories = useMemo(() => {
     const knownNames = new Set(categories.map((category) => category.name));
     const extraNames = Array.from(new Set(products.map((product) => product.category)))
-      .filter((name) => name && !knownNames.has(name));
+      .filter((name) => name && !knownNames.has(name) && categories.length === 0);
     return [
       ...categories,
       ...extraNames.map((name) => ({ id: name, name, description: 'تصفح منتجات القسم' }))
@@ -71,8 +72,8 @@ export default function StoreHome() {
         ...category,
         products: searchedProducts.filter((product) => product.category === category.name)
       }))
-      .filter((category) => !term || category.products.length > 0),
-    [allCategories, searchedProducts, term]
+      .filter((category) => (!term || category.products.length > 0) && (!selectedCategory || selectedCategory === category.name)),
+    [allCategories, searchedProducts, term, selectedCategory]
   );
 
   function toggleCategory(categoryName: string) {
@@ -99,6 +100,10 @@ export default function StoreHome() {
             <button type="button" className="store-search-clear" onClick={() => setSearch('')} aria-label="مسح البحث">×</button>
           ) : null}
         </label>
+        <div className="store-filter-categories" aria-label="فلترة حسب القسم">
+          <button type="button" className={!selectedCategory ? 'is-active' : ''} onClick={() => setSelectedCategory('')}>كل الأقسام</button>
+          {allCategories.map((category) => <button type="button" key={category.id} className={selectedCategory === category.name ? 'is-active' : ''} onClick={() => setSelectedCategory(category.name)}>{category.name}</button>)}
+        </div>
         <div className="store-search-hint" aria-live="polite">
           {term
             ? 'نتائج البحث: ' + searchedProducts.length + ' منتج'
@@ -164,7 +169,7 @@ export default function StoreHome() {
             <span>⌕</span>
             <strong>ما لقيناش منتج مطابق للبحث</strong>
             <p>جرّب اسمًا أو لونًا أو سعرًا مختلفًا.</p>
-            <button type="button" className="store-reset-search" onClick={() => setSearch('')}>عرض كل الأقسام</button>
+            <button type="button" className="store-reset-search" onClick={() => { setSearch(''); setSelectedCategory(''); }}>عرض كل الأقسام</button>
           </div>
         )}
       </div>

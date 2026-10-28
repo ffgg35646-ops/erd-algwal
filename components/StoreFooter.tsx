@@ -103,7 +103,7 @@ export default function StoreFooter() {
           <div className="store-footer-brand">
             <span className="stream-footer-mark">أ</span>
             <strong>أرض الجوال</strong>
-            <p className="store-footer-vat">الرقم الضريبي: {vatNumber ? <bdi dir="ltr">{vatNumber}</bdi> : <span>يُضاف من الإدارة</span>}</p>
+            <p className="store-footer-vat">الرقم الضريبي: {vatNumber ? <bdi dir="ltr">{vatNumber}</bdi> : <span>مثال مؤقت: 000000000000000 – غير صالح للاستخدام الضريبي</span>}</p>
             <p>متجر متخصص في الجوالات وملحقاتها، مع أقسام تساعدك على الوصول إلى المنتجات بسهولة.</p>
             <small>© {new Date().getFullYear()} أرض الجوال. جميع الحقوق محفوظة.</small>
           </div>
@@ -128,7 +128,7 @@ export default function StoreFooter() {
             {whatsappNumber ? (
               <a href={'https://wa.me/' + whatsappNumber} target="_blank" rel="noreferrer"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span> واتساب المتجر</a>
             ) : (
-              <span className="store-footer-muted"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span> رقم واتساب يُضاف من الإدارة</span>
+              <span className="store-footer-muted"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span> مثال مؤقت: 966500000000 – غير مفعّل</span>
             )}
           </div>
 
@@ -143,7 +143,10 @@ export default function StoreFooter() {
                 loading="lazy"
               />
             ) : (
-              <span className="store-footer-muted">يمكن إضافة الباركود من البوت ليظهر هنا.</span>
+              <div className="footer-demo-barcode" aria-label="نموذج باركود توضيحي غير صالح للمسح">
+                <svg viewBox="0 0 120 70" aria-hidden="true"><rect width="120" height="70" fill="#fff"/>{Array.from({length: 26}, (_, i) => <rect key={i} x={4+i*4.3} y="7" width={i%3===0?3:1.8} height={i%4===0?51:43} fill="#242424"/>)}</svg>
+                <small>نموذج مؤقت – يُستبدل من الإدارة</small>
+              </div>
             )}
           </div>
         </div>

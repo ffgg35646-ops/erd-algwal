@@ -1671,3 +1671,27 @@ html, body, .store-home, .category-stream, .category-stream-section { background
 .reviews-track { animation: none; scroll-behavior: auto; }
 
 .footer-whatsapp-svg { display: block; width: 17px; height: 17px; }
+
+/* Warm iPhone gold + full-width fitted banner and live category filtering */
+.site-header { background: linear-gradient(120deg,#94702e,#b99247 52%,#8c692b); border-bottom-color:#d9bc7d; color:#fff; }
+.site-header .brand-mark { background:rgba(255,255,255,.17); }
+.nav-category-dropdown { background:#96743a; border-color:#d8bb80; }
+.site-header .cart-count,.site-header .notification-count { border-color:#9b7839; }
+.store-site-footer { background:linear-gradient(135deg,#a27b36,#bb9852 50%,#927031); border-top:1px solid #d5b777; color:#fff; }
+.store-footer-brand strong,.store-footer-column h2,.store-footer-brand p,.store-footer-brand small,.store-footer-contact p,.store-footer-muted,.store-footer-vat,.store-footer-vat span,.store-footer-trust-item { color:#fff !important; }
+.store-footer-column h2 { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.42); color:#fff; }
+.store-footer-column button,.store-footer-column a { background:rgba(255,255,255,.13); border-color:rgba(255,255,255,.33); color:#fff; }
+.store-footer-column button:hover,.store-footer-column a:hover { background:rgba(255,255,255,.27); color:#fff; }
+.store-footer-trust { border-top-color:rgba(255,255,255,.33); }
+.store-footer-trust-item span { border-color:rgba(255,255,255,.35); color:#75551e; }
+.store-promo-slider.container { width:min(1500px,calc(100% - 30px)); max-width:none; }
+.store-promo-frame { aspect-ratio: 2.6 / 1; min-height:260px; max-height:650px; background:#f9f7f1; }
+.store-promo-slide { display:grid; place-items:center; background:#f9f7f1; }
+.store-promo-slide img { width:100%; height:100%; object-fit:contain; }
+.store-filter-categories { display:flex; flex-wrap:wrap; gap:9px; margin-top:12px; }
+.store-filter-categories button { padding:9px 15px; border:1px solid #dcc9a2; border-radius:12px; background:#fff; color:#765a27; font-size:12px; font-weight:700; cursor:pointer; }
+.store-filter-categories button.is-active,.store-filter-categories button:hover { background:#b28b37; border-color:#b28b37; color:#fff; }
+.footer-demo-barcode { display:flex; flex-direction:column; width:140px; gap:5px; background:#fff; border-radius:10px; padding:9px; color:#555; }
+.footer-demo-barcode svg { width:100%; display:block; }
+.footer-demo-barcode small { color:#6c6c6c; font-size:9px; }
+@media(max-width:600px) { .store-promo-slider.container { width:calc(100% - 16px); } .store-promo-frame { aspect-ratio:1.5/1; min-height:230px; max-height:none; } .store-filter-categories { flex-wrap:nowrap; overflow-x:auto; padding-bottom:5px; } .store-filter-categories button { white-space:nowrap; flex-shrink:0; } }
