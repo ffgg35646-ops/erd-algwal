@@ -207,15 +207,20 @@ function StripProductCard({ product }: { product: Product }) {
             <strong>{formatPrice(product.price)}</strong>
             {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
           </div>
-          <button
-            type="button"
-            className={'strip-add-button' + (added ? ' is-added' : '')}
-            onClick={handleAdd}
-            aria-label={'إضافة ' + product.name + ' إلى السلة'}
-            title="أضف إلى السلة"
-          >
-            {added ? '✓' : '+'}
-          </button>
+          <div className="strip-product-actions">
+            <button
+              type="button"
+              className={'strip-add-button' + (added ? ' is-added' : '')}
+              onClick={handleAdd}
+              aria-label={'إضافة ' + product.name + ' إلى السلة'}
+              title="أضف إلى السلة"
+            >
+              {added ? '✓' : '+'}
+            </button>
+            <Link href="/cart" className="strip-go-cart-button" aria-label="الانتقال إلى سلة المشتريات" title="عرض السلة">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg>
+            </Link>
+          </div>
         </div>
       </div>
     </article>
