@@ -7,9 +7,9 @@ import WhatsAppSupport from '@/components/WhatsAppSupport';
 import StoreFooter from '@/components/StoreFooter';
 
 export const metadata: Metadata = {
-  title: 'متجر الجوالات والإكسسوارات',
-  description: 'تصفح الهواتف الذكية وملحقاتها واختر المنتجات التي تناسبك.',
-  applicationName: 'متجر الجوالات والإكسسوارات'
+  title: 'أرض الجوال | متجر الجوالات والإكسسوارات',
+  description: 'أرض الجوال — تصفح الجوالات والأجهزة وملحقاتها واختر المنتجات التي تناسبك.',
+  applicationName: 'أرض الجوال'
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
