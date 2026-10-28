@@ -831,7 +831,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     return;
   }
   if (action === 'footer-barcode-delete') {
-    const result = await db.collection('store_settings').updateOne(
+    const result = await db.collection<{ _id: string; barcodeFileId?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
       { _id: 'footer' },
       { $unset: { barcodeFileId: '' }, $set: { updatedAt: new Date(), updatedByTelegramId: callback.from.id } }
     );
@@ -843,7 +843,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'footer-page' && id && FOOTER_PAGE_DEFINITIONS[id]) {
     const definition = FOOTER_PAGE_DEFINITIONS[id];
-    const saved = await db.collection('store_pages').findOne({ _id: id });
+    const saved = await db.collection<{ _id: string; content?: string; title?: string; group?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_pages').findOne({ _id: id });
     const current = typeof saved?.content === 'string' && saved.content.trim()
       ? saved.content
       : 'لم تتم إضافة نص لهذه الصفحة بعد.';
@@ -1037,7 +1037,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
 
   if (session.workflow === 'footer_settings' && session.step === 'footer_vat_number') {
     if (value === 'مسح' || value === 'حذف') {
-      const result = await db.collection('store_settings').updateOne(
+      const result = await db.collection<{ _id: string; vatNumber?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
         { _id: 'footer' },
         { $unset: { vatNumber: '' }, $set: { updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } }
       );
@@ -1053,7 +1053,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       await sendTelegramMessage(chatId, 'الرقم غير صالح. أرسل من 5 إلى 30 رقمًا فقط، ويمكن فصل الأرقام بمسافات أو شرطات.');
       return;
     }
-    await db.collection('store_settings').updateOne(
+    await db.collection<{ _id: string; vatNumber?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
       { _id: 'footer' },
       { $set: { vatNumber, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
       { upsert: true }
@@ -1069,7 +1069,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       return;
     }
     const photo = message.photo[message.photo.length - 1];
-    await db.collection('store_settings').updateOne(
+    await db.collection<{ _id: string; barcodeFileId?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
       { _id: 'footer' },
       { $set: { barcodeFileId: photo.file_id, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
       { upsert: true }
@@ -1129,7 +1129,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       await sendMainMenu(db, chatId);
       return;
     }
-    await db.collection('store_pages').updateOne(
+    await db.collection<{ _id: string; title?: string; group?: string; content?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_pages').updateOne(
       { _id: footerKey },
       { $set: { title: definition.title, group: definition.group, content, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } },
       { upsert: true }
