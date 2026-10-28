@@ -93,11 +93,11 @@ export const products: Product[] = [
 ];
 
 export function formatPrice(value: number) {
-  return new Intl.NumberFormat('ar-SA', {
-    style: 'currency',
-    currency: 'SAR',
-    maximumFractionDigits: 0
+  const amount = new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 0,
+    useGrouping: true
   }).format(value);
+  return amount + ' ر.س';
 }
 
 export function getProduct(id: string) {
