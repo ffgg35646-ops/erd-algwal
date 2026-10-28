@@ -104,7 +104,7 @@ const EXAMPLE_REVIEWS: Review[] = [
 type Prompt = { orderId: string; orderNumber: string } | null;
 
 export default function CustomerReviews() {
-  const [reviews, setReviews] = useState<Review[]>(EXAMPLE_REVIEWS);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [token, setToken] = useState('');
   const [prompt, setPrompt] = useState<Prompt>(null);
   const [name, setName] = useState('');
