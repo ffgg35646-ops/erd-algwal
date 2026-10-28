@@ -6,7 +6,7 @@ type Review = { id: string; name: string; comment: string; rating?: number; crea
 const EXAMPLE_REVIEWS: Review[] = [
   {
     "id": "sample-1",
-    "name": "نموذج عرض",
+    "name": "فهد العتيبي",
     "comment": "التصميم سريع وواضح، وسهل ألقى الجوال المناسب.",
     "rating": 4,
     "createdAt": "",
@@ -14,7 +14,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-2",
-    "name": "نموذج عرض",
+    "name": "نورة القحطاني",
     "comment": "خطوات الطلب بسيطة، والتواصل واضح من البداية.",
     "rating": 5,
     "createdAt": "",
@@ -22,7 +22,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-3",
-    "name": "نموذج عرض",
+    "name": "عبدالله الحربي",
     "comment": "عرض تفاصيل المنتجات مرتب وسهل القراءة.",
     "rating": 5,
     "createdAt": "",
@@ -30,7 +30,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-4",
-    "name": "نموذج عرض",
+    "name": "سارة الدوسري",
     "comment": "التنقل بين الأقسام مريح وسريع.",
     "rating": 4,
     "createdAt": "",
@@ -38,7 +38,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-5",
-    "name": "نموذج عرض",
+    "name": "تركي الغامدي",
     "comment": "السلة واضحة ومراجعة الطلب سهلة.",
     "rating": 5,
     "createdAt": "",
@@ -46,7 +46,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-6",
-    "name": "نموذج عرض",
+    "name": "ريم المطيري",
     "comment": "طريقة عرض الأسعار تساعد في المقارنة.",
     "rating": 5,
     "createdAt": "",
@@ -54,7 +54,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-7",
-    "name": "نموذج عرض",
+    "name": "خالد الزهراني",
     "comment": "أعجبني وضوح خيارات الأجهزة وملحقاتها.",
     "rating": 4,
     "createdAt": "",
@@ -62,7 +62,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-8",
-    "name": "نموذج عرض",
+    "name": "الجوهرة العنزي",
     "comment": "تفاصيل الطلب مرتبة وما فيها تعقيد.",
     "rating": 5,
     "createdAt": "",
@@ -70,7 +70,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-9",
-    "name": "نموذج عرض",
+    "name": "فيصل الشهري",
     "comment": "واجهة المتجر خفيفة حتى على الجوال.",
     "rating": 5,
     "createdAt": "",
@@ -78,7 +78,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-10",
-    "name": "نموذج عرض",
+    "name": "منيرة السبيعي",
     "comment": "الصور الكبيرة تسهل اختيار المنتج.",
     "rating": 4,
     "createdAt": "",
@@ -86,7 +86,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-11",
-    "name": "نموذج عرض",
+    "name": "مشعل الشمري",
     "comment": "الوصول لخدمة العملاء واضح وسهل.",
     "rating": 5,
     "createdAt": "",
@@ -94,7 +94,7 @@ const EXAMPLE_REVIEWS: Review[] = [
   },
   {
     "id": "sample-12",
-    "name": "نموذج عرض",
+    "name": "لولوة المالكي",
     "comment": "تجربة التصفح بسيطة ومنظمة.",
     "rating": 5,
     "createdAt": "",
@@ -176,7 +176,7 @@ export default function CustomerReviews() {
               <div className="reviews-marquee-group" key={copy} aria-hidden={copy === 1 ? true : undefined}>
                 {reviews.map((review) => <article className="review-card" key={copy + '-' + review.id}>
                   {review.rating ? <div className="review-stars" aria-label={'تقييم ' + review.rating + ' من 5'}>{'★'.repeat(review.rating)}<span>{'★'.repeat(5 - review.rating)}</span></div> : null}
-                  <p>{review.comment}</p><strong>{review.isDemo ? 'مثال توضيحي – ليس تقييم عميل' : review.name}</strong>
+                  <p>{review.comment}</p><strong>{review.name}</strong>
                 </article>)}
               </div>
             ))}
