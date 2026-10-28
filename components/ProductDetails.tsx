@@ -63,7 +63,7 @@ export default function ProductDetails({ product }: { product: Product }) {
 
   return (
     <main className="container detail-page">
-      <div className="breadcrumbs"><Link href="/">الرئيسية</Link><span>/</span><Link href="/#products">المنتجات</Link><span>/</span><span>{product.name}</span></div>
+      <div className="breadcrumbs"><Link href="/">الرئيسية</Link><span>/</span><Link href="/#categories">المنتجات</Link><span>/</span><span>{product.name}</span></div>
       <div className="detail-layout">
         <div className="detail-gallery">
           <div className="detail-image-panel">
