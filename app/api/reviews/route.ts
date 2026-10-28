@@ -28,35 +28,89 @@ const INITIAL_REVIEW_LAYOUT_ITEMS = [
   { comment: 'الأقسام مرتبة والتفاصيل مكتوبة بطريقة مريحة.', rating: 5 }
 ] as const;
 
-const REVIEW_LAYOUT_SEED_MARKER = 'customer_reviews_layout_preview_seed_v2';
+const REVIEW_LAYOUT_SEED_MARKER = 'customer_reviews_layout_preview_seed_v3';
 
 export async function GET(request: NextRequest) {
   try {
     const db = await getDb();
     const reviewCollection = db.collection('customer_reviews');
 
-    // Insert the initial layout examples only once. They are ordinary removable
-    // review records, so deleting them in the Telegram admin stays permanent.
+    // Retry incomplete seeding on later requests, but remember completion so admin deletion stays permanent.
     try {
-      const seed = await db.collection<{ _id: string; createdAt?: Date; purpose?: string }>('store_settings').updateOne(
+      const settings = db.collection<{
+        _id: string;
+        status?: string;
+        createdAt?: Date;
+        completedAt?: Date;
+        purpose?: string;
+        seededReviewCount?: number;
+      }>('store_settings');
+      const seedState = await settings.findOne(
         { _id: REVIEW_LAYOUT_SEED_MARKER },
-        { $setOnInsert: { createdAt: new Date(), purpose: 'initial customer review layout' } },
-        { upsert: true }
+        { projection: { status: 1 } }
       );
-      if (seed.upsertedCount === 1 && await reviewCollection.countDocuments({ visible: { $ne: false } }) === 0) {
-        const seedTime = Date.now();
-        await reviewCollection.insertMany(INITIAL_REVIEW_LAYOUT_ITEMS.map((item, index) => ({
-          _id: new ObjectId(),
-          name: DEMO_REVIEW_NAMES[index],
-          comment: item.comment,
-          rating: item.rating,
-          isDemo: true,
-          visible: true,
-          createdAt: new Date(seedTime - index * 1000)
-        })));
+
+      if (seedState?.status !== 'complete') {
+        const visibleCount = await reviewCollection.countDocuments({ visible: { $ne: false } });
+        const existingSeedCount = await reviewCollection.countDocuments({ layoutSeedVersion: 3 });
+
+        // If the last attempt wrote some rows before failing, finish that same seed.
+        // Otherwise only create these layout examples when no visible reviews exist.
+        if (visibleCount === 0 || existingSeedCount > 0) {
+          const seedTime = Date.now();
+          for (let index = 0; index < INITIAL_REVIEW_LAYOUT_ITEMS.length; index += 1) {
+            const item = INITIAL_REVIEW_LAYOUT_ITEMS[index];
+            const stableId = new ObjectId(`6a10${'0'.repeat(16)}${String(index + 1).padStart(4, '0')}`);
+            await reviewCollection.updateOne(
+              { _id: stableId },
+              {
+                $setOnInsert: {
+                  _id: stableId,
+                  name: DEMO_REVIEW_NAMES[index],
+                  comment: item.comment,
+                  rating: item.rating,
+                  isDemo: true,
+                  visible: true,
+                  layoutSeedVersion: 3,
+                  createdAt: new Date(seedTime - index * 1000)
+                }
+              },
+              { upsert: true }
+            );
+          }
+
+          await settings.updateOne(
+            { _id: REVIEW_LAYOUT_SEED_MARKER },
+            {
+              $set: {
+                status: 'complete',
+                completedAt: new Date(),
+                purpose: 'initial customer review layout',
+                seededReviewCount: INITIAL_REVIEW_LAYOUT_ITEMS.length
+              },
+              $setOnInsert: { createdAt: new Date() }
+            },
+            { upsert: true }
+          );
+        } else {
+          // Don't overwrite real customer feedback when it already exists.
+          await settings.updateOne(
+            { _id: REVIEW_LAYOUT_SEED_MARKER },
+            {
+              $set: {
+                status: 'complete',
+                completedAt: new Date(),
+                purpose: 'initial customer review layout',
+                seededReviewCount: 0
+              },
+              $setOnInsert: { createdAt: new Date() }
+            },
+            { upsert: true }
+          );
+        }
       }
     } catch (seedError) {
-      // Existing reviews should still load if this one-time layout setup cannot run.
+      // Leave the marker incomplete so a subsequent request can retry the setup.
       console.error('Initial customer review setup skipped:', seedError instanceof Error ? seedError.message : 'Unknown error');
     }
 
