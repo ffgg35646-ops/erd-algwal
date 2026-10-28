@@ -154,7 +154,14 @@ export default function ProductDetails({ product }: { product: Product }) {
               <span>{quantity}</span>
               <button type="button" onClick={() => setQuantity((current) => current + 1)} aria-label="زيادة الكمية">+</button>
             </div>
-            <button type="button" className="primary-button detail-add-button" onClick={handleAdd}>{added ? '✓ تمت الإضافة' : <><span aria-hidden="true">＋</span> أضف إلى السلة</>}</button>
+            <button type="button" className="primary-button detail-add-button" onClick={handleAdd}>
+              <span className="detail-add-label">{added ? '✓ تمت الإضافة' : 'أضف إلى السلة'}</span>
+              <svg className="detail-add-cart-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" />
+                <circle cx="10" cy="20" r="1.2" />
+                <circle cx="18" cy="20" r="1.2" />
+              </svg>
+            </button>
           </div>
           <p className="detail-storage-note"><span aria-hidden="true">♧</span> اختياراتك محفوظة في سلة المشتريات على هذا المتصفح.</p>
           <Link href="/cart" className="text-link">عرض سلة المشتريات <span aria-hidden="true">←</span></Link>
