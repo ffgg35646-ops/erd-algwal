@@ -17,3 +17,6 @@ undefined
 @keyframes sample-review-pan { from { scroll-margin-inline-start: 0; transform: translateX(0); } to { transform: translateX(min(0px, calc(-100% + 100vw))); } }
 @media(prefers-reduced-motion:reduce) { .reviews-track { animation: none; } }
 @media(max-width:760px) { .site-header .notification-bell, .site-header .header-cart { width: 42px; height: 42px; flex-basis: 42px; border-radius: 12px; } .site-header .notification-bell svg, .site-header .header-cart svg { width: 21px; height: 21px; } }
+
+/* Native horizontal scrolling handles the review animation without shifting its hit targets. */
+.reviews-track { animation: none; scroll-behavior: auto; }
