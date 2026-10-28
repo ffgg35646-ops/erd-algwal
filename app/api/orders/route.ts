@@ -32,10 +32,11 @@ function text(value: unknown, maxLength = 500) {
 }
 
 function validPhone(value: string) {
-  const normalized = value.replace(/[\\s()-]/g, '');
-  return /^(?:\\+?966|0)?5\\d{8}$/.test(normalized) ? normalized : '';
+  const normalized = value
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+  return /^05[0-9]{8}$/.test(normalized) ? normalized : '';
 }
-
 function validEmail(value: string) {
   if (!value) return true;
   return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value) && value.length <= 254;
