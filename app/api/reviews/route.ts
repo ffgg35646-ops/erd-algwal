@@ -28,12 +28,13 @@ const INITIAL_REVIEW_LAYOUT_ITEMS = [
   { comment: 'الأقسام مرتبة والتفاصيل مكتوبة بطريقة مريحة.', rating: 5 }
 ] as const;
 
-const REVIEW_LAYOUT_SEED_MARKER = 'customer_reviews_layout_preview_seed_v3';
+const REVIEW_LAYOUT_SEED_MARKER = 'customer_reviews_layout_preview_seed_v4';
 
 export async function GET(request: NextRequest) {
   try {
     const db = await getDb();
     const reviewCollection = db.collection('customer_reviews');
+    let reviewSetupPending = false;
 
     // Retry incomplete seeding on later requests, but remember completion so admin deletion stays permanent.
     try {
@@ -52,7 +53,7 @@ export async function GET(request: NextRequest) {
 
       if (seedState?.status !== 'complete') {
         const visibleCount = await reviewCollection.countDocuments({ visible: { $ne: false } });
-        const existingSeedCount = await reviewCollection.countDocuments({ layoutSeedVersion: 3 });
+        const existingSeedCount = await reviewCollection.countDocuments({ layoutSeedVersion: 4 });
 
         // If the last attempt wrote some rows before failing, finish that same seed.
         // Otherwise only create these layout examples when no visible reviews exist.
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
           const seedTime = Date.now();
           for (let index = 0; index < INITIAL_REVIEW_LAYOUT_ITEMS.length; index += 1) {
             const item = INITIAL_REVIEW_LAYOUT_ITEMS[index];
-            const stableId = new ObjectId(`6a10${'0'.repeat(16)}${String(index + 1).padStart(4, '0')}`);
+            const stableId = new ObjectId(`6a11${'0'.repeat(16)}${String(index + 1).padStart(4, '0')}`);
             await reviewCollection.updateOne(
               { _id: stableId },
               {
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
                   rating: item.rating,
                   isDemo: true,
                   visible: true,
-                  layoutSeedVersion: 3,
+                  layoutSeedVersion: 4,
                   createdAt: new Date(seedTime - index * 1000)
                 }
               },
@@ -79,19 +80,25 @@ export async function GET(request: NextRequest) {
             );
           }
 
+          const seededVisibleCount = await reviewCollection.countDocuments({
+            layoutSeedVersion: 4,
+            visible: { $ne: false }
+          });
+          const seedComplete = seededVisibleCount === INITIAL_REVIEW_LAYOUT_ITEMS.length;
           await settings.updateOne(
             { _id: REVIEW_LAYOUT_SEED_MARKER },
             {
               $set: {
-                status: 'complete',
-                completedAt: new Date(),
+                status: seedComplete ? 'complete' : 'pending',
+                ...(seedComplete ? { completedAt: new Date() } : {}),
                 purpose: 'initial customer review layout',
-                seededReviewCount: INITIAL_REVIEW_LAYOUT_ITEMS.length
+                seededReviewCount: seededVisibleCount
               },
               $setOnInsert: { createdAt: new Date() }
             },
             { upsert: true }
           );
+          if (!seedComplete) reviewSetupPending = true;
         } else {
           // Don't overwrite real customer feedback when it already exists.
           await settings.updateOne(
@@ -111,12 +118,27 @@ export async function GET(request: NextRequest) {
       }
     } catch (seedError) {
       // Leave the marker incomplete so a subsequent request can retry the setup.
+      reviewSetupPending = true;
       console.error('Initial customer review setup skipped:', seedError instanceof Error ? seedError.message : 'Unknown error');
     }
 
     const reviews = await reviewCollection
       .find({ visible: { $ne: false } })
       .sort({ createdAt: -1 }).limit(60).toArray();
+
+    if (reviews.length === 0) {
+      try {
+        const seedState = await db.collection<{ _id: string; status?: string; seededReviewCount?: number }>('store_settings').findOne(
+          { _id: REVIEW_LAYOUT_SEED_MARKER },
+          { projection: { status: 1, seededReviewCount: 1 } }
+        );
+        if (seedState?.status !== 'complete' || (seedState.seededReviewCount ?? 0) < INITIAL_REVIEW_LAYOUT_ITEMS.length) {
+          reviewSetupPending = true;
+        }
+      } catch {
+        reviewSetupPending = true;
+      }
+    }
 
     const token = clean(request.nextUrl.searchParams.get('token'), 120);
     let prompt = null;
@@ -135,7 +157,7 @@ export async function GET(request: NextRequest) {
     }
 
     let demoNameIndex = 0;
-    return NextResponse.json({ ok: true, reviews: reviews.map((r) => ({
+    return NextResponse.json({ ok: true, reviewSetupPending, reviews: reviews.map((r) => ({
       id: String(r._id), name: r.isDemo === true ? DEMO_REVIEW_NAMES[demoNameIndex++ % DEMO_REVIEW_NAMES.length] : r.name, comment: r.comment, isDemo: r.isDemo === true,
       ...(Number.isInteger(r.rating) && r.rating >= 1 && r.rating <= 5 ? { rating: r.rating } : {}),
       createdAt: r.createdAt
