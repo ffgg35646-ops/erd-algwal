@@ -102,7 +102,7 @@ export default function StoreHome() {
       <div className="category-stream" id="categories">
         {sections.length ? sections.map((category) => {
           const isExpanded = expandedCategory === category.name;
-          const symbol = categorySymbols[category.name] || category.icon || '✦';
+          const symbol = categorySymbols[category.name] || '✦';
 
           return (
             <section className="category-stream-section" key={category.id || category.name} aria-label={'قسم ' + category.name}>
