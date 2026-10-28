@@ -208,9 +208,6 @@ function StripProductCard({ product }: { product: Product }) {
             {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
           </div>
           <div className="strip-product-actions">
-            <Link href={'/products/' + product.id} className="strip-details-link" aria-label={'تفاصيل ' + product.name}>
-              تفاصيل
-            </Link>
             <button
               type="button"
               className={'strip-add-button' + (added ? ' is-added' : '')}
