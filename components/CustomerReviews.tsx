@@ -118,7 +118,7 @@ export default function CustomerReviews() {
       const response = await fetch('/api/reviews' + (currentToken ? '?token=' + encodeURIComponent(currentToken) : ''), { cache: 'no-store' });
       const data = await response.json();
       if (!response.ok || !data.ok) return;
-      setReviews(Array.isArray(data.reviews) && data.reviews.length ? data.reviews : EXAMPLE_REVIEWS);
+      setReviews(Array.isArray(data.reviews) ? data.reviews : EXAMPLE_REVIEWS);
       if (data.prompt) {
         setPrompt((previous) => previous?.orderId === data.prompt.orderId ? previous : data.prompt);
         setMessage('');
