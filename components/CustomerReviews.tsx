@@ -104,7 +104,7 @@ const EXAMPLE_REVIEWS: Review[] = [
 type Prompt = { orderId: string; orderNumber: string } | null;
 
 export default function CustomerReviews() {
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<Review[]>(EXAMPLE_REVIEWS);
   const [token, setToken] = useState('');
   const [prompt, setPrompt] = useState<Prompt>(null);
   const [name, setName] = useState('');
@@ -117,15 +117,27 @@ export default function CustomerReviews() {
     try {
       const response = await fetch('/api/reviews' + (currentToken ? '?token=' + encodeURIComponent(currentToken) : ''), { cache: 'no-store' });
       const data = await response.json();
-      if (!response.ok || !data.ok) return;
-      setReviews(Array.isArray(data.reviews) ? data.reviews : EXAMPLE_REVIEWS);
+      if (!response.ok || !data.ok) {
+        setReviews((current) => current.length ? current : EXAMPLE_REVIEWS);
+        return;
+      }
+      if (!Array.isArray(data.reviews)) {
+        setReviews(EXAMPLE_REVIEWS);
+      } else if (data.reviewSetupPending && data.reviews.length < EXAMPLE_REVIEWS.length) {
+        setReviews(EXAMPLE_REVIEWS);
+      } else {
+        setReviews(data.reviews);
+      }
       if (data.prompt) {
         setPrompt((previous) => previous?.orderId === data.prompt.orderId ? previous : data.prompt);
         setMessage('');
       } else {
         setPrompt(null);
       }
-    } catch { /* Keep the storefront usable when the network is unavailable. */ }
+    } catch {
+      // Keep the customer-review section visible if the API is temporarily unavailable.
+      setReviews((current) => current.length ? current : EXAMPLE_REVIEWS);
+    }
   }, []);
 
   useEffect(() => {
