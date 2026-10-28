@@ -128,15 +128,8 @@ export default function StoreFooter() {
           </nav>
 
           <div className="store-footer-column store-footer-contact">
-            <h2>تواصل معنا</h2>
+            <h2><a className="store-footer-contact-link" href={whatsappLink} target="_blank" rel="noreferrer">تواصل معنا</a></h2>
             <p>نسعد بخدمتك ومتابعة استفساراتك.</p>
-            {whatsappLink ? (
-              <a href={whatsappLink} target="_blank" rel="noreferrer" aria-label="واتساب المتجر" title="واتساب المتجر"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span></a>
-            ) : whatsappNumber ? (
-              <span className="store-footer-muted"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span></span>
-            ) : (
-              <span className="store-footer-muted"><span className="footer-whatsapp-icon" aria-hidden="true"><svg className="footer-whatsapp-svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.7 11.7 0 0 0 2.1 17.6L.5 23.5l6.1-1.6A11.7 11.7 0 0 0 23.5 11.8c0-3.1-1.2-6-3-8.3ZM11.8 21a9.2 9.2 0 0 1-4.7-1.3l-.3-.2-3.6.9.9-3.5-.2-.4a9.2 9.2 0 1 1 7.9 4.5Zm5.1-6.9c-.3-.1-1.6-.8-1.9-.9-.3-.1-.5-.1-.7.2-.2.3-.7.9-.9 1.1-.2.2-.4.2-.7.1-.3-.2-1.2-.5-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5l-.9-2.1c-.2-.5-.5-.4-.7-.4h-.6c-.2 0-.5.1-.8.4s-1 1-1 2.3c0 1.4 1 2.7 1.2 2.9.1.2 2 3 4.8 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.5-.1 1.6-.7 1.8-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.6-.4Z"/></svg></span> لم يُضف رقم واتساب بعد</span>
-            )}
           </div>
 
           <div className="store-footer-column store-footer-barcode">
@@ -146,9 +139,8 @@ export default function StoreFooter() {
             ) : barcodeRemoved ? (
               <span className="store-footer-muted">تم حذف الباركود من الإدارة.</span>
             ) : (
-              <div className="footer-demo-barcode" aria-label="باركود تصميمي مؤقت">
-                <svg viewBox="0 0 180 112" role="img" aria-label="باركود زخرفي مؤقت لأرض الجوال"><rect width="180" height="112" rx="8" fill="#fff"/><g fill="#202020">{Array.from({length: 42}, (_, i) => <rect key={i} x={7 + i * 3.95} y={7 + (i % 3)} width={i % 7 === 0 ? 2.8 : i % 4 === 0 ? 2.2 : 1.25} height={i % 5 === 0 ? 68 : i % 3 === 0 ? 76 : 62} />)}</g><rect x="56" y="31" width="68" height="28" rx="5" fill="#fff" stroke="#b28b37" strokeWidth="1.5"/><text x="90" y="49" fontSize="12" fontWeight="800" fill="#97712e" textAnchor="middle">أرض الجوال</text><text x="90" y="99" fontSize="8" fill="#555" textAnchor="middle">نموذج تصميم مؤقت</text></svg>
-                <small>باركود تصميمي مؤقت — يستبدل من البوت</small>
+              <div className="footer-demo-barcode" aria-label="باركود أرض الجوال">
+                <svg viewBox="0 0 180 112" role="img" aria-label="باركود أرض الجوال"><rect width="180" height="112" rx="8" fill="#fff"/><g fill="#202020">{Array.from({length: 42}, (_, i) => <rect key={i} x={7 + i * 3.95} y={7 + (i % 3)} width={i % 7 === 0 ? 2.8 : i % 4 === 0 ? 2.2 : 1.25} height={i % 5 === 0 ? 68 : i % 3 === 0 ? 76 : 62} />)}</g><rect x="56" y="31" width="68" height="28" rx="5" fill="#fff" stroke="#b28b37" strokeWidth="1.5"/><text x="90" y="49" fontSize="12" fontWeight="800" fill="#97712e" textAnchor="middle">أرض الجوال</text></svg>
               </div>
             )}
           </div>
