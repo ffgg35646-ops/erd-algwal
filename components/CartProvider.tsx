@@ -12,13 +12,27 @@ type CartContextValue = {
   hydrated: boolean;
   catalogProducts: Product[];
   catalogCategories: StoreCategory[];
-  addToCart: (productId: string, quantity?: number) => void;
+  addToCart: (productId: string, quantity?: number, color?: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   refreshCatalog: () => Promise<void>;
 };
 
 const STORAGE_KEY = 'erd-algwal-cart-v1';
+
+export function makeCartItemKey(productId: string, color?: string) {
+  return color ? productId + '::' + encodeURIComponent(color) : productId;
+}
+
+export function parseCartItemKey(itemKey: string) {
+  const divider = itemKey.lastIndexOf('::');
+  if (divider < 0) return { productId: itemKey, color: '' };
+  try {
+    return { productId: itemKey.slice(0, divider), color: decodeURIComponent(itemKey.slice(divider + 2)) };
+  } catch {
+    return { productId: itemKey.slice(0, divider), color: itemKey.slice(divider + 2) };
+  }
+}
 const CartContext = createContext<CartContextValue | null>(null);
 
 const FALLBACK_CATEGORIES: StoreCategory[] = seedCategories.map((category) => ({
@@ -81,11 +95,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [cart, hydrated]);
 
-  const addToCart = useCallback((productId: string, quantity = 1) => {
+  const addToCart = useCallback((productId: string, quantity = 1, color?: string) => {
     const safeQuantity = Math.max(1, Math.floor(quantity));
+    const itemKey = makeCartItemKey(productId, color);
     setCart((current) => ({
       ...current,
-      [productId]: (current[productId] || 0) + safeQuantity
+      [itemKey]: (current[itemKey] || 0) + safeQuantity
     }));
   }, []);
 
