@@ -1842,3 +1842,50 @@ html, body, .store-home, .category-stream, .category-stream-section { background
   object-position: center center;
   background-color: #f9f7f1;
 }
+
+/* Customer reviews: continuous, gap-free automatic loop. */
+.customer-reviews .reviews-track {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  direction: ltr;
+  padding: 2px 0 12px;
+  scroll-snap-type: none;
+  scrollbar-width: none;
+}
+.customer-reviews .reviews-marquee-track {
+  display: flex;
+  flex-direction: row;
+  width: max-content;
+  max-width: none;
+  gap: 0;
+  animation: customer-reviews-seamless 40s linear infinite;
+  animation-play-state: running !important;
+  will-change: transform;
+}
+.customer-reviews .reviews-marquee-group {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 12px;
+  padding-right: 12px;
+}
+.customer-reviews .reviews-marquee-group .review-card {
+  flex: 0 0 clamp(240px, 25vw, 320px);
+  width: clamp(240px, 25vw, 320px);
+}
+@keyframes customer-reviews-seamless {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (max-width: 600px) {
+  .customer-reviews .reviews-marquee-group .review-card {
+    flex-basis: 78vw;
+    width: 78vw;
+  }
+  .customer-reviews .reviews-marquee-track { animation-duration: 34s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .customer-reviews .reviews-marquee-track { animation: none !important; }
+}
