@@ -66,6 +66,16 @@ function normalizeArabic(value: string) {
     .toLocaleLowerCase('ar');
 }
 
+function normalizeSaudiPhoneDigits(value: string) {
+  return value
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+}
+
+function sanitizeSaudiPhoneInput(value: string) {
+  return normalizeSaudiPhoneDigits(value).replace(/[^0-9]/g, '').slice(0, 10);
+}
+
 export default function StoreCheckoutPage() {
   const router = useRouter();
   const { cart, hydrated, catalogProducts: products } = useCart();
@@ -100,7 +110,7 @@ export default function StoreCheckoutPage() {
       const restored: CheckoutForm = {
         ...EMPTY_FORM,
         fullName: typeof savedDraft.fullName === 'string' ? savedDraft.fullName : '',
-        phone: typeof savedDraft.phone === 'string' ? savedDraft.phone : '',
+        phone: typeof savedDraft.phone === 'string' ? sanitizeSaudiPhoneInput(savedDraft.phone) : '',
         email: typeof savedDraft.email === 'string' ? savedDraft.email : '',
         regionId: typeof savedDraft.regionId === 'string' ? savedDraft.regionId : '',
         cityId: typeof savedDraft.cityId === 'string' ? savedDraft.cityId : '',
@@ -187,9 +197,9 @@ export default function StoreCheckoutPage() {
       setFormError('اختر المدينة من القائمة، وليس بكتابة الاسم فقط.');
       return;
     }
-    const cleanPhone = form.phone.replace(/[\\s()-]/g, '');
-    if (!/^(?:\\+?966|0)?5\\d{8}$/.test(cleanPhone)) {
-      setFormError('اكتب رقم جوال سعودي صحيحًا، مثل 05XXXXXXXX أو +9665XXXXXXXX.');
+    const cleanPhone = normalizeSaudiPhoneDigits(form.phone);
+    if (!/^05[0-9]{8}$/.test(cleanPhone)) {
+      setFormError('اكتب رقم جوال سعودي من 10 أرقام يبدأ بـ 05، مثل 05XXXXXXXX.');
       return;
     }
     if (!form.acceptedPolicies) {
@@ -339,8 +349,8 @@ export default function StoreCheckoutPage() {
                 </label>
                 <label className="checkout-field">
                   <span>رقم الجوال <b>*</b></span>
-                  <input name="phone" value={form.phone} onChange={(event) => setField('phone', event.target.value)} placeholder="05XXXXXXXX" inputMode="tel" autoComplete="tel" required />
-                  <small>رقم سعودي يبدأ عادةً بـ 05.</small>
+                  <input name="phone" type="tel" value={form.phone} onChange={(event) => setField('phone', sanitizeSaudiPhoneInput(event.target.value))} placeholder="05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" maxLength={10} minLength={10} required aria-describedby="saudi-phone-hint" />
+                  <small id="saudi-phone-hint">10 أرقام فقط، يبدأ الرقم بـ 05.</small>
                 </label>
                 <label className="checkout-field">
                   <span>البريد الإلكتروني <small>(اختياري)</small></span>
