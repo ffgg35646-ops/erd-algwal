@@ -49,7 +49,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     const quantity = Number(item.quantity || 1);
     return `• ${name}${item.color ? ' — اللون: ' + String(item.color) : ''} × ${quantity}`;
   }).join('\n') || '• تفاصيل المنتجات غير متاحة';
-  const total = Number(order.total || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
+  const total = Number(order.total || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
   return [
     `رقم الطلب: ${String(order.orderNumber || order._id || '—')}`,
     `العميل: ${String(customer.name || '—')}`,
