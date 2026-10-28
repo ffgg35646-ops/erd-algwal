@@ -1033,6 +1033,15 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     }
     const step = fieldToStep[field || ''];
     if (!step) return void await sendTelegramMessage(chatId, 'الخانة غير معروفة.');
+    if (step === 'edit_product_colors') {
+      await startFlow(
+        db, callback.from.id, chatId, 'edit_product', step,
+        { productId: id, colors: product.colors || [] },
+        productColorPrompt(product.colors || []),
+        productColorKeyboard(product.colors || [])
+      );
+      return;
+    }
     if (step === 'edit_product_images') {
       await startFlow(db, callback.from.id, chatId, 'edit_product', step, { productId: id, images: [] },
         'أرسل الصور الجديدة للمنتج. سيؤدي الحفظ إلى استبدال الصور القديمة. أرسل صورة أو أكثر ثم اضغط «حفظ المنتج».',
