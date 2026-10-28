@@ -3569,3 +3569,14 @@ button,input,select,textarea { font:inherit; }
   .strip-product-image { flex-basis:132px; height:132px; }
   .store-footer-inner.container { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
+
+
+/* Use the shared header search as the single search entry point. */
+.store-search-bar,
+.store-filter-categories { display:none !important; }
+.store-utility-options a { color:#d7dde4; text-decoration:none; }
+.store-utility-options a:hover { color:#fff; text-decoration:underline; text-underline-offset:3px; }
+.store-utility-options a + span { padding-inline-start:18px; border-inline-start:1px solid rgba(255,255,255,.2); }
+@media(max-width:760px) {
+  .store-utility-options a + span { padding-inline-start:8px; }
+}
