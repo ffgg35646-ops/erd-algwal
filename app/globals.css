@@ -1829,3 +1829,7 @@ html, body, .store-home, .category-stream, .category-stream-section { background
 @media(prefers-reduced-motion:reduce) {
   .detail-page .detail-image,.detail-page .detail-thumbnail,.detail-page .detail-color-option,.detail-page .detail-add-button { transition:none; }
 }
+
+
+.cart-line-color { display:inline-flex; align-items:center; width:max-content; max-width:100%; margin-top:4px; padding:4px 8px; border:1px solid rgba(185,146,71,.2); border-radius:8px; background:#faf5e8; color:#8d6b2d; font-size:10px; font-weight:750; }
+.checkout-order-item small + small { margin-top:3px; }
