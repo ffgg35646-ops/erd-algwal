@@ -40,6 +40,12 @@ export default function ProductDetails({ product }: { product: Product }) {
   const gallery = product.images?.length ? product.images : [product.image];
   const safeImageIndex = Math.min(activeImageIndex, gallery.length - 1);
   const activeImage = gallery[safeImageIndex] || product.image;
+  const colorsSignature = availableColors.join('|');
+
+  useEffect(() => {
+    setSelectedColor(availableColors[0] || '');
+    setActiveImageIndex(0);
+  }, [product.id, colorsSignature]);
 
   useEffect(() => {
     if (gallery.length < 2) return;
