@@ -4347,7 +4347,8 @@ body {
 /* Mobile storefront layout based on the supplied phone-screen reference */
 .mobile-app-shell { min-height: 100vh; }
 .mobile-search-toggle,
-.mobile-bottom-nav { display: none; }
+.mobile-bottom-nav,
+.header-search-submit { display: none; }
 
 @media (max-width: 600px) {
   :root {
@@ -4524,6 +4525,19 @@ body {
     font-size: 13px;
   }
   .header-search input:focus { border-color: var(--mobile-gold); box-shadow: 0 0 0 2px rgba(201,162,28,.12); }
+  .header-search .header-search-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    min-height: 39px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--mobile-green);
+    color: #fff;
+    font-size: 12px;
+  }
   .header-search button {
     display: grid;
     place-items: center;
