@@ -7,46 +7,11 @@ export const dynamic = 'force-dynamic';
 
 const clean = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 
-const SAMPLE_REVIEW_COMMENTS = [
-  "التصميم سريع وواضح، وسهل ألقى الجوال المناسب.",
-  "خطوات الطلب بسيطة، والتواصل واضح من البداية.",
-  "عرض تفاصيل المنتجات مرتب وسهل القراءة.",
-  "التنقل بين الأقسام مريح وسريع.",
-  "السلة واضحة ومراجعة الطلب سهلة.",
-  "طريقة عرض الأسعار تساعد في المقارنة.",
-  "أعجبني وضوح خيارات الأجهزة وملحقاتها.",
-  "تفاصيل الطلب مرتبة وما فيها تعقيد.",
-  "واجهة المتجر خفيفة حتى على الجوال.",
-  "الصور الكبيرة تسهل اختيار المنتج.",
-  "الوصول لخدمة العملاء واضح وسهل.",
-  "تجربة التصفح بسيطة ومنظمة."
-];
-
-async function ensureSampleReviews(db: Awaited<ReturnType<typeof getDb>>) {
-  const settings = db.collection<{ _id: string; seededAt?: Date }>('store_settings');
-  const marker = await settings.updateOne(
-    { _id: 'sample_reviews_seed', seededAt: { $exists: false } },
-    { $set: { seededAt: new Date() } },
-    { upsert: false }
-  );
-  const record = await settings.findOne({ _id: 'sample_reviews_seed' });
-  if (!record) {
-    try {
-      await settings.insertOne({ _id: 'sample_reviews_seed', seededAt: new Date() });
-    } catch { return; }
-  } else if (!marker.modifiedCount) return;
-  await db.collection('customer_reviews').insertMany(SAMPLE_REVIEW_COMMENTS.map((comment, index) => ({
-    name: 'نموذج عرض', comment, rating: index % 3 === 0 ? 4 : 5,
-    isDemo: true, visible: true, createdAt: new Date(Date.now() - (12 - index) * 60000)
-  })));
-}
-
 export async function GET(request: NextRequest) {
   try {
     const db = await getDb();
-    await ensureSampleReviews(db);
     const reviews = await db.collection('customer_reviews')
-      .find({ visible: { $ne: false } })
+      .find({ visible: { $ne: false }, isDemo: { $ne: true } })
       .sort({ createdAt: -1 }).limit(60).toArray();
 
     const token = clean(request.nextUrl.searchParams.get('token'), 120);
