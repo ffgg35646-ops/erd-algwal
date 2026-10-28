@@ -47,6 +47,17 @@ function matchesSearch(product: Product, term: string) {
 export default function StoreHome() {
   const { catalogProducts: products, catalogCategories: categories } = useCart();
   const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const initialQuery = new URLSearchParams(window.location.search).get('q') || '';
+    if (initialQuery) setSearch(initialQuery);
+    const handleSearch = (event: Event) => {
+      const queryEvent = event as CustomEvent<string>;
+      setSearch(queryEvent.detail || '');
+    };
+    window.addEventListener('store-search', handleSearch);
+    return () => window.removeEventListener('store-search', handleSearch);
+  }, []);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const term = normalizeSearchValue(search);
