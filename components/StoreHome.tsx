@@ -96,36 +96,8 @@ export default function StoreHome() {
   }
 
   return (
-    <main className="store-home">
+    <main className="store-home" id="home">
       <StoreBannerSlider />
-      <section className="store-search-shell" aria-label="البحث عن المنتجات">
-        <label className="store-search-bar">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="10.8" cy="10.8" r="6.8" />
-            <path d="m16 16 4.5 4.5" />
-          </svg>
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="ابحث باسم المنتج أو اللون أو السعة أو السعر..."
-            aria-label="ابحث عن منتج"
-            type="search"
-          />
-          {search ? (
-            <button type="button" className="store-search-clear" onClick={() => setSearch('')} aria-label="مسح البحث">×</button>
-          ) : null}
-        </label>
-        <div className="store-filter-categories" aria-label="فلترة حسب القسم">
-          <button type="button" className={!selectedCategory ? 'is-active' : ''} onClick={() => setSelectedCategory('')}>كل الأقسام</button>
-          {allCategories.map((category) => <button type="button" key={category.id} className={selectedCategory === category.name ? 'is-active' : ''} onClick={() => setSelectedCategory(category.name)}>{category.name}</button>)}
-        </div>
-        <div className="store-search-hint" aria-live="polite">
-          {term
-            ? 'نتائج البحث: ' + searchedProducts.length + ' منتج'
-            : 'تصفح حسب الأقسام • ' + products.length + ' منتج'}
-        </div>
-      </section>
-
       <div className="category-stream" id="categories">
         {sections.length ? sections.map((category) => {
           const isExpanded = expandedCategory === category.name;
@@ -147,7 +119,7 @@ export default function StoreHome() {
                     <small>{category.products.length ? category.products.length + ' منتج' : 'لا توجد منتجات حاليًا'}</small>
                   </span>
                 </button>
-                {category.products.length > 0 ? (
+                {category.products.length > 4 ? (
                   <button
                     type="button"
                     className="category-more-button"
@@ -226,7 +198,7 @@ function StripProductCard({ product }: { product: Product }) {
               aria-label={'إضافة ' + product.name + ' إلى السلة'}
               title="أضف إلى السلة"
             >
-              {added ? '✓' : '+'}
+              {added ? 'تمت الإضافة' : 'أضف إلى السلة'}
             </button>
             <Link href="/cart" className="strip-go-cart-button" aria-label="الانتقال إلى سلة المشتريات" title="عرض السلة">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg>
