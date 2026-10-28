@@ -52,6 +52,13 @@ const EMPTY_FORM: CheckoutForm = {
   acceptedPolicies: false
 };
 
+function normalizeSaudiPhoneInput(value: string) {
+  const westernDigits = value
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
+  return westernDigits.replace(/[^0-9]/g, '').slice(0, 10);
+}
+
 function regionLabel(name: string) {
   return name.replace(/^منطقة\s+/, '');
 }
@@ -100,7 +107,7 @@ export default function StoreCheckoutPage() {
       const restored: CheckoutForm = {
         ...EMPTY_FORM,
         fullName: typeof savedDraft.fullName === 'string' ? savedDraft.fullName : '',
-        phone: typeof savedDraft.phone === 'string' ? savedDraft.phone : '',
+        phone: typeof savedDraft.phone === 'string' ? normalizeSaudiPhoneInput(savedDraft.phone) : '',
         email: typeof savedDraft.email === 'string' ? savedDraft.email : '',
         regionId: typeof savedDraft.regionId === 'string' ? savedDraft.regionId : '',
         cityId: typeof savedDraft.cityId === 'string' ? savedDraft.cityId : '',
@@ -187,9 +194,9 @@ export default function StoreCheckoutPage() {
       setFormError('اختر المدينة من القائمة، وليس بكتابة الاسم فقط.');
       return;
     }
-    const cleanPhone = form.phone.replace(/[\\s()-]/g, '');
-    if (!/^(?:\\+?966|0)?5\\d{8}$/.test(cleanPhone)) {
-      setFormError('اكتب رقم جوال سعودي صحيحًا، مثل 05XXXXXXXX أو +9665XXXXXXXX.');
+    const cleanPhone = normalizeSaudiPhoneInput(form.phone);
+    if (!/^05[0-9]{8}$/.test(cleanPhone)) {
+      setFormError('رقم الجوال يجب أن يبدأ بـ05 ويتكوّن من 10 أرقام فقط.');
       return;
     }
     if (!form.acceptedPolicies) {
@@ -339,7 +346,7 @@ export default function StoreCheckoutPage() {
                 </label>
                 <label className="checkout-field">
                   <span>رقم الجوال <b>*</b></span>
-                  <input name="phone" value={form.phone} onChange={(event) => setField('phone', event.target.value)} placeholder="05XXXXXXXX" inputMode="tel" autoComplete="tel" required />
+                  <input name="phone" value={form.phone} onChange={(event) => setField('phone', normalizeSaudiPhoneInput(event.target.value))} placeholder="05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" maxLength={10} required />
                   <small>رقم سعودي يبدأ عادةً بـ 05.</small>
                 </label>
                 <label className="checkout-field">
