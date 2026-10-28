@@ -37,7 +37,7 @@ const FALLBACK_TEXT: Record<string, string> = {
 export default function StoreFooter() {
   const [pages, setPages] = useState<StorePage[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [whatsappNumber, setWhatsappNumber] = useState('010593953..');
+  const [whatsappNumber, setWhatsappNumber] = useState('201090466376');
   const [vatNumber, setVatNumber] = useState('4353454564');
   const [barcodeImageUrl, setBarcodeImageUrl] = useState('');
   const [barcodeRemoved, setBarcodeRemoved] = useState(false);
