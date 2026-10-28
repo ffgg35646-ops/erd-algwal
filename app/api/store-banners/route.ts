@@ -54,7 +54,8 @@ export async function GET() {
         id: 'default-' + (index + 1),
         imageUrl: banner.imageUrl,
         alt: banner.alt
-      }))
+      })),
+      managed: false
     }, { headers: noStore });
   }
 
@@ -95,7 +96,8 @@ export async function GET() {
           ? banner.imageUrl
           : '/api/store-banners/' + String(banner._id) + '/image',
         alt: typeof banner.alt === 'string' && banner.alt.trim() ? banner.alt : 'عرض من أرض الجوال'
-      }))
+      })),
+      managed: true
     }, { headers: noStore });
   } catch (error) {
     console.error('Store banners load failed:', error instanceof Error ? error.message : 'Unknown error');
@@ -104,7 +106,8 @@ export async function GET() {
         id: 'default-' + (index + 1),
         imageUrl: banner.imageUrl,
         alt: banner.alt
-      }))
+      })),
+      managed: false
     }, { headers: noStore });
   }
 }
