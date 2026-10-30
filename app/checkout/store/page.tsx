@@ -84,6 +84,22 @@ function sanitizeSaudiPhoneInput(value: string) {
   return normalizeSaudiPhoneDigits(value).replace(/[^0-9]/g, '').slice(0, 10);
 }
 
+async function requestWarrantyPolicy(): Promise<WarrantyPolicy> {
+  const response = await fetch('/api/store-content', { cache: 'no-store' });
+  if (!response.ok) throw new Error('تعذر تحميل سياسة الضمان.');
+  const data = await response.json() as {
+    pages?: Array<{ key: string; title: string; content: string; updatedAt: string | null; configured?: boolean }>;
+  };
+  const saved = data.pages?.find((item) => item.key === 'warranty');
+  if (!saved) throw new Error('صفحة سياسة الضمان غير متاحة.');
+  return {
+    title: saved.title || 'سياسة الضمان',
+    content: saved.content || '',
+    updatedAt: saved.updatedAt || null,
+    configured: saved.configured === true
+  };
+}
+
 export default function StoreCheckoutPage() {
   const router = useRouter();
   const { cart, hydrated, catalogProducts: products } = useCart();
@@ -108,21 +124,10 @@ export default function StoreCheckoutPage() {
 
   useEffect(() => {
     let alive = true;
-    fetch('/api/store-content', { cache: 'no-store' })
-      .then((response) => {
-        if (!response.ok) throw new Error('تعذر تحميل سياسة الضمان.');
-        return response.json() as Promise<{ pages?: Array<{ key: string; title: string; content: string; updatedAt: string | null; configured?: boolean }> }>;
-      })
-      .then((data) => {
-        const page = data.pages?.find((item) => item.key === 'warranty');
-        if (!page) throw new Error('صفحة سياسة الضمان غير متاحة.');
+    requestWarrantyPolicy()
+      .then((policy) => {
         if (alive) {
-          setWarrantyPolicy({
-            title: page.title || 'سياسة الضمان',
-            content: page.content || '',
-            updatedAt: page.updatedAt || null,
-            configured: page.configured === true
-          });
+          setWarrantyPolicy(policy);
           setPolicyLoadError('');
         }
       })
@@ -215,6 +220,23 @@ export default function StoreCheckoutPage() {
       .sort((a, b) => a.name_ar.localeCompare(b.name_ar, 'ar'))
       .slice(0, 80);
   }, [cities, form.regionId, citySearch]);
+
+  async function openWarrantyPolicy() {
+    setPolicyOpen(true);
+    setPolicyLoading(true);
+    setPolicyLoadError('');
+    try {
+      const latestPolicy = await requestWarrantyPolicy();
+      if (warrantyPolicy.updatedAt && latestPolicy.updatedAt !== warrantyPolicy.updatedAt) {
+        setForm((current) => ({ ...current, acceptedPolicies: false }));
+      }
+      setWarrantyPolicy(latestPolicy);
+    } catch (error) {
+      setPolicyLoadError(error instanceof Error ? error.message : 'تعذر تحميل سياسة الضمان.');
+    } finally {
+      setPolicyLoading(false);
+    }
+  }
 
   function setField<K extends keyof CheckoutForm>(key: K, value: CheckoutForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -558,7 +580,7 @@ export default function StoreCheckoutPage() {
                 />
                 <div>
                   <label htmlFor="checkout-policy-accepted">أوافق على سياسة الضمان وأتعهد بالالتزام بالشروط.</label>
-                  <button type="button" className="policy-modal-link" onClick={() => setPolicyOpen(true)}>
+                  <button type="button" className="policy-modal-link" onClick={openWarrantyPolicy}>
                     اضغط هنا لقراءة سياسة الضمان
                   </button>
                   <small id="checkout-policy-help">
