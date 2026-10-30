@@ -187,7 +187,7 @@ export default function CheckoutPaymentPage() {
                 <span className={styles.visuallyHidden}>سنة الانتهاء</span>
                 <select aria-label="سنة الانتهاء" defaultValue="">
                   <option value="" disabled>⌄</option>
-                  {EXPIRY_YEARS.map((year) => <option key={year} value={year}>{year}</option>)}
+                  {EXPIRY_YEARS.map((year) => <option key={year} value={year}>{year.slice(-2)}</option>)}
                 </select>
               </label>
               <input className={`${styles.paymentInput} ${styles.paymentCvv}`} type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" />
