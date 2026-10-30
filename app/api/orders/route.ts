@@ -1,8 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
-import { products as seedProducts } from '@/lib/products';
-import { findStoredProduct } from '@/lib/catalog';
+import { ensureDefaultProducts, findStoredProduct } from '@/lib/catalog';
 import { sendNewOrderToAdmin, makeOrderNumber, type StoreOrder } from '@/lib/orders';
 import { adminReplyKeyboard, ensureTelegramIndexes, sendTelegramMessage } from '@/lib/telegram';
 
@@ -94,6 +93,7 @@ export async function POST(request: NextRequest) {
   try {
     const db = await getDb();
     await ensureTelegramIndexes(db);
+    await ensureDefaultProducts(db);
     const orders = db.collection<StoreOrder>('orders');
 
     const previous = await orders.findOne({ checkoutRequestId: submissionId });
@@ -118,13 +118,8 @@ export async function POST(request: NextRequest) {
 
       let product: { name: string; price: number; colors?: string[] } | null = null;
       const selectedColor = text(line?.color, 60);
-      const seedProduct = seedProducts.find((item) => item.id === productId);
-      if (seedProduct) {
-        product = { name: seedProduct.name, price: seedProduct.price, colors: seedProduct.colors || [] };
-      } else if (ObjectId.isValid(productId)) {
-        const stored = await findStoredProduct(db, productId);
-        if (stored) product = { name: stored.name, price: stored.price, colors: stored.colors || [] };
-      }
+      const stored = await findStoredProduct(db, productId);
+      if (stored) product = { name: stored.name, price: stored.price, colors: stored.colors || [] };
 
       if (selectedColor && !product?.colors?.includes(selectedColor)) {
         return NextResponse.json({ ok: false, error: 'اللون المختار غير متاح لهذا المنتج. حدّث السلة واختر لونًا متاحًا.' }, { status: 400 });
