@@ -61,7 +61,6 @@ export default function CartPage() {
                   <span className={styles.category}>{product.category}</span>
                   <Link href={'/products/' + product.id} className={styles.name}>{product.name}</Link>
                   {color ? <p className={styles.variant}>اللون: {color}</p> : null}
-                  {product.storageOptions?.length ? <p className={styles.variant}>السعة: {product.storageOptions.join(' / ')}</p> : null}
                   <div className={styles.price}>{formatPrice(product.price)}</div>
                   <div className={styles.itemActions}>
                     <div className={styles.quantity} aria-label="الكمية">
