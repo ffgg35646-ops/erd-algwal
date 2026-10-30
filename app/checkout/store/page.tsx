@@ -23,6 +23,13 @@ type City = {
   name_en: string;
 };
 
+type WarrantyPolicy = {
+  title: string;
+  content: string;
+  updatedAt: string | null;
+  configured: boolean;
+};
+
 type CheckoutForm = {
   fullName: string;
   phone: string;
@@ -89,6 +96,50 @@ export default function StoreCheckoutPage() {
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [warrantyPolicy, setWarrantyPolicy] = useState<WarrantyPolicy>({
+    title: 'سياسة الضمان',
+    content: 'جاري تحميل سياسة الضمان...',
+    updatedAt: null,
+    configured: false
+  });
+  const [policyLoading, setPolicyLoading] = useState(true);
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const [policyLoadError, setPolicyLoadError] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/store-content', { cache: 'no-store' })
+      .then((response) => {
+        if (!response.ok) throw new Error('تعذر تحميل سياسة الضمان.');
+        return response.json() as Promise<{ pages?: Array<{ key: string; title: string; content: string; updatedAt: string | null; configured?: boolean }> }>;
+      })
+      .then((data) => {
+        const page = data.pages?.find((item) => item.key === 'warranty');
+        if (!page) throw new Error('صفحة سياسة الضمان غير متاحة.');
+        if (alive) {
+          setWarrantyPolicy({
+            title: page.title || 'سياسة الضمان',
+            content: page.content || '',
+            updatedAt: page.updatedAt || null,
+            configured: page.configured === true
+          });
+          setPolicyLoadError('');
+        }
+      })
+      .catch((error) => {
+        if (alive) {
+          setWarrantyPolicy({
+            title: 'سياسة الضمان',
+            content: 'تعذر تحميل سياسة الضمان حاليًا. حاول تحديث الصفحة.',
+            updatedAt: null,
+            configured: false
+          });
+          setPolicyLoadError(error instanceof Error ? error.message : 'تعذر تحميل سياسة الضمان.');
+        }
+      })
+      .finally(() => { if (alive) setPolicyLoading(false); });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -222,8 +273,16 @@ export default function StoreCheckoutPage() {
       setFormError('اكتب رقم الهوية أو الإقامة المكوّن من 10 أرقام.');
       return;
     }
+    if (policyLoading) {
+      setFormError('انتظر تحميل سياسة الضمان ثم حاول مرة أخرى.');
+      return;
+    }
+    if (!warrantyPolicy.configured || !warrantyPolicy.updatedAt) {
+      setFormError('لا يمكن إكمال الطلب قبل أن تضيف الإدارة سياسة الضمان المعتمدة.');
+      return;
+    }
     if (!form.acceptedPolicies) {
-      setFormError('يجب الموافقة على سياسة الضمان والاسترجاع والتوصيل قبل المتابعة.');
+      setFormError('يجب قراءة سياسة الضمان والموافقة عليها بعلامة الصح قبل إكمال الطلب.');
       return;
     }
 
@@ -244,6 +303,7 @@ export default function StoreCheckoutPage() {
       installmentDownPayment: form.installment === 'yes' ? Number(form.installmentDownPayment) : null,
       installmentMonths: form.installment === 'yes' ? Number(form.installmentMonths) : null,
       acceptedPolicies: form.acceptedPolicies,
+      warrantyPolicyUpdatedAt: warrantyPolicy.updatedAt,
       items
     };
     const fingerprint = JSON.stringify(payload);
@@ -487,10 +547,29 @@ export default function StoreCheckoutPage() {
                   </div>
                 </div>
               ) : null}
-              <label className="policy-consent">
-                <input type="checkbox" checked={form.acceptedPolicies} onChange={(event) => setField('acceptedPolicies', event.target.checked)} required />
-                <span>أقر أنني راغب في استلام الطلب وموافق على <Link href="/policies">سياسة الضمان والاسترجاع والتوصيل</Link>.</span>
-              </label>
+              <div className="policy-consent">
+                <input
+                  id="checkout-policy-accepted"
+                  type="checkbox"
+                  checked={form.acceptedPolicies}
+                  onChange={(event) => setField('acceptedPolicies', event.target.checked)}
+                  required
+                  aria-describedby="checkout-policy-help"
+                />
+                <div>
+                  <label htmlFor="checkout-policy-accepted">أوافق على سياسة الضمان وأتعهد بالالتزام بالشروط.</label>
+                  <button type="button" className="policy-modal-link" onClick={() => setPolicyOpen(true)}>
+                    اضغط هنا لقراءة سياسة الضمان
+                  </button>
+                  <small id="checkout-policy-help">
+                    {policyLoading
+                      ? 'جاري تحميل الشروط...'
+                      : warrantyPolicy.configured
+                        ? 'الموافقة بعلامة الصح إلزامية لإكمال الطلب.'
+                        : policyLoadError || 'سياسة الضمان لم تُضف من الإدارة بعد؛ لا يمكن إكمال الطلب حاليًا.'}
+                  </small>
+                </div>
+              </div>
             </section>
 
             {formError ? <div className="checkout-alert checkout-alert-error" role="alert"><span>!</span>{formError}</div> : null}
@@ -498,6 +577,32 @@ export default function StoreCheckoutPage() {
               <Link href="/cart" className="outline-button">العودة للسلة</Link>
               <button type="submit" className="primary-button checkout-submit" disabled={isSubmitting}>{isSubmitting ? 'جارٍ حفظ الطلب...' : 'إكمال الطلب'} <span aria-hidden="true">←</span></button>
             </div>
+
+            {policyOpen ? (
+              <div className="policy-modal-backdrop" role="presentation" onClick={() => setPolicyOpen(false)}>
+                <section
+                  className="policy-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="checkout-policy-title"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <header className="policy-modal-header">
+                    <h2 id="checkout-policy-title">{warrantyPolicy.title}</h2>
+                    <button type="button" className="policy-modal-close" aria-label="إغلاق" onClick={() => setPolicyOpen(false)}>×</button>
+                  </header>
+                  <div className="policy-modal-content">
+                    {policyLoading ? 'جاري تحميل الشروط...' : warrantyPolicy.content}
+                    {!policyLoading && !warrantyPolicy.configured ? (
+                      <p className="policy-modal-warning">لم تنشر الإدارة سياسة الضمان بعد، لذلك لن يمكن إكمال الطلب حتى إضافتها.</p>
+                    ) : null}
+                  </div>
+                  <footer className="policy-modal-footer">
+                    <button type="button" className="primary-button" onClick={() => setPolicyOpen(false)}>إغلاق</button>
+                  </footer>
+                </section>
+              </div>
+            ) : null}
           </form>
 
           <aside className="checkout-order-summary checkout-order-summary-compact">

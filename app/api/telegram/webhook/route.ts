@@ -94,6 +94,7 @@ const FOOTER_PAGE_DEFINITIONS: Record<string, { title: string; group: 'policies'
   privacy: { title: 'سياسة الخصوصية', group: 'policies' },
   terms: { title: 'الشروط والأحكام', group: 'policies' },
   returns: { title: 'الاستبدال والاسترجاع', group: 'policies' },
+  warranty: { title: 'سياسة الضمان', group: 'policies' },
   shipping: { title: 'الشحن والتوصيل', group: 'customer-service' },
   'payment-methods': { title: 'طرق الدفع', group: 'customer-service' },
   ordering: { title: 'طلب الدفع والشراء', group: 'customer-service' },

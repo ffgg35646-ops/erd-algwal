@@ -26,6 +26,7 @@ type CheckoutBody = {
   installmentDownPayment?: number;
   installmentMonths?: number;
   acceptedPolicies?: boolean;
+  warrantyPolicyUpdatedAt?: string;
   customerNotificationKey?: string;
   items?: Array<{ productId?: string; quantity?: number; color?: string }>;
 };
@@ -129,6 +130,7 @@ export async function POST(request: NextRequest) {
   const installmentDownPayment = Number(body.installmentDownPayment);
   const installmentMonths = Number(body.installmentMonths);
   const acceptedPolicies = body.acceptedPolicies === true;
+  const warrantyPolicyUpdatedAt = text(body.warrantyPolicyUpdatedAt, 40);
 
   if (fullName.length < 2) return NextResponse.json({ ok: false, error: 'اكتب الاسم الكامل.' }, { status: 400 });
   if (!phone) return NextResponse.json({ ok: false, error: 'رقم الجوال السعودي غير صحيح.' }, { status: 400 });
@@ -149,6 +151,21 @@ export async function POST(request: NextRequest) {
     await ensureTelegramIndexes(db);
     await ensureDefaultProducts(db);
     const orders = db.collection<StoreOrder>('orders');
+    const warrantyPolicy = await db.collection<{ _id: string; content?: string; updatedAt?: Date }>('store_pages')
+      .findOne({ _id: 'warranty' });
+    const warrantyPolicyContent = typeof warrantyPolicy?.content === 'string' ? warrantyPolicy.content.trim() : '';
+    const currentWarrantyPolicyUpdatedAt = warrantyPolicy?.updatedAt instanceof Date
+      ? warrantyPolicy.updatedAt.toISOString()
+      : '';
+    if (!warrantyPolicyContent || !currentWarrantyPolicyUpdatedAt) {
+      return NextResponse.json({ ok: false, error: 'الإدارة لم تنشر سياسة الضمان بعد، ولا يمكن إكمال الطلب حاليًا.' }, { status: 409 });
+    }
+    if (!acceptedPolicies) {
+      return NextResponse.json({ ok: false, error: 'يجب الموافقة على سياسة الضمان قبل إكمال الطلب.' }, { status: 400 });
+    }
+    if (!warrantyPolicyUpdatedAt || warrantyPolicyUpdatedAt !== currentWarrantyPolicyUpdatedAt) {
+      return NextResponse.json({ ok: false, error: 'تم تحديث سياسة الضمان. افتحها مرة أخرى ووافق على النسخة الحالية.' }, { status: 409 });
+    }
 
     const previous = await orders.findOne({ checkoutRequestId: submissionId });
     if (previous) {
@@ -195,7 +212,16 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     const _id = new ObjectId();
-    const order: StoreOrder & { checkoutRequestId: string; acceptedPoliciesAt: Date; adminSeenAt: null; customerNotificationKey: string; reviewToken?: string } = {
+    const order: StoreOrder & {
+      checkoutRequestId: string;
+      acceptedPoliciesAt: Date;
+      acceptedWarrantyPolicyAt: Date;
+      acceptedWarrantyPolicyUpdatedAt: string;
+      acceptedWarrantyPolicyContent: string;
+      adminSeenAt: null;
+      customerNotificationKey: string;
+      reviewToken?: string;
+    } = {
       _id,
       orderNumber: makeOrderNumber(_id, now),
       checkoutRequestId: submissionId,
@@ -220,6 +246,9 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
       adminSeenAt: null,
       acceptedPoliciesAt: now,
+      acceptedWarrantyPolicyAt: now,
+      acceptedWarrantyPolicyUpdatedAt: currentWarrantyPolicyUpdatedAt,
+      acceptedWarrantyPolicyContent: warrantyPolicyContent,
       telegramNotificationSent: false,
       ...(notes ? { notes } : {})
     };

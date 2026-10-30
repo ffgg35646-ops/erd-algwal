@@ -20,6 +20,11 @@ export const STORE_CONTENT_PAGES = {
     group: 'policies',
     fallback: 'لم تتم إضافة نص سياسة الاستبدال والاسترجاع بعد. يرجى التواصل مع خدمة العملاء لمعرفة الشروط المعتمدة.'
   },
+  warranty: {
+    title: 'سياسة الضمان',
+    group: 'policies',
+    fallback: 'لم تضف الإدارة سياسة الضمان بعد. لا يمكن إكمال الطلب قبل نشر الشروط المعتمدة.'
+  },
   shipping: {
     title: 'الشحن والتوصيل',
     group: 'customer-service',
@@ -52,7 +57,8 @@ export async function GET() {
     title: STORE_CONTENT_PAGES[key].title,
     group: STORE_CONTENT_PAGES[key].group,
     content: STORE_CONTENT_PAGES[key].fallback,
-    updatedAt: null as string | null
+    updatedAt: null as string | null,
+    configured: false
   }));
 
   if (!process.env.MONGODB_URI) {
@@ -73,7 +79,8 @@ export async function GET() {
         title: STORE_CONTENT_PAGES[key].title,
         group: STORE_CONTENT_PAGES[key].group,
         content,
-        updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt.toISOString() : null
+        updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt.toISOString() : null,
+        configured: typeof doc?.content === 'string' && doc.content.trim().length > 0
       };
     });
     return NextResponse.json({ pages }, { headers: noStore });
