@@ -15,14 +15,31 @@ function getClientPromise(): Promise<MongoClient> {
   if (process.env.NODE_ENV !== 'production') {
     if (!globalForMongo._erdAlgwalMongoClientPromise) {
       const client = new MongoClient(uri);
-      globalForMongo._erdAlgwalMongoClientPromise = client.connect();
+      const connection = client.connect();
+      globalForMongo._erdAlgwalMongoClientPromise = connection.catch((error) => {
+        // Do not keep a rejected connection promise cached after a transient
+        // network/TLS failure. The next request should be able to retry.
+        if (globalForMongo._erdAlgwalMongoClientPromise === connection) {
+          globalForMongo._erdAlgwalMongoClientPromise = undefined;
+        }
+        void client.close().catch(() => undefined);
+        throw error;
+      });
     }
     return globalForMongo._erdAlgwalMongoClientPromise;
   }
 
   if (!localClientPromise) {
     const client = new MongoClient(uri);
-    localClientPromise = client.connect();
+    const connection = client.connect();
+    localClientPromise = connection.catch((error) => {
+      // A failed promise must not poison this warm serverless instance forever.
+      if (localClientPromise === connection) {
+        localClientPromise = undefined;
+      }
+      void client.close().catch(() => undefined);
+      throw error;
+    });
   }
 
   return localClientPromise;
