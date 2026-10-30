@@ -384,7 +384,7 @@ export default function StoreCheckoutPage() {
                   <input name="idNumber" value={form.idNumber} onChange={(event) => setField('idNumber', normalizeSaudiPhoneDigits(event.target.value).replace(/[^0-9]/g, '').slice(0, 10))} placeholder="أدخل رقم الهوية المكوّن من 10 أرقام" inputMode="numeric" autoComplete="off" maxLength={10} minLength={10} pattern="[0-9]{10}" required />
                 </label>
               </div>
-            </section>            </section>
+            </section>
 
             <section className="checkout-form-section">
               <div className="checkout-section-heading"><span className="checkout-section-number">٢</span><div><h2>الشحن والتوصيل</h2></div></div>
