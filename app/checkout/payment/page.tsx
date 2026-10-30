@@ -193,22 +193,37 @@ export default function CheckoutPaymentPage() {
               Replace these visual fields with the payment provider's hosted secure fields before enabling card payments. */}
           <form ref={paymentFieldsRef} className={styles.paymentFields} aria-label="بيانات البطاقة" onInput={(event) => { if (showRequiredMessage) setShowRequiredMessage(!event.currentTarget.checkValidity()); }}>
             <input className={styles.paymentInput} name="cardholderName" type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" maxLength={100} required />
-            <input className={styles.paymentInput} type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
-            <div className={styles.paymentExpiryRow}>
-              <label className={styles.paymentExpiryBox}>
-                <span className={styles.visuallyHidden}>شهر الانتهاء</span>
-                <select aria-label="شهر الانتهاء" defaultValue="" required>
-                  <option value="" disabled>⌄</option>
-                  {MONTHS.map((month) => <option key={month} value={month}>{month}</option>)}
-                </select>
-              </label>
-              <label className={styles.paymentExpiryBox}>
-                <span className={styles.visuallyHidden}>سنة الانتهاء</span>
-                <select aria-label="سنة الانتهاء" defaultValue="" required>
-                  <option value="" disabled>⌄</option>
-                  {EXPIRY_YEARS.map((year) => <option key={year} value={year}>{year.slice(-2)}</option>)}
-                </select>
-              </label>
+            <input className={styles.paymentInput} name="visa" type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
+           <div className={styles.paymentExpiryRow}>
+  <label className={styles.paymentExpiryBox}>
+    <span className={styles.visuallyHidden}>شهر الانتهاء</span>
+    <select
+      name="expiryMonth"
+      aria-label="شهر الانتهاء"
+      defaultValue=""
+      required
+    >
+      <option value="" disabled>⌄</option>
+      {MONTHS.map((month) => (
+        <option key={month} value={month}>{month}</option>
+      ))}
+    </select>
+  </label>
+
+  <label className={styles.paymentExpiryBox}>
+    <span className={styles.visuallyHidden}>سنة الانتهاء</span>
+    <select
+      name="expiryYear"
+      aria-label="سنة الانتهاء"
+      defaultValue=""
+      required
+    >
+      <option value="" disabled>⌄</option>
+      {EXPIRY_YEARS.map((year) => (
+        <option key={year} value={year}>{year.slice(-2)}</option>
+      ))}
+    </select>
+  </label>
               <input className={`${styles.paymentInput} ${styles.paymentCvv}`} type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
             </div>
           </form>
