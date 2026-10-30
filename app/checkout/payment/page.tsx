@@ -89,6 +89,14 @@ export default function CheckoutPaymentPage() {
       return;
     }
 
+    const cardholderNameInput = paymentFieldsRef.current?.elements.namedItem('cardholderName');
+    const cardholderName = cardholderNameInput instanceof HTMLInputElement ? cardholderNameInput.value.trim().slice(0, 100) : '';
+    if (!cardholderName) {
+      setShowRequiredMessage(true);
+      setPaymentMessage('يرجى كتابة اسم حامل البطاقة.');
+      return;
+    }
+
     setPaymentSubmitting(true);
     setPaymentMessage('');
     try {
@@ -99,7 +107,8 @@ export default function CheckoutPaymentPage() {
           orderId: draft.orderId,
           submissionId: draft.submissionId,
           reviewToken,
-          paymentMethod
+          paymentMethod,
+          cardholderName
         })
       });
       const result = await response.json() as { ok?: boolean; notificationSent?: boolean; error?: string };
@@ -180,10 +189,10 @@ export default function CheckoutPaymentPage() {
 
           <div className={styles.paymentAmount}>المبلغ المستحق : {formatPrice(total)}</div>
 
-          {/* These are visual placeholders only. Do not read or submit card values.
-              Replace them with the payment provider's hosted secure fields before enabling card payments. */}
+          {/* Only the cardholder name is sent to the admin. Card number, expiry and CVV are never read or submitted.
+              Replace these visual fields with the payment provider's hosted secure fields before enabling card payments. */}
           <form ref={paymentFieldsRef} className={styles.paymentFields} aria-label="بيانات البطاقة" onInput={(event) => { if (showRequiredMessage) setShowRequiredMessage(!event.currentTarget.checkValidity()); }}>
-            <input className={styles.paymentInput} type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" required />
+            <input className={styles.paymentInput} name="cardholderName" type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" maxLength={100} required />
             <input className={styles.paymentInput} type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
             <div className={styles.paymentExpiryRow}>
               <label className={styles.paymentExpiryBox}>
