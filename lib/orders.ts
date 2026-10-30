@@ -25,6 +25,8 @@ export type StoreOrder = Document & {
   status: OrderStatus;
   paymentStatus: 'pending' | 'paid' | 'not_recorded' | 'failed';
   installment: boolean;
+  installmentDownPayment?: number;
+  installmentMonths?: number;
   createdAt: Date;
   updatedAt: Date;
   notes?: string;
@@ -58,6 +60,9 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     `العنوان: ${String(customer.address || '—')}`,
     `المنتجات:\n${itemText}`,
     `الإجمالي: ${total} ر.س`,
+    `التقسيط: ${order.installment === true
+      ? `نعم — دفعة مقدمة ${Number(order.installmentDownPayment || 0).toLocaleString('en-US')} ر.س — ${Number(order.installmentMonths || 0)} شهور`
+      : 'لا'}`,
     `الحالة: ${status}`,
     ...(order.status === 'cancelled' && typeof order.cancellationReason === 'string' && order.cancellationReason.trim()
       ? [`سبب الإلغاء: ${order.cancellationReason.trim()}`]

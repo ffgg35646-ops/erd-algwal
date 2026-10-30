@@ -17,11 +17,14 @@ type CheckoutBody = {
   idNumber?: string;
   region?: string;
   city?: string;
+  addressDetails?: string;
   neighborhood?: string;
   street?: string;
   building?: string;
   notes?: string;
   installment?: 'yes' | 'no';
+  installmentDownPayment?: number;
+  installmentMonths?: number;
   acceptedPolicies?: boolean;
   customerNotificationKey?: string;
   items?: Array<{ productId?: string; quantity?: number; color?: string }>;
@@ -67,6 +70,8 @@ export async function GET(request: NextRequest) {
         status: order.status,
         paymentStatus: order.paymentStatus,
         installment: order.installment === true,
+        installmentDownPayment: order.installmentDownPayment ?? null,
+        installmentMonths: order.installmentMonths ?? null,
         notes: order.notes || '',
         customerName: order.customer?.name || '',
         customerPhone: order.customer?.phone || '',
@@ -118,18 +123,22 @@ export async function POST(request: NextRequest) {
     .replace(/[^0-9]/g, '');
   const region = text(body.region, 100);
   const city = text(body.city, 120);
-  const neighborhood = text(body.neighborhood, 150);
-  const street = text(body.street, 250);
-  const building = text(body.building, 120);
+  const addressDetails = text(body.addressDetails || [body.neighborhood, body.street, body.building].filter(Boolean).join('، '), 500);
   const notes = text(body.notes, 1000);
   const installment = body.installment === 'yes';
+  const installmentDownPayment = Number(body.installmentDownPayment);
+  const installmentMonths = Number(body.installmentMonths);
   const acceptedPolicies = body.acceptedPolicies === true;
 
   if (fullName.length < 2) return NextResponse.json({ ok: false, error: 'اكتب الاسم الكامل.' }, { status: 400 });
   if (!phone) return NextResponse.json({ ok: false, error: 'رقم الجوال السعودي غير صحيح.' }, { status: 400 });
-  if (!validEmail(email)) return NextResponse.json({ ok: false, error: 'البريد الإلكتروني غير صحيح.' }, { status: 400 });
+  if (!email || !validEmail(email)) return NextResponse.json({ ok: false, error: 'اكتب بريدًا إلكترونيًا صحيحًا.' }, { status: 400 });
   if (!/^[0-9]{10}$/.test(idNumber)) return NextResponse.json({ ok: false, error: 'رقم الهوية أو الإقامة يجب أن يتكون من 10 أرقام.' }, { status: 400 });
-  if (!region || !city || !neighborhood || !street) return NextResponse.json({ ok: false, error: 'أكمل عنوان التوصيل.' }, { status: 400 });
+  if (!region || !city || !addressDetails) return NextResponse.json({ ok: false, error: 'أكمل تفاصيل عنوان التوصيل.' }, { status: 400 });
+  if (installment && (
+    ![500, 750, 1000, 1500, 2000].includes(installmentDownPayment) ||
+    ![3, 6, 12, 24].includes(installmentMonths)
+  )) return NextResponse.json({ ok: false, error: 'اختر الدفعة المقدمة ومدة التقسيط.' }, { status: 400 });
   if (!acceptedPolicies) return NextResponse.json({ ok: false, error: 'الموافقة على سياسة المتجر مطلوبة.' }, { status: 400 });
   if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) {
     return NextResponse.json({ ok: false, error: 'قائمة المنتجات غير صالحة.' }, { status: 400 });
@@ -198,7 +207,7 @@ export async function POST(request: NextRequest) {
         phone,
         idNumber,
         ...(email ? { email } : {}),
-        address: [region, city, neighborhood, street, building].filter(Boolean).join('، ')
+        address: [region, city, addressDetails].filter(Boolean).join('، ')
       },
       items: orderItems,
       total,
@@ -206,6 +215,7 @@ export async function POST(request: NextRequest) {
       status: 'new',
       paymentStatus: 'pending',
       installment,
+      ...(installment ? { installmentDownPayment, installmentMonths } : {}),
       createdAt: now,
       updatedAt: now,
       adminSeenAt: null,

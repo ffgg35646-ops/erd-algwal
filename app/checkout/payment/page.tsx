@@ -15,11 +15,14 @@ type CheckoutDraft = {
   email?: string;
   region?: string;
   city?: string;
+  addressDetails?: string;
   neighborhood?: string;
   street?: string;
   building?: string;
   notes?: string;
   installment?: 'yes' | 'no';
+  installmentDownPayment?: number;
+  installmentMonths?: number;
   acceptedPolicies?: boolean;
 };
 
@@ -117,7 +120,7 @@ export default function CheckoutPaymentPage() {
           ) : null}
 
           {draft.installment === 'yes' ? (
-            <div className="checkout-alert checkout-alert-error"><span>!</span><div><strong>طلب تقسيط محدد</strong><p>اختيار التقسيط محفوظ، لكن مزود التقسيط وشروطه لم يتم تحديدهما بعد. لا تُعرض خطة أو أقساط فعلية قبل ربط المزود.</p></div></div>
+            <div className="checkout-alert checkout-alert-error"><span>!</span><div><strong>طلب تقسيط محدد</strong><p>الدفعة المقدمة: {Number(draft.installmentDownPayment || 0).toLocaleString('en-US')} ريال — المدة: {draft.installmentMonths || '—'} شهور. يتم تأكيد الشروط عند تفعيل مزود التقسيط.</p></div></div>
           ) : null}
 
           {paymentMessage ? <div className="checkout-alert checkout-alert-error" role="alert"><span>!</span>{paymentMessage}</div> : null}
@@ -133,7 +136,7 @@ export default function CheckoutPaymentPage() {
           <div className="payment-customer-summary">
             <div><small>الاسم الكامل</small><strong>{draft.fullName}</strong></div>
             <div><small>رقم الجوال</small><strong dir="ltr">{draft.phone || '—'}</strong></div>
-            <div><small>عنوان التوصيل</small><strong>{[draft.neighborhood, draft.city, draft.region].filter(Boolean).join('، ') || '—'}</strong></div>
+            <div><small>عنوان التوصيل</small><strong>{[draft.region, draft.city, draft.addressDetails, draft.neighborhood, draft.street, draft.building].filter(Boolean).join('، ') || '—'}</strong></div>
           </div>
           <div className="checkout-order-items">
             {lines.map(({ cartKey, product, color, quantity }) => product ? (

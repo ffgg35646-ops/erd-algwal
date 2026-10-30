@@ -480,3 +480,133 @@
 .checkoutShell.checkoutShell :global(.checkout-order-summary-compact .checkout-grand-total strong) {
   font-size: 14px;
 }
+
+/* Small checkout inputs, Saudi phone flag and optional installment switch. */
+.checkoutShell.checkoutShell :global(.checkout-form-section) {
+  padding-bottom: 14px;
+}
+.checkoutShell.checkoutShell :global(.checkout-form-section + .checkout-form-section) {
+  margin-top: 13px;
+}
+.checkoutShell.checkoutShell :global(.checkout-section-heading) {
+  margin-bottom: 10px;
+}
+.checkoutShell.checkoutShell :global(.checkout-section-heading p) {
+  display: none;
+}
+.checkoutShell.checkoutShell :global(.checkout-fields-grid) {
+  gap: 10px;
+}
+.checkoutShell.checkoutShell :global(.checkout-field > span),
+.checkoutShell.checkoutShell :global(.checkout-field > label) {
+  margin-bottom: 4px;
+}
+.checkoutShell.checkoutShell :global(.checkout-field input),
+.checkoutShell.checkoutShell :global(.checkout-field select),
+.checkoutShell.checkoutShell :global(.checkout-field textarea),
+.checkoutShell.checkoutShell input,
+.checkoutShell.checkoutShell select,
+.checkoutShell.checkoutShell textarea {
+  min-height: 34px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.checkoutShell.checkoutShell :global(.checkout-field textarea),
+.checkoutShell.checkoutShell textarea {
+  min-height: 58px;
+}
+.checkoutShell.checkoutShell :global(.saudi-phone-input) {
+  position: relative;
+  width: 100%;
+  direction: ltr;
+}
+.checkoutShell.checkoutShell :global(.saudi-phone-input input) {
+  padding-left: 48px;
+  text-align: left;
+  direction: ltr;
+}
+.checkoutShell.checkoutShell :global(.saudi-phone-flag) {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 9px;
+  transform: translateY(-50%);
+  font-size: 17px;
+  line-height: 1;
+  pointer-events: none;
+}
+.checkoutShell.checkoutShell :global(.installment-heading-row) {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+.checkoutShell.checkoutShell :global(.installment-toggle) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid #deddd7;
+  border-radius: 5px;
+  background: #fff;
+  color: #292820;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  cursor: pointer;
+}
+.checkoutShell.checkoutShell :global(.installment-toggle.active) {
+  border-color: #b28b37;
+  background: #fbf8ef;
+}
+.checkoutShell.checkoutShell :global(.installment-switch) {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 19px;
+  padding: 2px;
+  border-radius: 999px;
+  background: #c9c8c1;
+  transition: background .15s ease;
+}
+.checkoutShell.checkoutShell :global(.installment-switch > span) {
+  display: block;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .15s ease;
+}
+.checkoutShell.checkoutShell :global(.installment-toggle.active .installment-switch) {
+  background: #8c742d;
+}
+.checkoutShell.checkoutShell :global(.installment-toggle.active .installment-switch > span) {
+  transform: translateX(15px);
+}
+.checkoutShell.checkoutShell :global(.installment-details) {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #eee6d4;
+  border-radius: 6px;
+  background: #fdfbf6;
+}
+.checkoutShell.checkoutShell :global(.installment-details > p) {
+  margin: 0;
+  color: #6e5520;
+  font-size: 12px;
+  font-weight: 700;
+}
+.checkoutShell.checkoutShell :global(.installment-details .checkout-fields-grid) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 760px) {
+  .checkoutShell.checkoutShell :global(.installment-details .checkout-fields-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

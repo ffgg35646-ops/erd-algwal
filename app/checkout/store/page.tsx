@@ -31,11 +31,10 @@ type CheckoutForm = {
   regionId: string;
   cityId: string;
   city: string;
-  neighborhood: string;
-  street: string;
-  building: string;
-  notes: string;
+  addressDetails: string;
   installment: 'yes' | 'no';
+  installmentDownPayment: string;
+  installmentMonths: string;
   acceptedPolicies: boolean;
 };
 
@@ -47,11 +46,10 @@ const EMPTY_FORM: CheckoutForm = {
   regionId: '',
   cityId: '',
   city: '',
-  neighborhood: '',
-  street: '',
-  building: '',
-  notes: '',
+  addressDetails: '',
   installment: 'no',
+  installmentDownPayment: '',
+  installmentMonths: '',
   acceptedPolicies: false
 };
 
@@ -108,7 +106,7 @@ export default function StoreCheckoutPage() {
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem('erd-algwal-checkout-draft-v1');
-      const savedDraft = raw ? JSON.parse(raw) as Partial<CheckoutForm> : {};
+      const savedDraft = raw ? JSON.parse(raw) as Partial<CheckoutForm> & { neighborhood?: string; street?: string; building?: string; notes?: string } : {};
       const savedEmail = window.localStorage.getItem(CUSTOMER_EMAIL_STORAGE_KEY) || '';
       const restored: CheckoutForm = {
         ...EMPTY_FORM,
@@ -119,11 +117,12 @@ export default function StoreCheckoutPage() {
         regionId: typeof savedDraft.regionId === 'string' ? savedDraft.regionId : '',
         cityId: typeof savedDraft.cityId === 'string' ? savedDraft.cityId : '',
         city: typeof savedDraft.city === 'string' ? savedDraft.city : '',
-        neighborhood: typeof savedDraft.neighborhood === 'string' ? savedDraft.neighborhood : '',
-        street: typeof savedDraft.street === 'string' ? savedDraft.street : '',
-        building: typeof savedDraft.building === 'string' ? savedDraft.building : '',
-        notes: typeof savedDraft.notes === 'string' ? savedDraft.notes : '',
+        addressDetails: typeof savedDraft.addressDetails === 'string'
+          ? savedDraft.addressDetails
+          : [savedDraft.neighborhood, savedDraft.street, savedDraft.building, savedDraft.notes].filter((part): part is string => typeof part === 'string' && part.trim().length > 0).join('، '),
         installment: savedDraft.installment === 'yes' ? 'yes' : 'no',
+        installmentDownPayment: ['500', '750', '1000', '1500', '2000'].includes(String(savedDraft.installmentDownPayment ?? '')) ? String(savedDraft.installmentDownPayment) : '',
+        installmentMonths: ['3', '6', '12', '24'].includes(String(savedDraft.installmentMonths ?? '')) ? String(savedDraft.installmentMonths) : '',
         acceptedPolicies: savedDraft.acceptedPolicies === true
       };
       setForm(restored);
@@ -202,6 +201,17 @@ export default function StoreCheckoutPage() {
       setFormError('اختر المدينة من القائمة، وليس بكتابة الاسم فقط.');
       return;
     }
+    if (!form.addressDetails.trim()) {
+      setFormError('اكتب تفاصيل العنوان.');
+      return;
+    }
+    if (form.installment === 'yes' && (
+      !['500', '750', '1000', '1500', '2000'].includes(form.installmentDownPayment) ||
+      !['3', '6', '12', '24'].includes(form.installmentMonths)
+    )) {
+      setFormError('اختر الدفعة المقدمة ومدة التقسيط.');
+      return;
+    }
     const cleanPhone = normalizeSaudiPhoneDigits(form.phone);
     if (!/^05[0-9]{8}$/.test(cleanPhone)) {
       setFormError('اكتب رقم جوال سعودي من 10 أرقام يبدأ بـ 05، مثل 05XXXXXXXX.');
@@ -229,11 +239,10 @@ export default function StoreCheckoutPage() {
       idNumber: cleanIdNumber,
       region: regionLabel(selectedRegion.name_ar),
       city: form.city,
-      neighborhood: form.neighborhood.trim(),
-      street: form.street.trim(),
-      building: form.building.trim(),
-      notes: form.notes.trim(),
+      addressDetails: form.addressDetails.trim(),
       installment: form.installment,
+      installmentDownPayment: form.installment === 'yes' ? Number(form.installmentDownPayment) : null,
+      installmentMonths: form.installment === 'yes' ? Number(form.installmentMonths) : null,
       acceptedPolicies: form.acceptedPolicies,
       items
     };
@@ -349,47 +358,47 @@ export default function StoreCheckoutPage() {
         <div className="checkout-layout">
           <form className="checkout-form-card" onSubmit={handleSubmit}>
             <section className="checkout-form-section">
-              <div className="checkout-section-heading"><span className="checkout-section-number">١</span><div><h2>بيانات التواصل</h2><p>لن تحتاج إلى تسجيل الدخول أو إنشاء حساب.</p></div></div>
+              <div className="checkout-section-heading"><span className="checkout-section-number">١</span><div><h2>بيانات التواصل</h2></div></div>
               <div className="checkout-fields-grid">
                 <label className="checkout-field checkout-field-full">
-                  <span>الاسم الكامل <b>*</b></span>
-                  <input name="fullName" value={form.fullName} onChange={(event) => setField('fullName', event.target.value)} placeholder="اكتب الاسم الكامل" autoComplete="name" required minLength={2} />
+                  <span>الاسم بالكامل <b>*</b></span>
+                  <input name="fullName" value={form.fullName} onChange={(event) => setField('fullName', event.target.value)} placeholder="اكتب الاسم بالكامل" autoComplete="name" required minLength={2} />
                 </label>
                 <label className="checkout-field">
                   <span>رقم الجوال <b>*</b></span>
-                  <input name="phone" type="tel" value={form.phone} onChange={(event) => setField('phone', sanitizeSaudiPhoneInput(event.target.value))} placeholder="05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" maxLength={10} minLength={10} required aria-describedby="saudi-phone-hint" />
-                  <small id="saudi-phone-hint">10 أرقام فقط، يبدأ الرقم بـ 05.</small>
+                  <div className="saudi-phone-input" dir="ltr">
+                    <span className="saudi-phone-flag" role="img" aria-label="السعودية">🇸🇦</span>
+                    <input name="phone" type="tel" dir="ltr" value={form.phone} onChange={(event) => setField('phone', sanitizeSaudiPhoneInput(event.target.value))} placeholder="05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" maxLength={10} minLength={10} required />
+                  </div>
                 </label>
                 <label className="checkout-field">
-                  <span>البريد الإلكتروني <small>(اختياري)</small></span>
+                  <span>البريد الإلكتروني <b>*</b></span>
                   <input name="email" type="email" value={form.email} onChange={(event) => {
                     const value = event.target.value;
                     setField('email', value);
                     try { window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, value); } catch { /* Keep checkout usable without browser storage. */ }
-                  }} placeholder="name@example.com" autoComplete="email" />
+                  }} placeholder="name@example.com" autoComplete="email" required />
                 </label>
-                <label className="checkout-field">
-                  <span>رقم الهوية / الإقامة <b>*</b></span>
-                  <input name="idNumber" value={form.idNumber} onChange={(event) => setField('idNumber', normalizeSaudiPhoneDigits(event.target.value).replace(/[^0-9]/g, '').slice(0, 10))} placeholder="أدخل 10 أرقام" inputMode="numeric" autoComplete="off" maxLength={10} minLength={10} pattern="[0-9]{10}" required aria-describedby="checkout-id-hint" />
-                  <small id="checkout-id-hint">رقم مكوّن من 10 أرقام.</small>
+                <label className="checkout-field checkout-field-full">
+                  <span>رقم الهوية <b>*</b></span>
+                  <input name="idNumber" value={form.idNumber} onChange={(event) => setField('idNumber', normalizeSaudiPhoneDigits(event.target.value).replace(/[^0-9]/g, '').slice(0, 10))} placeholder="أدخل رقم الهوية المكوّن من 10 أرقام" inputMode="numeric" autoComplete="off" maxLength={10} minLength={10} pattern="[0-9]{10}" required />
                 </label>
               </div>
-            </section>
+            </section>            </section>
 
             <section className="checkout-form-section">
-              <div className="checkout-section-heading"><span className="checkout-section-number">٢</span><div><h2>الشحن والتوصيل (1)</h2><p>عنوان التوصيل — اختر المنطقة ثم المدينة.</p></div></div>
+              <div className="checkout-section-heading"><span className="checkout-section-number">٢</span><div><h2>الشحن والتوصيل</h2></div></div>
               <div className="checkout-fields-grid">
                 <label className="checkout-field">
-                  <span>المنطقة / المحافظة <b>*</b></span>
+                  <span>المنطقة <b>*</b></span>
                   <select name="regionId" value={form.regionId} onChange={(event) => handleRegionChange(event.target.value)} required disabled={regionsLoading}>
                     <option value="">{regionsLoading ? 'جاري تحميل المناطق...' : 'اختر المنطقة'}</option>
                     {regions.map((region) => <option key={region.region_id} value={String(region.region_id)}>{regionLabel(region.name_ar)}</option>)}
                   </select>
-                  <small>تشمل المناطق الإدارية الثلاث عشرة في السعودية.</small>
                 </label>
 
                 <div className="checkout-field city-combobox">
-                  <label htmlFor="checkout-city"><span>المدينة / المحافظة <b>*</b></span></label>
+                  <label htmlFor="checkout-city"><span>المدينة <b>*</b></span></label>
                   <input
                     id="checkout-city"
                     name="city"
@@ -402,7 +411,7 @@ export default function StoreCheckoutPage() {
                     }}
                     onFocus={() => setCityDropdownOpen(true)}
                     onBlur={() => window.setTimeout(() => setCityDropdownOpen(false), 120)}
-                    placeholder={form.regionId ? (citiesLoading ? 'جاري تحميل المدن...' : 'ابحث عن مدينتك...') : 'اختر المنطقة أولًا'}
+                    placeholder={form.regionId ? (citiesLoading ? 'جاري تحميل المدن...' : 'اختر المدينة') : 'اختر المنطقة أولًا'}
                     autoComplete="off"
                     role="combobox"
                     aria-expanded={cityDropdownOpen}
@@ -417,43 +426,67 @@ export default function StoreCheckoutPage() {
                           <span>{city.name_ar}</span><small>{city.name_en}</small>
                         </button>
                       )) : <p className="city-options-empty">لا توجد نتيجة مطابقة. جرّب اسمًا آخر.</p>}
-                      {cityOptions.length === 80 ? <p className="city-options-hint">تظهر أول 80 نتيجة؛ اكتب مزيدًا من حروف اسم المدينة لتضييق البحث.</p> : null}
+                      {cityOptions.length === 80 ? <p className="city-options-hint">اكتب مزيدًا من حروف اسم المدينة لتضييق البحث.</p> : null}
                     </div>
                   ) : null}
-                  <small>{form.regionId ? 'اكتب جزءًا من اسم المدينة للبحث ضمن المنطقة المختارة.' : 'ستظهر المدن بعد تحديد المنطقة.'}</small>
                 </div>
 
-                <label className="checkout-field">
-                  <span>الحي <b>*</b></span>
-                  <input name="neighborhood" value={form.neighborhood} onChange={(event) => setField('neighborhood', event.target.value)} placeholder="اسم الحي" autoComplete="address-level3" required />
-                </label>
-                <label className="checkout-field">
-                  <span>الشارع / تفاصيل العنوان <b>*</b></span>
-                  <input name="street" value={form.street} onChange={(event) => setField('street', event.target.value)} placeholder="اسم الشارع وتفاصيل الموقع" autoComplete="street-address" required />
-                </label>
-                <label className="checkout-field">
-                  <span>رقم المبنى أو الشقة <small>(اختياري)</small></span>
-                  <input name="building" value={form.building} onChange={(event) => setField('building', event.target.value)} placeholder="رقم المبنى أو الشقة" />
-                </label>
                 <label className="checkout-field checkout-field-full">
-                  <span>علامة مميزة أو ملاحظات للمندوب <small>(اختياري)</small></span>
-                  <textarea name="notes" rows={3} value={form.notes} onChange={(event) => setField('notes', event.target.value)} placeholder="اكتب أي تفاصيل تساعد في الوصول إليك." />
+                  <span>تفاصيل العنوان <b>*</b></span>
+                  <textarea name="addressDetails" rows={2} value={form.addressDetails} onChange={(event) => setField('addressDetails', event.target.value)} placeholder="اكتب الحي والشارع ورقم المبنى وأي تفاصيل تساعد في الوصول إليك." required />
                 </label>
               </div>
             </section>
 
             <section className="checkout-form-section checkout-extra-options">
-              <div className="checkout-section-heading"><span className="checkout-section-number">٣</span><div><h2>هل تريد تقسيط الجهاز؟</h2><p>اختيارك يُحفظ مع بيانات الطلب؛ خيارات التقسيط الفعلية تحتاج تفعيل مزود التقسيط.</p></div></div>
-              <div className="installment-choice">
-                <label className={form.installment === 'no' ? 'installment-option selected' : 'installment-option'}>
-                  <input type="radio" name="installment" value="no" checked={form.installment === 'no'} onChange={() => setField('installment', 'no')} />
-                  <span><strong>لا، بدون تقسيط</strong><small>شراء عادي</small></span>
-                </label>
-                <label className={form.installment === 'yes' ? 'installment-option selected' : 'installment-option'}>
-                  <input type="radio" name="installment" value="yes" checked={form.installment === 'yes'} onChange={() => setField('installment', 'yes')} />
-                  <span><strong>نعم، أرغب في التقسيط</strong><small>تأكيد التوفر عند ربط مزود التقسيط</small></span>
-                </label>
+              <div className="installment-heading-row">
+                <span className="checkout-section-number">٣</span>
+                <button
+                  type="button"
+                  className={form.installment === 'yes' ? 'installment-toggle active' : 'installment-toggle'}
+                  aria-pressed={form.installment === 'yes'}
+                  onClick={() => {
+                    setForm((current) => ({
+                      ...current,
+                      installment: current.installment === 'yes' ? 'no' : 'yes',
+                      installmentDownPayment: '',
+                      installmentMonths: ''
+                    }));
+                    setFormError('');
+                  }}
+                >
+                  <span>هل تريد تقسيط الجهاز؟</span>
+                  <span className="installment-switch" aria-hidden="true"><span /></span>
+                </button>
               </div>
+              {form.installment === 'yes' ? (
+                <div className="installment-details">
+                  <p>اختر مدة التقسيط</p>
+                  <div className="checkout-fields-grid">
+                    <label className="checkout-field">
+                      <span>الدفعة المقدمة <b>*</b></span>
+                      <select name="installmentDownPayment" value={form.installmentDownPayment} onChange={(event) => setField('installmentDownPayment', event.target.value)} required>
+                        <option value="">اختر الدفعة المقدمة</option>
+                        <option value="500">500 ريال</option>
+                        <option value="750">750 ريال</option>
+                        <option value="1000">1000 ريال</option>
+                        <option value="1500">1500 ريال</option>
+                        <option value="2000">2000 ريال</option>
+                      </select>
+                    </label>
+                    <label className="checkout-field">
+                      <span>مدة التقسيط <b>*</b></span>
+                      <select name="installmentMonths" value={form.installmentMonths} onChange={(event) => setField('installmentMonths', event.target.value)} required>
+                        <option value="">اختر المدة</option>
+                        <option value="3">3 شهور</option>
+                        <option value="6">6 شهور</option>
+                        <option value="12">12 شهر</option>
+                        <option value="24">24 شهر</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              ) : null}
               <label className="policy-consent">
                 <input type="checkbox" checked={form.acceptedPolicies} onChange={(event) => setField('acceptedPolicies', event.target.checked)} required />
                 <span>أقر أنني راغب في استلام الطلب وموافق على <Link href="/policies">سياسة الضمان والاسترجاع والتوصيل</Link>.</span>
