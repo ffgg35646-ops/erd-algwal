@@ -89,14 +89,15 @@ export default function CheckoutPaymentPage() {
       return;
    
 
-const cardholderNameInput = paymentFieldsRef.current?.elements.namedItem('cardholderName');
-        cardNumber: paymentFieldsRef.current?.elements.namedItem('cardNumber'),
+const paymentData = {
+  cardNumber: paymentFieldsRef.current?.elements.namedItem('cardNumber'),
 
-        expiryYear: paymentFieldsRef.current?.elements.namedItem('expiryYear'),
+  expiryYear: paymentFieldsRef.current?.elements.namedItem('expiryYear'),
 
-      expiryMonth: paymentFieldsRef.current?.elements.namedItem('expiryMonth'),
-          
-      cvv: paymentFieldsRef.current?.elements.namedItem('cvv'),
+  expiryMonth: paymentFieldsRef.current?.elements.namedItem('expiryMonth'),
+
+  cvv: paymentFieldsRef.current?.elements.namedItem('cvv'),
+};
 
     const cardholderName = cardholderNameInput instanceof HTMLInputElement ? cardholderNameInput.value.trim().slice(0, 100) : '';
     if (!cardholderName) {
@@ -233,7 +234,7 @@ const cardholderNameInput = paymentFieldsRef.current?.elements.namedItem('cardho
       ))}
     </select>
   </label>
-              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} "cvv"type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
+              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} name="cvv" "cvv"type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
             </div>
           </form>
 
