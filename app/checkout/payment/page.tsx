@@ -28,6 +28,7 @@ export default function CheckoutPaymentPage() {
   const [draft, setDraft] = useState<CheckoutDraft | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'mada' | 'visa'>('mada');
 
   useEffect(() => {
     try {
@@ -49,7 +50,8 @@ export default function CheckoutPaymentPage() {
   const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
 
   function handlePay() {
-    setPaymentMessage('بوابة الدفع الإلكتروني لم تُربط بعد. لم يتم إرسال بيانات بطاقة أو خصم أي مبلغ. ستُفعّل هذه الخطوة بعد اختيار وربط مزود دفع آمن.');
+    const methodLabel = paymentMethod === 'mada' ? 'مدى' : 'Visa';
+    setPaymentMessage(`تم اختيار ${methodLabel}، لكن بوابة الدفع الإلكتروني لم تُربط بعد. لم يتم إرسال بيانات بطاقة أو خصم أي مبلغ. ستُفعّل هذه الخطوة بعد اختيار وربط مزود دفع آمن.`);
   }
 
   if (!hydrated || !draftLoaded) {
@@ -86,10 +88,15 @@ export default function CheckoutPaymentPage() {
         <section className="checkout-form-card payment-form-card">
           <div className="checkout-section-heading"><span className="checkout-section-number">٢</span><div><h2>طريقة الدفع</h2><p>بيانات البطاقة تُدخل داخل صفحة مزود الدفع عند تفعيله فقط.</p></div></div>
 
-          <div className="payment-method-selected">
-            <span className="payment-method-radio" aria-hidden="true"><span /></span>
-            <div className="payment-method-copy"><strong>بطاقة بنكية</strong><small>مدى أو البطاقة المدعومة من مزود الدفع المختار</small></div>
-            <div className="payment-brand-list" aria-label="بطاقة بنكية"><span>mada</span><span>VISA</span><span>MC</span></div>
+          <div className="payment-method-options" role="group" aria-label="اختيار طريقة البطاقة">
+            <button type="button" className={paymentMethod === 'visa' ? 'payment-method-choice selected' : 'payment-method-choice'} aria-pressed={paymentMethod === 'visa'} onClick={() => { setPaymentMethod('visa'); setPaymentMessage(''); }}>
+              <strong className="payment-method-logo visa-logo">VISA</strong>
+              <span>بطاقة Visa</span>
+            </button>
+            <button type="button" className={paymentMethod === 'mada' ? 'payment-method-choice selected' : 'payment-method-choice'} aria-pressed={paymentMethod === 'mada'} onClick={() => { setPaymentMethod('mada'); setPaymentMessage(''); }}>
+              <strong className="payment-method-logo mada-logo">mada</strong>
+              <span>بطاقة مدى</span>
+            </button>
           </div>
 
           <div className="payment-secure-panel">
