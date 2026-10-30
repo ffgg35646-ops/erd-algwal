@@ -111,7 +111,7 @@ type StoreBannerRecord = {
 };
 
 function isAuthorized(adminId: number) {
-  const configured = process.env.TELEGRAM_ADMIN_ID;
+  const configured = process.env.TELEGRAM_ADMIN_ID || process.env.Id;
   return Boolean(configured && /^\d+$/.test(configured) && String(adminId) === configured);
 }
 
