@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import styles from '../checkout.module.css';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
@@ -312,11 +313,11 @@ export default function StoreCheckoutPage() {
   }
 
   if (!hydrated) {
-    return <main className="container checkout-page"><div className="cart-loading">جاري تحميل سلة المشتريات...</div></main>;
+    return <main className={`${styles.checkoutShell} container checkout-page`}><div className="cart-loading">جاري تحميل سلة المشتريات...</div></main>;
   }
 
   return (
-    <main className="container checkout-page">
+    <main className={`${styles.checkoutShell} container checkout-page`}>
       <div className="breadcrumbs">
         <Link href="/">الرئيسية</Link><span>/</span><Link href="/cart">سلة المشتريات</Link><span>/</span><span>إنهاء الطلب</span>
       </div>
