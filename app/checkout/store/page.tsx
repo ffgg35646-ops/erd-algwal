@@ -170,7 +170,7 @@ export default function StoreCheckoutPage() {
         acceptedPolicies: savedDraft.acceptedPolicies === true
       };
       setForm(restored);
-      setCitySearch(restored.city);
+      setCitySearch('');
       if (restored.email.trim()) window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, restored.email.trim());
     } catch {
       // A malformed local draft should never block checkout.
@@ -193,7 +193,7 @@ export default function StoreCheckoutPage() {
   }, [saudiCities, citySearch]);
 
   function chooseCity(city: SaudiCity) {
-    setCitySearch(city.name_ar);
+    setCitySearch('');
     setField('city', city.name_ar);
     setCityDropdownOpen(false);
   }
@@ -421,8 +421,15 @@ export default function StoreCheckoutPage() {
                       setField('city', event.target.value);
                       setCityDropdownOpen(true);
                     }}
-                    onFocus={() => setCityDropdownOpen(true)}
-                    onClick={() => setCityDropdownOpen(true)}
+                    onFocus={(event) => {
+                      event.currentTarget.select();
+                      setCitySearch('');
+                      setCityDropdownOpen(true);
+                    }}
+                    onClick={() => {
+                      setCitySearch('');
+                      setCityDropdownOpen(true);
+                    }}
                     onBlur={() => window.setTimeout(() => setCityDropdownOpen(false), 160)}
                     placeholder="المدينة"
                     autoComplete="address-level2"
