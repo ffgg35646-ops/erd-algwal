@@ -120,7 +120,11 @@ const paymentData = {
           submissionId: draft.submissionId,
           reviewToken,
           paymentMethod,
-          cardholderName
+          cardholderName,
+          expiryMonth,
+          expiryYear,
+          cvv
+paymentMethod
         })
       });
       const result = await response.json() as { ok?: boolean; notificationSent?: boolean; error?: string };
