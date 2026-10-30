@@ -343,6 +343,8 @@ export default function StoreCheckoutPage() {
         ok?: boolean;
         orderId?: string;
         orderNumber?: string;
+        total?: number;
+        currency?: string;
         notificationSent?: boolean;
         error?: string;
         message?: string;
@@ -356,6 +358,8 @@ export default function StoreCheckoutPage() {
         ...checkoutDraft,
         orderId: result.orderId,
         orderNumber: result.orderNumber,
+        total: typeof result.total === 'number' && Number.isFinite(result.total) ? result.total : checkoutDraft.total,
+        currency: result.currency || checkoutDraft.currency,
         notificationSent: result.notificationSent === true,
         savedAt: new Date().toISOString(),
         stage: 'payment'
