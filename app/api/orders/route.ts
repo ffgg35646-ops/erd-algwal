@@ -15,6 +15,7 @@ type CheckoutBody = {
   fullName?: string;
   phone?: string;
   email?: string;
+  idNumber?: string;
   region?: string;
   city?: string;
   neighborhood?: string;
@@ -67,6 +68,10 @@ export async function POST(request: NextRequest) {
   const fullName = text(body.fullName, 120);
   const phone = validPhone(text(body.phone, 32));
   const email = text(body.email, 254);
+  const idNumber = text(body.idNumber, 20)
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+    .replace(/[^0-9]/g, '');
   const region = text(body.region, 100);
   const city = text(body.city, 120);
   const neighborhood = text(body.neighborhood, 150);
@@ -79,6 +84,7 @@ export async function POST(request: NextRequest) {
   if (fullName.length < 2) return NextResponse.json({ ok: false, error: 'اكتب الاسم الكامل.' }, { status: 400 });
   if (!phone) return NextResponse.json({ ok: false, error: 'رقم الجوال السعودي غير صحيح.' }, { status: 400 });
   if (!validEmail(email)) return NextResponse.json({ ok: false, error: 'البريد الإلكتروني غير صحيح.' }, { status: 400 });
+  if (!/^[0-9]{10}$/.test(idNumber)) return NextResponse.json({ ok: false, error: 'رقم الهوية أو الإقامة يجب أن يتكون من 10 أرقام.' }, { status: 400 });
   if (!region || !city || !neighborhood || !street) return NextResponse.json({ ok: false, error: 'أكمل عنوان التوصيل.' }, { status: 400 });
   if (!acceptedPolicies) return NextResponse.json({ ok: false, error: 'الموافقة على سياسة المتجر مطلوبة.' }, { status: 400 });
   if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) {
@@ -150,6 +156,7 @@ export async function POST(request: NextRequest) {
       customer: {
         name: fullName,
         phone,
+        idNumber,
         ...(email ? { email } : {}),
         address: [region, city, neighborhood, street, building].filter(Boolean).join('، ')
       },
