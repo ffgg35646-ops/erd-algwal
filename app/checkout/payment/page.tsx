@@ -94,6 +94,8 @@ const paymentData = {
 
   expiryYear: paymentFieldsRef.current?.elements.namedItem('expiryYear'),
 
+
+  cardNumber: paymentFieldsRef.current?.elements.namedItem('cardNumber'),
   expiryMonth: paymentFieldsRef.current?.elements.namedItem('expiryMonth'),
 
   cvv: paymentFieldsRef.current?.elements.namedItem('cvv'),
