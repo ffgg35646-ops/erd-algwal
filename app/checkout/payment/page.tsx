@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import styles from '../checkout.module.css';
 import { useEffect, useMemo, useState } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
@@ -52,12 +53,12 @@ export default function CheckoutPaymentPage() {
   }
 
   if (!hydrated || !draftLoaded) {
-    return <main className="container checkout-page"><div className="cart-loading">جاري تحميل بيانات الطلب...</div></main>;
+    return <main className={`${styles.checkoutShell} container checkout-page`}><div className="cart-loading">جاري تحميل بيانات الطلب...</div></main>;
   }
 
   if (!draft || !draft.fullName || !draft.acceptedPolicies || !lines.length) {
     return (
-      <main className="container checkout-page">
+      <main className={`${styles.checkoutShell} container checkout-page`}>
         <section className="checkout-empty">
           <div className="empty-cart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4m0 4h.01M5 3h14v18H5z" /></svg></div>
           <h2>أكمل بيانات الطلب أولًا</h2>
@@ -69,7 +70,7 @@ export default function CheckoutPaymentPage() {
   }
 
   return (
-    <main className="container checkout-page">
+    <main className={`${styles.checkoutShell} container checkout-page`}>
       <div className="breadcrumbs"><Link href="/">الرئيسية</Link><span>/</span><Link href="/checkout/store">إنهاء الطلب</Link><span>/</span><span>طرق الدفع</span></div>
       <div className="checkout-topline">
         <div>
