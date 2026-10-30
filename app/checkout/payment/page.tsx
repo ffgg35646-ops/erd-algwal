@@ -28,6 +28,9 @@ type CheckoutDraft = {
   acceptedPolicies?: boolean;
 };
 
+const MONTHS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
+const EXPIRY_YEARS = Array.from({ length: 15 }, (_, index) => String(new Date().getFullYear() + index));
+
 export default function CheckoutPaymentPage() {
   const { cart, hydrated, catalogProducts: products } = useCart();
   const [draft, setDraft] = useState<CheckoutDraft | null>(null);
@@ -39,7 +42,11 @@ export default function CheckoutPaymentPage() {
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem('erd-algwal-checkout-draft-v1');
-      if (raw) setDraft(JSON.parse(raw) as CheckoutDraft);
+      if (raw) {
+        const saved = JSON.parse(raw) as CheckoutDraft;
+        setDraft(saved);
+        if (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa') setPaymentMethod(saved.paymentMethod);
+      }
     } catch {
       setDraft(null);
     } finally {
@@ -50,10 +57,9 @@ export default function CheckoutPaymentPage() {
   const lines = useMemo(() => Object.entries(cart).map(([cartKey, quantity]) => {
     const { productId, color } = parseCartItemKey(cartKey);
     return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
-  }).filter((line) => Boolean(line.product)), [cart]);
+  }).filter((line) => Boolean(line.product)), [cart, products]);
 
   const total = lines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
-  const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
 
   async function handlePay() {
     if (paymentSubmitting) return;
@@ -61,6 +67,7 @@ export default function CheckoutPaymentPage() {
       setPaymentMessage('بيانات الطلب غير مكتملة. ارجع إلى بيانات التوصيل وأعد المحاولة.');
       return;
     }
+
     let reviewToken = '';
     try {
       reviewToken = window.localStorage.getItem('erd-algwal-review-token') || '';
@@ -87,109 +94,114 @@ export default function CheckoutPaymentPage() {
       });
       const result = await response.json() as { ok?: boolean; notificationSent?: boolean; error?: string };
       if (!response.ok || !result.ok) {
-        throw new Error(result.error || 'تعذر إرسال اختيار طريقة الدفع إلى الإدارة.');
+        throw new Error(result.error || 'تعذر إرسال الطلب إلى الإدارة.');
       }
 
-      const methodLabel = paymentMethod === 'mada' ? 'مدى' : 'Visa';
       setDraft((current) => current ? { ...current, paymentMethod } : current);
+      const methodLabel = paymentMethod === 'mada' ? 'مدى' : 'Visa';
       setPaymentMessage(result.notificationSent
-        ? `تم إرسال اختيار ${methodLabel} وبيانات الطلب إلى الإدارة. الدفع لم يُنفذ بعد لأن بوابة الدفع الإلكتروني لم تُربط.`
-        : `تم حفظ اختيار ${methodLabel} في الطلب، لكن تعذر إرسال إشعار تيليجرام للإدارة. لم يتم خصم أي مبلغ.`);
+        ? `تم إرسال بيانات الطلب واختيار ${methodLabel} إلى الإدارة. لم يتم تنفيذ خصم إلكتروني لأن بوابة الدفع لم تُربط بعد.`
+        : `تم حفظ الطلب واختيار ${methodLabel}، لكن تعذر إرسال إشعار تيليجرام للإدارة. لم يتم خصم أي مبلغ.`);
     } catch (error) {
-      setPaymentMessage(error instanceof Error ? error.message : 'تعذر إرسال اختيار طريقة الدفع.');
+      setPaymentMessage(error instanceof Error ? error.message : 'تعذر إرسال الطلب.');
     } finally {
       setPaymentSubmitting(false);
     }
   }
 
   if (!hydrated || !draftLoaded) {
-    return <main className={`${styles.checkoutShell} container checkout-page`}><div className="cart-loading">جاري تحميل بيانات الطلب...</div></main>;
+    return (
+      <main className={`${styles.checkoutShell} ${styles.paymentPageShell} payment-design-page`}>
+        <div className={styles.paymentTopBand}>
+          <div className={styles.paymentCard}>
+            <div className={styles.paymentStep}><span>طريقة الدفع</span><hr /><i>2</i></div>
+            <p>جاري تحميل بيانات الطلب...</p>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (!draft || !draft.fullName || !draft.acceptedPolicies || !lines.length) {
     return (
-      <main className={`${styles.checkoutShell} container checkout-page`}>
-        <section className="checkout-empty">
-          <div className="empty-cart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v4m0 4h.01M5 3h14v18H5z" /></svg></div>
-          <h2>أكمل بيانات الطلب أولًا</h2>
-          <p>نحتاج بيانات التوصيل ومحتويات السلة قبل الانتقال إلى خطوة الدفع.</p>
-          <Link href="/checkout/store" className="primary-button">العودة لبيانات التوصيل</Link>
-        </section>
+      <main className={`${styles.checkoutShell} ${styles.paymentPageShell} payment-design-page`}>
+        <div className={styles.paymentTopBand}>
+          <section className={styles.paymentCard}>
+            <div className={styles.paymentStep}><span>طريقة الدفع</span><hr /><i>2</i></div>
+            <h1 className={styles.paymentEmptyTitle}>أكمل بيانات الطلب أولًا</h1>
+            <p className={styles.paymentEmptyText}>نحتاج بيانات التوصيل ومحتويات السلة قبل الانتقال إلى خطوة الدفع.</p>
+            <Link href="/checkout/store" className={styles.paymentSubmit}>العودة لبيانات التوصيل ←</Link>
+          </section>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className={`${styles.checkoutShell} container checkout-page`}>
-      <div className="breadcrumbs"><Link href="/">الرئيسية</Link><span>/</span><Link href="/checkout/store">إنهاء الطلب</Link><span>/</span><span>طرق الدفع</span></div>
-      <div className="checkout-topline">
-        <div>
-          <span className="section-kicker">الخطوة الثانية من إتمام الطلب</span>
-          <h1>طريقة الدفع</h1>
-          {draft.orderNumber ? <p className="checkout-order-number">رقم الطلب: <strong>{draft.orderNumber}</strong></p> : null}
-        </div>
-        <div className="checkout-step-indicator"><span>٢</span><div><strong>طرق الدفع</strong><small>الخطوة الثانية من ٢</small></div></div>
-      </div>
+    <main className={`${styles.checkoutShell} ${styles.paymentPageShell} payment-design-page`}>
+      <div className={styles.paymentTopBand}>
+        <section className={styles.paymentCard} aria-label="نموذج الدفع">
+          <div className={styles.paymentStep}>
+            <span>طريقة الدفع</span>
+            <hr />
+            <i>2</i>
+          </div>
 
-      <div className="checkout-layout payment-layout">
-        <section className="checkout-form-card payment-form-card">
-          <div className="checkout-section-heading"><div><h2>طريقة الدفع</h2></div></div>
-
-          <div className="payment-method-options" role="group" aria-label="اختيار طريقة البطاقة">
-            <button type="button" className={paymentMethod === 'visa' ? 'payment-method-choice selected' : 'payment-method-choice'} aria-pressed={paymentMethod === 'visa'} onClick={() => { setPaymentMethod('visa'); setPaymentMessage(''); }}>
-              <span className="payment-method-name">Visa</span>
+          <div className={styles.paymentMethods} role="group" aria-label="اختيار طريقة الدفع">
+            <button
+              type="button"
+              className={paymentMethod === 'mada' ? `${styles.paymentMethod} ${styles.paymentMethodSelected}` : styles.paymentMethod}
+              aria-label="الدفع بمدى"
+              aria-pressed={paymentMethod === 'mada'}
+              onClick={() => { setPaymentMethod('mada'); setPaymentMessage(''); }}
+            >
+              <span className={styles.madaLogo}>مدى<br />mada<span className={styles.madaLogoUnderline} /></span>
             </button>
-            <button type="button" className={paymentMethod === 'mada' ? 'payment-method-choice selected' : 'payment-method-choice'} aria-pressed={paymentMethod === 'mada'} onClick={() => { setPaymentMethod('mada'); setPaymentMessage(''); }}>
-              <span className="payment-method-name">مدى</span>
+            <button
+              type="button"
+              className={paymentMethod === 'visa' ? `${styles.paymentMethod} ${styles.paymentMethodSelected}` : styles.paymentMethod}
+              aria-label="الدفع بفيزا"
+              aria-pressed={paymentMethod === 'visa'}
+              onClick={() => { setPaymentMethod('visa'); setPaymentMessage(''); }}
+            >
+              <span className={styles.visaLogo}><i>VISA</i><b className={styles.visaCircleRed} /><b className={styles.visaCircleYellow} /></span>
             </button>
           </div>
 
-          <p className="payment-pending-note">اختيار البطاقة يُسجّل كطريقة دفع مفضلة فقط. لن يتم خصم أي مبلغ قبل ربط بوابة الدفع.</p>
-          <div className="payment-amount-bar">
-            <span>المبلغ المستحق</span>
-            <strong>{formatPrice(total)}</strong>
-          </div>
+          <div className={styles.paymentAmount}>المبلغ المستحق : {formatPrice(total)}</div>
 
-          {draft.notificationSent === false ? (
-            <div className="checkout-alert checkout-alert-error" role="status">
-              <span>!</span><div><strong>تم تسجيل الطلب، لكن إشعار تيليجرام لم يُرسل.</strong><p>رقم الطلب محفوظ ويمكن مراجعته من قسم «طلبات العملاء» بعد تفعيل البوت.</p></div>
+          {/* These are visual placeholders only. Do not read or submit card values.
+              Replace them with the payment provider's hosted secure fields before enabling card payments. */}
+          <div className={styles.paymentFields} aria-label="بيانات البطاقة">
+            <input className={styles.paymentInput} type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" />
+            <input className={styles.paymentInput} type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" />
+            <div className={styles.paymentExpiryRow}>
+              <label className={styles.paymentExpiryBox}>
+                <span className={styles.visuallyHidden}>شهر الانتهاء</span>
+                <select aria-label="شهر الانتهاء" defaultValue="">
+                  <option value="" disabled>⌄</option>
+                  {MONTHS.map((month) => <option key={month} value={month}>{month}</option>)}
+                </select>
+              </label>
+              <label className={styles.paymentExpiryBox}>
+                <span className={styles.visuallyHidden}>سنة الانتهاء</span>
+                <select aria-label="سنة الانتهاء" defaultValue="">
+                  <option value="" disabled>⌄</option>
+                  {EXPIRY_YEARS.map((year) => <option key={year} value={year}>{year}</option>)}
+                </select>
+              </label>
+              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" />
             </div>
-          ) : null}
-
-          {draft.installment === 'yes' ? (
-            <div className="checkout-alert checkout-alert-error"><span>!</span><div><strong>طلب تقسيط محدد</strong><p>الدفعة المقدمة: {Number(draft.installmentDownPayment || 0).toLocaleString('en-US')} ريال — المدة: {draft.installmentMonths || '—'} شهور. يتم تأكيد الشروط عند تفعيل مزود التقسيط.</p></div></div>
-          ) : null}
-
-          {paymentMessage ? <div className="payment-feedback" role="status">{paymentMessage}</div> : null}
-
-          <div className="checkout-form-actions payment-actions">
-            <Link href="/checkout/store" className="outline-button">الرجوع لبيانات التوصيل</Link>
-            <button type="button" className="primary-button checkout-submit" onClick={handlePay} disabled={paymentSubmitting}>{paymentSubmitting ? 'جارٍ إرسال الطلب...' : 'إكمال الدفع'} <span aria-hidden="true">←</span></button>
           </div>
+
+          {paymentMessage ? <div className={styles.paymentInlineMessage} role="status">{paymentMessage}</div> : null}
+
+          <div className={styles.paymentSafe}>تسوق إلكتروني</div>
+
+          <button type="button" className={styles.paymentSubmit} onClick={handlePay} disabled={paymentSubmitting}>
+            {paymentSubmitting ? 'جارٍ إرسال الطلب...' : 'إكمال الدفع'} <span aria-hidden="true">←</span>
+          </button>
         </section>
-
-        <aside className="checkout-order-summary">
-          <h2>ملخص الطلب</h2>
-          <div className="payment-customer-summary">
-            <div><small>الاسم الكامل</small><strong>{draft.fullName}</strong></div>
-            <div><small>رقم الجوال</small><strong dir="ltr">{draft.phone || '—'}</strong></div>
-            <div><small>عنوان التوصيل</small><strong>{[draft.city, draft.addressDetails, draft.neighborhood, draft.street, draft.building].filter(Boolean).join('، ') || '—'}</strong></div>
-          </div>
-          <div className="checkout-order-items">
-            {lines.map(({ cartKey, product, color, quantity }) => product ? (
-              <div className="checkout-order-item" key={cartKey}>
-                <img src={product.image} alt={product.name} />
-                <div><strong>{product.name}</strong>{color ? <small>اللون: {color}</small> : null}<small>الكمية: {quantity}</small></div>
-                <b>{formatPrice(product.price * quantity)}</b>
-              </div>
-            ) : null)}
-          </div>
-          <div className="checkout-total-row"><span>عدد القطع</span><strong>{itemCount}</strong></div>
-          <div className="checkout-total-row"><span>الشحن والتوصيل</span><strong>يُحدد لاحقًا</strong></div>
-          
-          <p className="checkout-shipping-note">المبلغ المعروض يساوي قيمة المنتجات فقط؛ قد يتغير بعد تحديد تكلفة الشحن وأي رسوم معلنة قبل الدفع.</p>
-          <Link href="/checkout/store" className="checkout-edit-cart">تعديل بيانات التوصيل ←</Link>
-        </aside>
       </div>
     </main>
   );
