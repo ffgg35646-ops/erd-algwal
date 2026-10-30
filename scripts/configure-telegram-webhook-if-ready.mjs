@@ -10,5 +10,9 @@ if (missing.length) {
   console.log('[telegram] Webhook registration skipped: deployment environment is missing required Telegram settings.');
 } else {
   console.log('[telegram] Registering Telegram webhook for this deployment.');
-  await import('./set-telegram-webhook.mjs');
+  try {
+    await import('./set-telegram-webhook.mjs');
+  } catch (error) {
+    console.error('[telegram] Webhook registration failed:', error instanceof Error ? error.message : 'Unknown error');
+  }
 }
