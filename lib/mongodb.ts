@@ -15,31 +15,32 @@ function getClientPromise(): Promise<MongoClient> {
   if (process.env.NODE_ENV !== 'production') {
     if (!globalForMongo._erdAlgwalMongoClientPromise) {
       const client = new MongoClient(uri);
-      const connection = client.connect();
-      globalForMongo._erdAlgwalMongoClientPromise = connection.catch((error) => {
-        // Do not keep a rejected connection promise cached after a transient
-        // network/TLS failure. The next request should be able to retry.
-        if (globalForMongo._erdAlgwalMongoClientPromise === connection) {
+      let cachedConnection: Promise<MongoClient>;
+      cachedConnection = client.connect().catch((error) => {
+        // Do not keep a rejected promise cached after a transient network/TLS failure.
+        if (globalForMongo._erdAlgwalMongoClientPromise === cachedConnection) {
           globalForMongo._erdAlgwalMongoClientPromise = undefined;
         }
         void client.close().catch(() => undefined);
         throw error;
       });
+      globalForMongo._erdAlgwalMongoClientPromise = cachedConnection;
     }
     return globalForMongo._erdAlgwalMongoClientPromise;
   }
 
   if (!localClientPromise) {
     const client = new MongoClient(uri);
-    const connection = client.connect();
-    localClientPromise = connection.catch((error) => {
+    let cachedConnection: Promise<MongoClient>;
+    cachedConnection = client.connect().catch((error) => {
       // A failed promise must not poison this warm serverless instance forever.
-      if (localClientPromise === connection) {
+      if (localClientPromise === cachedConnection) {
         localClientPromise = undefined;
       }
       void client.close().catch(() => undefined);
       throw error;
     });
+    localClientPromise = cachedConnection;
   }
 
   return localClientPromise;
