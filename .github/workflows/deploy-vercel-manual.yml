@@ -2,11 +2,6 @@ name: Deploy to Vercel (manual)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'app/account/account.module.css'
 
 permissions:
   contents: read
