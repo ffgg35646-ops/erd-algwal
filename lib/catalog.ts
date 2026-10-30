@@ -12,6 +12,13 @@ export type StoreCategory = Document & {
 export type StoredProduct = Document & {
   _id: ObjectId;
   categoryId: string;
+  seedId?: string;
+  deleted?: boolean;
+  imageUrl?: string;
+  oldPrice?: number;
+  badge?: string;
+  shortDescription?: string;
+  specifications?: string[];
   category: string;
   name: string;
   colors: string[];
@@ -47,6 +54,43 @@ export async function ensureDefaultCategories(db: Db) {
   await collection.createIndex({ createdAt: -1 });
 }
 
+// Link the existing visible demo catalogue to the same MongoDB records the bot edits.
+// Upsert only missing seed identities: never overwrite an existing admin edit.
+export async function ensureDefaultProducts(db: Db) {
+  await ensureDefaultCategories(db);
+  const sections = await db.collection<StoreCategory>('categories').find({ seedName: { $exists: true } }).toArray();
+  const bySeedName = new Map(sections.map(section => [String(section.seedName), section]));
+  const collection = db.collection<StoredProduct>('products');
+  await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
+  for (const product of seedProducts) {
+    const section = bySeedName.get(product.category);
+    if (!section) continue;
+    const now = new Date();
+    await collection.updateOne(
+      { seedId: product.id },
+      { $setOnInsert: {
+        seedId: product.id,
+        categoryId: section._id.toHexString(),
+        category: section.name,
+        name: product.name,
+        colors: product.colors || [],
+        storageOptions: product.storageOptions || [],
+        price: product.price,
+        details: product.description,
+        images: [],
+        imageUrl: product.image,
+        ...(product.oldPrice !== undefined ? { oldPrice: product.oldPrice } : {}),
+        ...(product.badge ? { badge: product.badge } : {}),
+        shortDescription: product.shortDescription,
+        specifications: product.specifications,
+        createdAt: now,
+        updatedAt: now
+      } },
+      { upsert: true }
+    );
+  }
+}
+
 export async function listCategories(db: Db) {
   await ensureDefaultCategories(db);
   return db.collection<StoreCategory>('categories').find({}).sort({ createdAt: 1, name: 1 }).toArray();
@@ -60,37 +104,35 @@ export function serializeStoredProduct(product: StoredProduct): Product & {
 } {
   const id = product._id.toHexString();
   const images = Array.isArray(product.images) ? product.images : [];
+  const storedImageUrls = images.map((_, index) => `/api/products/${id}/image?index=${index}`);
+  const displayImages = storedImageUrls.length ? storedImageUrls : product.imageUrl ? [product.imageUrl] : [];
   return {
-    id,
+    id: product.seedId || id,
     name: product.name,
     category: product.category,
     categoryId: product.categoryId,
     price: product.price,
-    image: images.length ? `/api/products/${id}/image?index=0` : '',
-    images: images.map((_, index) => `/api/products/${id}/image?index=${index}`),
+    image: displayImages[0] || '',
+    images: displayImages,
+    ...(product.oldPrice !== undefined ? { oldPrice: product.oldPrice } : {}),
+    ...(product.badge ? { badge: product.badge } : {}),
     colors: product.colors || [],
     storageOptions: product.storageOptions || [],
-    shortDescription: product.details,
+    shortDescription: product.shortDescription || product.details,
     description: product.details,
-    specifications: []
+    specifications: product.specifications || []
   };
 }
 
 export async function listCatalogProducts(db: Db): Promise<Product[]> {
-  const [saved, seededSections] = await Promise.all([
-    db.collection<StoredProduct>('products').find({}).sort({ createdAt: -1 }).toArray(),
-    db.collection<StoreCategory>('categories').find({ seedName: { $exists: true } }).toArray()
-  ]);
-  const sectionNames = new Map(seededSections.map((section) => [String(section.seedName), section.name]));
-  const dynamicProducts = saved.map((product) => serializeStoredProduct(product));
-  const demoProducts = seedProducts.map((product) => ({
-    ...product,
-    category: sectionNames.get(product.category) || product.category
-  }));
-  return [...dynamicProducts, ...demoProducts];
+  await ensureDefaultProducts(db);
+  const saved = await db.collection<StoredProduct>('products').find({ deleted: { $ne: true } }).sort({ createdAt: -1 }).toArray();
+  return saved.map(serializeStoredProduct);
 }
 
 export async function findStoredProduct(db: Db, id: string) {
-  if (!ObjectId.isValid(id)) return null;
-  return db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id) });
+  const collection = db.collection<StoredProduct>('products');
+  return ObjectId.isValid(id)
+    ? collection.findOne({ _id: new ObjectId(id), deleted: { $ne: true } })
+    : collection.findOne({ seedId: id, deleted: { $ne: true } });
 }
