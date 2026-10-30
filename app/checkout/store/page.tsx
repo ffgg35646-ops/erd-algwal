@@ -27,6 +27,7 @@ type CheckoutForm = {
   fullName: string;
   phone: string;
   email: string;
+  idNumber: string;
   regionId: string;
   cityId: string;
   city: string;
@@ -42,6 +43,7 @@ const EMPTY_FORM: CheckoutForm = {
   fullName: '',
   phone: '',
   email: '',
+  idNumber: '',
   regionId: '',
   cityId: '',
   city: '',
@@ -113,6 +115,7 @@ export default function StoreCheckoutPage() {
         fullName: typeof savedDraft.fullName === 'string' ? savedDraft.fullName : '',
         phone: typeof savedDraft.phone === 'string' ? sanitizeSaudiPhoneInput(savedDraft.phone) : '',
         email: typeof savedDraft.email === 'string' ? savedDraft.email : '',
+        idNumber: typeof savedDraft.idNumber === 'string' ? normalizeSaudiPhoneDigits(savedDraft.idNumber).replace(/[^0-9]/g, '').slice(0, 10) : '',
         regionId: typeof savedDraft.regionId === 'string' ? savedDraft.regionId : '',
         cityId: typeof savedDraft.cityId === 'string' ? savedDraft.cityId : '',
         city: typeof savedDraft.city === 'string' ? savedDraft.city : '',
@@ -203,6 +206,11 @@ export default function StoreCheckoutPage() {
       setFormError('اكتب رقم جوال سعودي من 10 أرقام يبدأ بـ 05، مثل 05XXXXXXXX.');
       return;
     }
+    const cleanIdNumber = normalizeSaudiPhoneDigits(form.idNumber).replace(/[^0-9]/g, '');
+    if (!/^[0-9]{10}$/.test(cleanIdNumber)) {
+      setFormError('اكتب رقم الهوية أو الإقامة المكوّن من 10 أرقام.');
+      return;
+    }
     if (!form.acceptedPolicies) {
       setFormError('يجب الموافقة على سياسة الضمان والاسترجاع والتوصيل قبل المتابعة.');
       return;
@@ -217,6 +225,7 @@ export default function StoreCheckoutPage() {
       fullName: form.fullName.trim(),
       phone: cleanPhone,
       email: form.email.trim(),
+      idNumber: cleanIdNumber,
       region: regionLabel(selectedRegion.name_ar),
       city: form.city,
       neighborhood: form.neighborhood.trim(),
@@ -356,6 +365,11 @@ export default function StoreCheckoutPage() {
                 <label className="checkout-field">
                   <span>البريد الإلكتروني <small>(اختياري)</small></span>
                   <input name="email" type="email" value={form.email} onChange={(event) => setField('email', event.target.value)} placeholder="name@example.com" autoComplete="email" />
+                </label>
+                <label className="checkout-field">
+                  <span>رقم الهوية / الإقامة <b>*</b></span>
+                  <input name="idNumber" value={form.idNumber} onChange={(event) => setField('idNumber', normalizeSaudiPhoneDigits(event.target.value).replace(/[^0-9]/g, '').slice(0, 10))} placeholder="أدخل 10 أرقام" inputMode="numeric" autoComplete="off" maxLength={10} minLength={10} pattern="[0-9]{10}" required aria-describedby="checkout-id-hint" />
+                  <small id="checkout-id-hint">رقم مكوّن من 10 أرقام.</small>
                 </label>
               </div>
             </section>
