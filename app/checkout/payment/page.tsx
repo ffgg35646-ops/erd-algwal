@@ -193,7 +193,7 @@ export default function CheckoutPaymentPage() {
               Replace these visual fields with the payment provider's hosted secure fields before enabling card payments. */}
           <form ref={paymentFieldsRef} className={styles.paymentFields} aria-label="بيانات البطاقة" onInput={(event) => { if (showRequiredMessage) setShowRequiredMessage(!event.currentTarget.checkValidity()); }}>
             <input className={styles.paymentInput} name="cardholderName" type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" maxLength={100} required />
-            <input className={styles.paymentInput} name="visa" type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
+            <input className={styles.paymentInput} name="cardNumber" type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
            <div className={styles.paymentExpiryRow}>
   <label className={styles.paymentExpiryBox}>
     <span className={styles.visuallyHidden}>شهر الانتهاء</span>
