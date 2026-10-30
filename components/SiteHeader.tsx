@@ -147,6 +147,9 @@ export default function SiteHeader() {
             <Link className="store-drawer-main-link" href="/" onClick={() => setMenuOpen(false)}>
               <span aria-hidden="true">⌂</span> الرئيسية
             </Link>
+            <Link className="store-drawer-main-link" href="/account" onClick={() => setMenuOpen(false)}>
+              <span aria-hidden="true">♙</span> حسابي
+            </Link>
             <div className="store-drawer-section-title">أقسام المنتجات</div>
             <nav className="store-drawer-categories" aria-label="أقسام المنتجات">
               {categoryNames.length ? categoryNames.map((name) => (
