@@ -1,0 +1,243 @@
+.page {
+  width: min(820px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 36px;
+  color: var(--ink, #1c1c1c);
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 16px;
+  color: #7a8589;
+  font-size: 12px;
+}
+.breadcrumbs a:hover { color: #b28b37; }
+.breadcrumbs strong { color: var(--ink, #1c1c1c); }
+
+.welcome {
+  background: linear-gradient(125deg, #1d4d3b, #163a2c);
+  color: #fff;
+  border-radius: 22px;
+  padding: 24px;
+  box-shadow: 0 15px 32px rgba(22, 58, 44, .14);
+}
+.welcomeTop { display: flex; align-items: center; gap: 16px; }
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 62px;
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  color: #f6d982;
+  background: rgba(255,255,255,.11);
+  border: 1px solid rgba(255,255,255,.23);
+}
+.avatar svg { width: 30px; height: 30px; }
+.welcomeCopy { min-width: 0; }
+.welcomeCopy small {
+  color: #f0ca61;
+  font-size: 12px;
+  font-weight: 800;
+}
+.welcomeCopy h1 { margin: 1px 0 5px; font-size: clamp(23px, 4vw, 30px); line-height: 1.4; font-weight: 900; }
+.welcomeCopy p { margin: 0; max-width: 560px; color: #d4e4dc; font-size: 13px; line-height: 1.9; }
+.goldButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  margin-top: 20px;
+  border: 0;
+  border-radius: 12px;
+  background: #d6a82a;
+  color: #211f17;
+  font-weight: 900;
+  font-size: 14px;
+  transition: transform .18s, background .18s;
+}
+.goldButton:hover { background: #e4bc4a; transform: translateY(-1px); }
+.goldButton span { font-size: 18px; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 0 8px;
+}
+.stat {
+  min-width: 0;
+  padding: 14px 13px;
+  border: 1px solid #ecece6;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(20, 45, 59, .025);
+}
+.stat > span { display: block; color: #858b88; font-size: 11px; line-height: 1.7; }
+.stat strong { display: block; margin-top: 6px; font-size: 18px; font-weight: 900; overflow-wrap: anywhere; }
+.stat .statLast { font-size: 12px; line-height: 1.8; }
+.stat small { display: block; color: #8b6b20; margin-top: 3px; font-size: 11px; }
+.scopeNote { margin: 0 2px 16px; color: #8a8f8d; font-size: 11px; line-height: 1.8; }
+
+.card {
+  margin-bottom: 14px;
+  padding: 20px;
+  border: 1px solid #e9ede9;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(20, 45, 59, .035);
+}
+.cardHeading { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+.sectionIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: #f8f1df;
+  color: #9b7626;
+}
+.sectionIcon svg { width: 22px; height: 22px; }
+.card h2, .credentials h2 { margin: 0; font-size: 20px; line-height: 1.5; font-weight: 900; }
+.sub { margin: 3px 0 0; color: #838b87; font-size: 12px; line-height: 1.8; }
+
+.lookup {
+  padding: 16px;
+  border-radius: 15px;
+  background: #f7f6f1;
+}
+.lookup h3 { margin: 0; font-size: 16px; font-weight: 900; }
+.lookup > label { display: block; margin-top: 13px; color: #46554e; font-size: 12px; font-weight: 800; }
+.lookup input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 7px;
+  padding: 12px 14px;
+  border: 1px solid #e0e5df;
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+  color: #1c1c1c;
+  font: inherit;
+  font-size: 14px;
+  text-align: right;
+  direction: ltr;
+}
+.lookup input:focus { border-color: #b28b37; box-shadow: 0 0 0 3px rgba(178,139,55,.12); }
+.greenButton, .whatsappButton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 47px;
+  margin-top: 11px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 12px;
+  background: #1d4d3b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  transition: background .18s, transform .18s;
+}
+.greenButton svg, .whatsappButton svg { width: 18px; height: 18px; }
+.greenButton:hover, .whatsappButton:hover { background: #163a2c; transform: translateY(-1px); }
+.lookupMessage {
+  margin: 13px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #eadcae;
+  border-radius: 12px;
+  background: #fff9e9;
+  color: #66531e;
+  font-size: 12px;
+  line-height: 1.9;
+}
+.orderResult { margin-top: 15px; border: 1px solid #e9ede9; border-radius: 15px; padding: 15px; }
+.orderTop { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+.orderTop > div { display: flex; flex-direction: column; gap: 3px; }
+.orderTop small { color: #858b88; font-size: 11px; }
+.orderTop strong { font-size: 14px; }
+.orderBadge { border-radius: 99px; padding: 5px 10px; background: #f8f1df; color: #785a18; font-size: 11px; font-weight: 800; }
+.orderDate { margin: 9px 0 0; color: #858b88; font-size: 11px; }
+.orderItems { margin-top: 12px; }
+.orderItem, .orderTotal { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; padding: 10px 0; border-bottom: 1px solid #eef0ec; font-size: 12px; }
+.orderItem span { min-width: 0; }
+.orderItem strong { flex: 0 0 auto; font-size: 12px; white-space: nowrap; }
+.orderTotal { border-bottom: 0; padding-bottom: 0; font-size: 13px; font-weight: 800; }
+.orderTotal strong { color: #1d4d3b; }
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 13px 0;
+  border-bottom: 1px solid #eff0ec;
+  font-size: 13px;
+}
+.infoRow:last-child { border-bottom: 0; padding-bottom: 0; }
+.infoRow span { flex: 0 0 90px; color: #8a8f8b; }
+.infoRow strong { min-width: 0; max-width: 70%; font-weight: 800; text-align: left; overflow-wrap: anywhere; }
+.breakWord { direction: ltr; }
+.helpCard { background: #fbf5e3; border-color: #efdfae; }
+.whatsappButton { text-decoration: none; }
+.credentials {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 3px;
+  padding: 19px 20px;
+  border: 1px solid #e9ede9;
+  border-radius: 18px;
+  background: #fff;
+}
+.credentialsCopy { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.credentialsCopy > div:last-child { min-width: 0; }
+.credentials h2 { font-size: 17px; }
+.barcodeLink { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 0 0 auto; color: #8b6b20; font-size: 10px; text-align: center; }
+.barcodeLink img { width: 86px; height: 86px; object-fit: contain; padding: 5px; border: 1px solid #e7e8e2; border-radius: 10px; background: #fff; }
+.noBarcode { max-width: 230px; margin: 0; color: #8b918d; font-size: 11px; line-height: 1.8; text-align: left; }
+
+@media (min-width: 760px) {
+  .page { padding-top: 30px; padding-bottom: 48px; }
+  .welcome { padding: 28px 30px; }
+  .goldButton { width: 240px; }
+  .stats { gap: 14px; margin-top: 16px; }
+  .stat { padding: 16px 17px; }
+  .card { padding: 24px; }
+}
+@media (max-width: 520px) {
+  .page { width: calc(100% - 24px); padding-top: 16px; }
+  .welcome { padding: 18px; border-radius: 19px; }
+  .welcomeTop { align-items: flex-start; gap: 12px; }
+  .avatar { flex-basis: 48px; width: 48px; height: 48px; border-radius: 14px; }
+  .avatar svg { width: 25px; height: 25px; }
+  .welcomeCopy p { font-size: 12px; }
+  .goldButton { min-height: 46px; margin-top: 16px; }
+  .stats { gap: 7px; }
+  .stat { padding: 10px 8px; border-radius: 12px; }
+  .stat > span { font-size: 10px; }
+  .stat strong { font-size: 15px; }
+  .stat .statLast { font-size: 10px; }
+  .card { padding: 15px; border-radius: 17px; }
+  .cardHeading { align-items: flex-start; gap: 10px; }
+  .card h2 { font-size: 18px; }
+  .lookup { padding: 12px; }
+  .credentials { align-items: flex-start; padding: 15px; }
+  .credentialsCopy { align-items: flex-start; gap: 9px; }
+  .credentialsCopy .sectionIcon { flex-basis: 36px; width: 36px; height: 36px; }
+  .credentials h2 { font-size: 15px; }
+  .credentialsCopy .sub { font-size: 11px; }
+  .barcodeLink img { width: 68px; height: 68px; }
+  .noBarcode { max-width: 125px; font-size: 10px; }
+  .infoRow { gap: 10px; font-size: 12px; }
+  .infoRow span { flex-basis: 72px; }
+}
