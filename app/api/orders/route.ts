@@ -15,7 +15,6 @@ type CheckoutBody = {
   phone?: string;
   email?: string;
   idNumber?: string;
-  region?: string;
   city?: string;
   addressDetails?: string;
   neighborhood?: string;
@@ -122,7 +121,6 @@ export async function POST(request: NextRequest) {
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
     .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
     .replace(/[^0-9]/g, '');
-  const region = text(body.region, 100);
   const city = text(body.city, 120);
   const addressDetails = text(body.addressDetails || [body.neighborhood, body.street, body.building].filter(Boolean).join('، '), 500);
   const notes = text(body.notes, 1000);
@@ -136,7 +134,7 @@ export async function POST(request: NextRequest) {
   if (!phone) return NextResponse.json({ ok: false, error: 'رقم الجوال السعودي غير صحيح.' }, { status: 400 });
   if (!email || !validEmail(email)) return NextResponse.json({ ok: false, error: 'اكتب بريدًا إلكترونيًا صحيحًا.' }, { status: 400 });
   if (!/^[0-9]{10}$/.test(idNumber)) return NextResponse.json({ ok: false, error: 'رقم الهوية أو الإقامة يجب أن يتكون من 10 أرقام.' }, { status: 400 });
-  if (!region || !city || !addressDetails) return NextResponse.json({ ok: false, error: 'أكمل تفاصيل عنوان التوصيل.' }, { status: 400 });
+  if (!city || !addressDetails) return NextResponse.json({ ok: false, error: 'أكمل تفاصيل عنوان التوصيل.' }, { status: 400 });
   if (installment && (
     ![500, 750, 1000, 1500, 2000].includes(installmentDownPayment) ||
     ![3, 6, 12, 24].includes(installmentMonths)
@@ -233,7 +231,7 @@ export async function POST(request: NextRequest) {
         phone,
         idNumber,
         ...(email ? { email } : {}),
-        address: [region, city, addressDetails].filter(Boolean).join('، ')
+        address: [city, addressDetails].filter(Boolean).join('، ')
       },
       items: orderItems,
       total,

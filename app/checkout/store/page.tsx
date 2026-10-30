@@ -8,21 +8,6 @@ import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
 import { CUSTOMER_EMAIL_STORAGE_KEY, getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
-type Region = {
-  region_id: number;
-  code: string;
-  name_ar: string;
-  name_en: string;
-  capital_city_id?: number;
-};
-
-type City = {
-  city_id: number;
-  region_id: number;
-  name_ar: string;
-  name_en: string;
-};
-
 type WarrantyPolicy = {
   title: string;
   content: string;
@@ -35,8 +20,6 @@ type CheckoutForm = {
   phone: string;
   email: string;
   idNumber: string;
-  regionId: string;
-  cityId: string;
   city: string;
   addressDetails: string;
   installment: 'yes' | 'no';
@@ -50,8 +33,6 @@ const EMPTY_FORM: CheckoutForm = {
   phone: '',
   email: '',
   idNumber: '',
-  regionId: '',
-  cityId: '',
   city: '',
   addressDetails: '',
   installment: 'no',
@@ -59,20 +40,6 @@ const EMPTY_FORM: CheckoutForm = {
   installmentMonths: '',
   acceptedPolicies: false
 };
-
-function regionLabel(name: string) {
-  return name.replace(/^منطقة\s+/, '');
-}
-
-function normalizeArabic(value: string) {
-  return value
-    .normalize('NFKC')
-    .replace(/[أإآ]/g, 'ا')
-    .replace(/ة/g, 'ه')
-    .replace(/ى/g, 'ي')
-    .trim()
-    .toLocaleLowerCase('ar');
-}
 
 function normalizeSaudiPhoneDigits(value: string) {
   return value
@@ -103,12 +70,6 @@ async function requestWarrantyPolicy(): Promise<WarrantyPolicy> {
 export default function StoreCheckoutPage() {
   const router = useRouter();
   const { cart, hydrated, catalogProducts: products } = useCart();
-  const [regions, setRegions] = useState<Region[]>([]);
-  const [cities, setCities] = useState<City[]>([]);
-  const [regionsLoading, setRegionsLoading] = useState(true);
-  const [citiesLoading, setCitiesLoading] = useState(false);
-  const [citySearch, setCitySearch] = useState('');
-  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM);
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,19 +108,6 @@ export default function StoreCheckoutPage() {
   }, []);
 
   useEffect(() => {
-    let alive = true;
-    fetch('/data/saudi-regions.json')
-      .then((response) => {
-        if (!response.ok) throw new Error('تعذر تحميل قائمة المناطق');
-        return response.json() as Promise<Region[]>;
-      })
-      .then((data) => { if (alive) setRegions(data); })
-      .catch(() => { if (alive) setFormError('تعذر تحميل قائمة مناطق السعودية. حدّث الصفحة وحاول مرة أخرى.'); })
-      .finally(() => { if (alive) setRegionsLoading(false); });
-    return () => { alive = false; };
-  }, []);
-
-  useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem('erd-algwal-checkout-draft-v1');
       const savedDraft = raw ? JSON.parse(raw) as Partial<CheckoutForm> & { neighborhood?: string; street?: string; building?: string; notes?: string } : {};
@@ -170,8 +118,6 @@ export default function StoreCheckoutPage() {
         phone: typeof savedDraft.phone === 'string' ? sanitizeSaudiPhoneInput(savedDraft.phone) : '',
         email: savedEmail.trim() || (typeof savedDraft.email === 'string' ? savedDraft.email : ''),
         idNumber: typeof savedDraft.idNumber === 'string' ? normalizeSaudiPhoneDigits(savedDraft.idNumber).replace(/[^0-9]/g, '').slice(0, 10) : '',
-        regionId: typeof savedDraft.regionId === 'string' ? savedDraft.regionId : '',
-        cityId: typeof savedDraft.cityId === 'string' ? savedDraft.cityId : '',
         city: typeof savedDraft.city === 'string' ? savedDraft.city : '',
         addressDetails: typeof savedDraft.addressDetails === 'string'
           ? savedDraft.addressDetails
@@ -182,27 +128,11 @@ export default function StoreCheckoutPage() {
         acceptedPolicies: savedDraft.acceptedPolicies === true
       };
       setForm(restored);
-      setCitySearch(restored.city);
       if (restored.email.trim()) window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, restored.email.trim());
     } catch {
       // A malformed local draft should never block checkout.
     }
   }, []);
-
-  useEffect(() => {
-    if (!form.regionId || cities.length > 0) return;
-    let alive = true;
-    setCitiesLoading(true);
-    fetch('/data/saudi-cities.json')
-      .then((response) => {
-        if (!response.ok) throw new Error('تعذر تحميل المدن');
-        return response.json() as Promise<City[]>;
-      })
-      .then((data) => { if (alive) setCities(data); })
-      .catch(() => { if (alive) setFormError('تعذر تحميل قائمة المدن. حدّث الصفحة وحاول مرة أخرى.'); })
-      .finally(() => { if (alive) setCitiesLoading(false); });
-    return () => { alive = false; };
-  }, [form.regionId, cities.length]);
 
   const cartLines = useMemo(() => Object.entries(cart).map(([cartKey, quantity]) => {
     const { productId, color } = parseCartItemKey(cartKey);
@@ -210,17 +140,6 @@ export default function StoreCheckoutPage() {
   }).filter((line) => Boolean(line.product)), [cart]);
 
   const total = cartLines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
-  const selectedRegion = regions.find((region) => String(region.region_id) === form.regionId);
-  const cityOptions = useMemo(() => {
-    if (!form.regionId) return [];
-    const term = normalizeArabic(citySearch);
-    return cities
-      .filter((city) => city.region_id === Number(form.regionId))
-      .filter((city) => !term || normalizeArabic(city.name_ar).includes(term) || normalizeArabic(city.name_en).includes(term))
-      .sort((a, b) => a.name_ar.localeCompare(b.name_ar, 'ar'))
-      .slice(0, 80);
-  }, [cities, form.regionId, citySearch]);
-
   async function openWarrantyPolicy() {
     setPolicyOpen(true);
     setPolicyLoading(true);
@@ -243,20 +162,6 @@ export default function StoreCheckoutPage() {
     setFormError('');
   }
 
-  function handleRegionChange(regionId: string) {
-    setForm((current) => ({ ...current, regionId, cityId: '', city: '' }));
-    setCitySearch('');
-    setCityDropdownOpen(false);
-    setFormError('');
-  }
-
-  function chooseCity(city: City) {
-    setForm((current) => ({ ...current, cityId: String(city.city_id), city: city.name_ar }));
-    setCitySearch(city.name_ar);
-    setCityDropdownOpen(false);
-    setFormError('');
-  }
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting) return;
@@ -266,12 +171,8 @@ export default function StoreCheckoutPage() {
       setFormError('سلة المشتريات فارغة. أضف المنتجات أولًا ثم ارجع لإتمام البيانات.');
       return;
     }
-    if (!form.regionId || !selectedRegion) {
-      setFormError('اختر المنطقة / المحافظة.');
-      return;
-    }
-    if (!form.cityId || !form.city) {
-      setFormError('اختر المدينة من القائمة، وليس بكتابة الاسم فقط.');
+    if (!form.city.trim()) {
+      setFormError('اكتب المدينة.');
       return;
     }
     if (!form.addressDetails.trim()) {
@@ -318,7 +219,6 @@ export default function StoreCheckoutPage() {
       phone: cleanPhone,
       email: form.email.trim(),
       idNumber: cleanIdNumber,
-      region: regionLabel(selectedRegion.name_ar),
       city: form.city,
       addressDetails: form.addressDetails.trim(),
       installment: form.installment,
@@ -349,9 +249,6 @@ export default function StoreCheckoutPage() {
       const checkoutDraft = {
         ...form,
         ...payload,
-        regionId: form.regionId,
-        cityId: form.cityId,
-        regionName: selectedRegion.name_ar,
         items: cartLines.map(({ product, quantity, color }) => ({
           productId: product!.id,
           name: product!.name,
@@ -440,89 +337,41 @@ export default function StoreCheckoutPage() {
         <div className="checkout-layout">
           <form className="checkout-form-card" onSubmit={handleSubmit}>
             <section className="checkout-form-section">
-              <div className="checkout-section-heading"><span className="checkout-section-number">١</span><div><h2>بيانات التواصل</h2></div></div>
+              <div className="checkout-section-heading"><div><h2>بيانات التواصل</h2></div></div>
               <div className="checkout-fields-grid">
                 <label className="checkout-field checkout-field-full">
-                  <span>الاسم بالكامل <b>*</b></span>
-                  <input name="fullName" value={form.fullName} onChange={(event) => setField('fullName', event.target.value)} placeholder="اكتب الاسم بالكامل" autoComplete="name" required minLength={2} />
+                  <input name="fullName" value={form.fullName} onChange={(event) => setField('fullName', event.target.value)} placeholder="الاسم بالكامل" autoComplete="name" required minLength={2} />
                 </label>
-                <label className="checkout-field">
-                  <span>رقم الجوال <b>*</b></span>
-                  <div className="saudi-phone-input" dir="ltr">
-                    <span className="saudi-phone-flag" role="img" aria-label="السعودية">🇸🇦</span>
-                    <input name="phone" type="tel" dir="ltr" value={form.phone} onChange={(event) => setField('phone', sanitizeSaudiPhoneInput(event.target.value))} placeholder="05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" maxLength={10} minLength={10} required />
-                  </div>
+                <label className="checkout-field checkout-field-full">
+                  <input name="phone" type="tel" dir="ltr" value={form.phone} onChange={(event) => setField('phone', sanitizeSaudiPhoneInput(event.target.value))} placeholder="رقم الجوال 05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" maxLength={10} minLength={10} required />
                 </label>
-                <label className="checkout-field">
-                  <span>البريد الإلكتروني <b>*</b></span>
+                <label className="checkout-field checkout-field-full">
                   <input name="email" type="email" value={form.email} onChange={(event) => {
                     const value = event.target.value;
                     setField('email', value);
                     try { window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, value); } catch { /* Keep checkout usable without browser storage. */ }
-                  }} placeholder="name@example.com" autoComplete="email" required />
+                  }} placeholder="البريد الإلكتروني" autoComplete="email" required />
                 </label>
                 <label className="checkout-field checkout-field-full">
-                  <span>رقم الهوية <b>*</b></span>
-                  <input name="idNumber" value={form.idNumber} onChange={(event) => setField('idNumber', normalizeSaudiPhoneDigits(event.target.value).replace(/[^0-9]/g, '').slice(0, 10))} placeholder="أدخل رقم الهوية المكوّن من 10 أرقام" inputMode="numeric" autoComplete="off" maxLength={10} minLength={10} pattern="[0-9]{10}" required />
+                  <input name="idNumber" value={form.idNumber} onChange={(event) => setField('idNumber', normalizeSaudiPhoneDigits(event.target.value).replace(/[^0-9]/g, '').slice(0, 10))} placeholder="رقم الهوية / الإقامة (10 أرقام)" inputMode="numeric" autoComplete="off" maxLength={10} minLength={10} pattern="[0-9]{10}" required />
                 </label>
               </div>
             </section>
 
             <section className="checkout-form-section">
-              <div className="checkout-section-heading"><span className="checkout-section-number">٢</span><div><h2>الشحن والتوصيل</h2></div></div>
+              <div className="checkout-section-heading"><div><h2>الشحن والتوصيل</h2></div></div>
               <div className="checkout-fields-grid">
-                <label className="checkout-field">
-                  <span>المنطقة <b>*</b></span>
-                  <select name="regionId" value={form.regionId} onChange={(event) => handleRegionChange(event.target.value)} required disabled={regionsLoading}>
-                    <option value="">{regionsLoading ? 'جاري تحميل المناطق...' : 'اختر المنطقة'}</option>
-                    {regions.map((region) => <option key={region.region_id} value={String(region.region_id)}>{regionLabel(region.name_ar)}</option>)}
-                  </select>
-                </label>
-
-                <div className="checkout-field city-combobox">
-                  <label htmlFor="checkout-city"><span>المدينة <b>*</b></span></label>
-                  <input
-                    id="checkout-city"
-                    name="city"
-                    value={citySearch}
-                    onChange={(event) => {
-                      setCitySearch(event.target.value);
-                      setField('cityId', '');
-                      setField('city', '');
-                      setCityDropdownOpen(true);
-                    }}
-                    onFocus={() => setCityDropdownOpen(true)}
-                    onBlur={() => window.setTimeout(() => setCityDropdownOpen(false), 120)}
-                    placeholder={form.regionId ? (citiesLoading ? 'جاري تحميل المدن...' : 'اختر المدينة') : 'اختر المنطقة أولًا'}
-                    autoComplete="off"
-                    role="combobox"
-                    aria-expanded={cityDropdownOpen}
-                    aria-controls="checkout-city-options"
-                    disabled={!form.regionId || citiesLoading}
-                    required
-                  />
-                  {cityDropdownOpen && form.regionId && !citiesLoading ? (
-                    <div className="city-options" id="checkout-city-options" role="listbox">
-                      {cityOptions.length ? cityOptions.map((city) => (
-                        <button type="button" role="option" aria-selected={form.cityId === String(city.city_id)} key={city.city_id} onMouseDown={(event) => event.preventDefault()} onClick={() => chooseCity(city)}>
-                          <span>{city.name_ar}</span><small>{city.name_en}</small>
-                        </button>
-                      )) : <p className="city-options-empty">لا توجد نتيجة مطابقة. جرّب اسمًا آخر.</p>}
-                      {cityOptions.length === 80 ? <p className="city-options-hint">اكتب مزيدًا من حروف اسم المدينة لتضييق البحث.</p> : null}
-                    </div>
-                  ) : null}
-                </div>
-
                 <label className="checkout-field checkout-field-full">
-                  <span>تفاصيل العنوان <b>*</b></span>
-                  <textarea name="addressDetails" rows={2} value={form.addressDetails} onChange={(event) => setField('addressDetails', event.target.value)} placeholder="اكتب الحي والشارع ورقم المبنى وأي تفاصيل تساعد في الوصول إليك." required />
+                  <input name="city" value={form.city} onChange={(event) => setField('city', event.target.value)} placeholder="المدينة" autoComplete="address-level2" required />
+                </label>
+                <label className="checkout-field checkout-field-full">
+                  <input name="addressDetails" value={form.addressDetails} onChange={(event) => setField('addressDetails', event.target.value)} placeholder="تفاصيل العنوان (الحي، الشارع، رقم المبنى)" autoComplete="street-address" required />
                 </label>
               </div>
             </section>
 
             <section className="checkout-form-section checkout-extra-options">
               <div className="installment-heading-row">
-                <span className="checkout-section-number">٣</span>
                 <button
                   type="button"
                   className={form.installment === 'yes' ? 'installment-toggle active' : 'installment-toggle'}
@@ -543,10 +392,8 @@ export default function StoreCheckoutPage() {
               </div>
               {form.installment === 'yes' ? (
                 <div className="installment-details">
-                  <p>اختر مدة التقسيط</p>
                   <div className="checkout-fields-grid">
                     <label className="checkout-field">
-                      <span>الدفعة المقدمة <b>*</b></span>
                       <select name="installmentDownPayment" value={form.installmentDownPayment} onChange={(event) => setField('installmentDownPayment', event.target.value)} required>
                         <option value="">اختر الدفعة المقدمة</option>
                         <option value="500">500 ريال</option>
@@ -557,7 +404,6 @@ export default function StoreCheckoutPage() {
                       </select>
                     </label>
                     <label className="checkout-field">
-                      <span>مدة التقسيط <b>*</b></span>
                       <select name="installmentMonths" value={form.installmentMonths} onChange={(event) => setField('installmentMonths', event.target.value)} required>
                         <option value="">اختر المدة</option>
                         <option value="3">3 شهور</option>
@@ -576,20 +422,11 @@ export default function StoreCheckoutPage() {
                   checked={form.acceptedPolicies}
                   onChange={(event) => setField('acceptedPolicies', event.target.checked)}
                   required
-                  aria-describedby="checkout-policy-help"
                 />
-                <div>
-                  <label htmlFor="checkout-policy-accepted">أوافق على سياسة الضمان وأتعهد بالالتزام بالشروط.</label>
-                  <button type="button" className="policy-modal-link" onClick={openWarrantyPolicy}>
-                    اضغط هنا لقراءة سياسة الضمان
-                  </button>
-                  <small id="checkout-policy-help">
-                    {policyLoading
-                      ? 'جاري تحميل الشروط...'
-                      : warrantyPolicy.configured
-                        ? 'الموافقة بعلامة الصح إلزامية لإكمال الطلب.'
-                        : policyLoadError || 'سياسة الضمان لم تُضف من الإدارة بعد؛ لا يمكن إكمال الطلب حاليًا.'}
-                  </small>
+                <div className="policy-consent-text">
+                  <label htmlFor="checkout-policy-accepted">أوافق على </label>
+                  <button type="button" className="policy-modal-link" onClick={openWarrantyPolicy}>سياسة الضمان</button>
+                  <span> وأتعهد بالالتزام بالشروط.</span>
                 </div>
               </div>
             </section>
@@ -614,7 +451,7 @@ export default function StoreCheckoutPage() {
                     <button type="button" className="policy-modal-close" aria-label="إغلاق" onClick={() => setPolicyOpen(false)}>×</button>
                   </header>
                   <div className="policy-modal-content">
-                    {policyLoading ? 'جاري تحميل الشروط...' : warrantyPolicy.content}
+                    {policyLoading ? 'جاري تحميل الشروط...' : policyLoadError || warrantyPolicy.content}
                     {!policyLoading && !warrantyPolicy.configured ? (
                       <p className="policy-modal-warning">لم تنشر الإدارة سياسة الضمان بعد، لذلك لن يمكن إكمال الطلب حتى إضافتها.</p>
                     ) : null}
