@@ -16,6 +16,7 @@ export type StoreOrder = Document & {
     name: string;
     phone: string;
     email?: string;
+    idNumber?: string;
     address: string;
   };
   items: OrderItem[];
