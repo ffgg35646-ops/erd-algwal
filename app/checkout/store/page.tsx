@@ -8,6 +8,13 @@ import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
 import { CUSTOMER_EMAIL_STORAGE_KEY, getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
+type SaudiCity = {
+  city_id: number;
+  region_id: number;
+  name_ar: string;
+  name_en: string;
+};
+
 type WarrantyPolicy = {
   title: string;
   content: string;
@@ -51,6 +58,16 @@ function sanitizeSaudiPhoneInput(value: string) {
   return normalizeSaudiPhoneDigits(value).replace(/[^0-9]/g, '').slice(0, 10);
 }
 
+function normalizeCitySearch(value: string) {
+  return value
+    .normalize('NFKC')
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .trim()
+    .toLocaleLowerCase('ar');
+}
+
 async function requestWarrantyPolicy(): Promise<WarrantyPolicy> {
   const response = await fetch('/api/store-content', { cache: 'no-store' });
   if (!response.ok) throw new Error('تعذر تحميل سياسة الضمان.');
@@ -71,6 +88,11 @@ export default function StoreCheckoutPage() {
   const router = useRouter();
   const { cart, hydrated, catalogProducts: products } = useCart();
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM);
+  const [saudiCities, setSaudiCities] = useState<SaudiCity[]>([]);
+  const [citySearch, setCitySearch] = useState('');
+  const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
+  const [citiesLoading, setCitiesLoading] = useState(true);
+  const [citiesLoadError, setCitiesLoadError] = useState('');
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [warrantyPolicy, setWarrantyPolicy] = useState<WarrantyPolicy>({
@@ -82,6 +104,26 @@ export default function StoreCheckoutPage() {
   const [policyLoading, setPolicyLoading] = useState(true);
   const [policyOpen, setPolicyOpen] = useState(false);
   const [policyLoadError, setPolicyLoadError] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/data/saudi-cities.json', { cache: 'force-cache' })
+      .then((response) => {
+        if (!response.ok) throw new Error('تعذر تحميل قائمة مدن السعودية.');
+        return response.json() as Promise<SaudiCity[]>;
+      })
+      .then((cities) => {
+        if (alive) {
+          setSaudiCities(cities.slice().sort((a, b) => a.name_ar.localeCompare(b.name_ar, 'ar')));
+          setCitiesLoadError('');
+        }
+      })
+      .catch((error) => {
+        if (alive) setCitiesLoadError(error instanceof Error ? error.message : 'تعذر تحميل قائمة المدن.');
+      })
+      .finally(() => { if (alive) setCitiesLoading(false); });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -128,6 +170,7 @@ export default function StoreCheckoutPage() {
         acceptedPolicies: savedDraft.acceptedPolicies === true
       };
       setForm(restored);
+      setCitySearch(restored.city);
       if (restored.email.trim()) window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, restored.email.trim());
     } catch {
       // A malformed local draft should never block checkout.
@@ -140,6 +183,21 @@ export default function StoreCheckoutPage() {
   }).filter((line) => Boolean(line.product)), [cart]);
 
   const total = cartLines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
+  const cityOptions = useMemo(() => {
+    const term = normalizeCitySearch(citySearch);
+    if (!term) return saudiCities;
+    return saudiCities.filter((city) =>
+      normalizeCitySearch(city.name_ar).includes(term) ||
+      city.name_en.toLocaleLowerCase('en').includes(term)
+    );
+  }, [saudiCities, citySearch]);
+
+  function chooseCity(city: SaudiCity) {
+    setCitySearch(city.name_ar);
+    setField('city', city.name_ar);
+    setCityDropdownOpen(false);
+  }
+
   async function openWarrantyPolicy() {
     setPolicyOpen(true);
     setPolicyLoading(true);
@@ -320,12 +378,6 @@ export default function StoreCheckoutPage() {
         <Link href="/">الرئيسية</Link><span>/</span><Link href="/cart">سلة المشتريات</Link><span>/</span><span>إنهاء الطلب</span>
       </div>
 
-      <div className="checkout-topline checkout-topline-compact">
-        <div className="checkout-step-indicator checkout-step-indicator-plain">
-          <div><strong>الشحن والتوصيل</strong><small>الخطوة الأولى</small></div>
-        </div>
-      </div>
-
       {!cartLines.length ? (
         <section className="checkout-empty">
           <div className="empty-cart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg></div>
@@ -359,11 +411,53 @@ export default function StoreCheckoutPage() {
             </section>
 
             <section className="checkout-form-section">
-              <div className="checkout-section-heading"><div><h2>الشحن والتوصيل</h2></div></div>
               <div className="checkout-fields-grid">
-                <label className="checkout-field checkout-field-full">
-                  <input name="city" value={form.city} onChange={(event) => setField('city', event.target.value)} placeholder="المدينة" autoComplete="address-level2" required />
-                </label>
+                <div className="checkout-field checkout-field-full city-combobox">
+                  <input
+                    name="city"
+                    value={citySearch}
+                    onChange={(event) => {
+                      setCitySearch(event.target.value);
+                      setField('city', event.target.value);
+                      setCityDropdownOpen(true);
+                    }}
+                    onFocus={() => setCityDropdownOpen(true)}
+                    onClick={() => setCityDropdownOpen(true)}
+                    onBlur={() => window.setTimeout(() => setCityDropdownOpen(false), 160)}
+                    placeholder="المدينة"
+                    autoComplete="address-level2"
+                    role="combobox"
+                    aria-expanded={cityDropdownOpen}
+                    aria-controls="checkout-city-options"
+                    aria-autocomplete="list"
+                    required
+                  />
+                  {cityDropdownOpen ? (
+                    <div className="city-options" id="checkout-city-options" role="listbox" aria-label="مدن السعودية">
+                      {citiesLoading ? (
+                        <p className="city-options-status">جاري تحميل مدن السعودية...</p>
+                      ) : citiesLoadError ? (
+                        <p className="city-options-status">{citiesLoadError}</p>
+                      ) : cityOptions.length ? (
+                        cityOptions.map((city) => (
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={form.city === city.name_ar}
+                            key={city.city_id}
+                            onMouseDown={(event) => event.preventDefault()}
+                            onClick={() => chooseCity(city)}
+                          >
+                            <span>{city.name_ar}</span>
+                            <small>{city.name_en}</small>
+                          </button>
+                        ))
+                      ) : (
+                        <p className="city-options-status">لا توجد مدينة مطابقة لبحثك.</p>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
                 <label className="checkout-field checkout-field-full">
                   <input name="addressDetails" value={form.addressDetails} onChange={(event) => setField('addressDetails', event.target.value)} placeholder="تفاصيل العنوان (الحي، الشارع، رقم المبنى)" autoComplete="street-address" required />
                 </label>

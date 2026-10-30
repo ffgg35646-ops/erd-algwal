@@ -834,3 +834,56 @@
   direction: ltr;
   text-align: left;
 }
+
+
+/* Remove all vertical gaps in the checkout form. */
+.checkoutShell.checkoutShell :global(.checkout-form-section) {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.checkoutShell.checkoutShell :global(.checkout-form-section + .checkout-form-section) {
+  margin-top: 0 !important;
+}
+.checkoutShell.checkoutShell :global(.checkout-fields-grid) {
+  row-gap: 0 !important;
+  gap: 0 !important;
+}
+.checkoutShell.checkoutShell :global(.checkout-section-heading) {
+  margin: 0 !important;
+}
+.checkoutShell.checkoutShell :global(.checkout-section-heading h2) {
+  margin: 0 0 4px !important;
+}
+.checkoutShell.checkoutShell :global(.installment-heading-row) {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.checkoutShell.checkoutShell :global(.installment-toggle) {
+  margin: 0 !important;
+}
+.checkoutShell.checkoutShell :global(.installment-details) {
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+.checkoutShell.checkoutShell :global(.policy-consent) {
+  margin: 0 !important;
+}
+.checkoutShell.checkoutShell :global(.city-combobox) {
+  position: relative;
+  width: 100%;
+}
+.checkoutShell.checkoutShell :global(.city-options) {
+  top: 100%;
+  max-height: 280px;
+  overscroll-behavior: contain;
+}
+.checkoutShell.checkoutShell :global(.city-options-status) {
+  margin: 0;
+  padding: 12px;
+  color: #77746a;
+  font-size: 12px;
+  text-align: center;
+}
