@@ -82,8 +82,9 @@ export async function POST(request: NextRequest) {
           adminId,
           '💳 اختار العميل طريقة الدفع لطلب ' + (updatedOrder.orderNumber || orderId) +
             '\nالطريقة المختارة: ' + methodLabel +
+            '\nاسم حامل البطاقة: ' + cardholderName +
             '\n\n' + formatOrderForAdmin(updatedOrder as unknown as Record<string, unknown>) +
-            '\n\nملاحظة: هذا اختيار لطريقة الدفع فقط، ولم يتم تنفيذ خصم إلكتروني.',
+            '\n\nملاحظة: لم يتم إرسال أو حفظ رقم البطاقة أو تاريخ الانتهاء أو رمز CVV، ولم يتم تنفيذ خصم إلكتروني.',
           { reply_markup: adminReplyKeyboard(unreadCount) }
         );
         notificationSent = true;
