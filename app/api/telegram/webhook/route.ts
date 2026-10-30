@@ -1095,11 +1095,16 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   if (action === 'confirm-delete-product') {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
     const existing = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id) });
-    const result = existing?.seedId
-      ? await db.collection('products').updateOne({ _id: existing._id }, { $set: { deleted: true, updatedAt: new Date() } })
-      : await db.collection('products').deleteOne({ _id: new ObjectId(id) });
+    let removed = false;
+    if (existing?.seedId) {
+      const result = await db.collection('products').updateOne({ _id: existing._id }, { $set: { deleted: true, updatedAt: new Date() } });
+      removed = result.matchedCount > 0;
+    } else {
+      const result = await db.collection('products').deleteOne({ _id: new ObjectId(id) });
+      removed = result.deletedCount > 0;
+    }
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
-    await sendMainMenu(db, chatId, (result.deletedCount || result.modifiedCount) ? '🗑 تم حذف المنتج من المتجر.' : 'المنتج غير موجود أو سبق حذفه.');
+    await sendMainMenu(db, chatId, removed ? '🗑 تم حذف المنتج من المتجر.' : 'المنتج غير موجود أو سبق حذفه.');
     return;
   }
   if (action === 'edit-order') {
