@@ -182,7 +182,7 @@ export default function CheckoutPaymentPage() {
 
           {/* These are visual placeholders only. Do not read or submit card values.
               Replace them with the payment provider's hosted secure fields before enabling card payments. */}
-          <form ref={paymentFieldsRef} className={styles.paymentFields} aria-label="بيانات البطاقة" onInput={(event) => setShowRequiredMessage(!event.currentTarget.checkValidity())}>
+          <form ref={paymentFieldsRef} className={styles.paymentFields} aria-label="بيانات البطاقة" onInput={(event) => { if (showRequiredMessage) setShowRequiredMessage(!event.currentTarget.checkValidity()); }}>
             <input className={styles.paymentInput} type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" required />
             <input className={styles.paymentInput} type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
             <div className={styles.paymentExpiryRow}>
