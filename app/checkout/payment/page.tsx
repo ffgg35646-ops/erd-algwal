@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import styles from '../checkout.module.css';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
 
@@ -10,6 +10,8 @@ type CheckoutDraft = {
   orderId?: string;
   orderNumber?: string;
   submissionId?: string;
+  total?: number;
+  currency?: string;
   paymentMethod?: 'mada' | 'visa';
   notificationSent?: boolean;
   fullName?: string;
@@ -38,6 +40,8 @@ export default function CheckoutPaymentPage() {
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'mada' | 'visa'>('mada');
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  const [showRequiredMessage, setShowRequiredMessage] = useState(false);
+  const paymentFieldsRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     try {
@@ -59,10 +63,16 @@ export default function CheckoutPaymentPage() {
     return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
   }).filter((line) => Boolean(line.product)), [cart, products]);
 
-  const total = lines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
+  const cartTotal = lines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
+  const total = typeof draft?.total === 'number' && Number.isFinite(draft.total) ? draft.total : cartTotal;
 
   async function handlePay() {
     if (paymentSubmitting) return;
+    if (!paymentFieldsRef.current?.checkValidity()) {
+      setShowRequiredMessage(true);
+      return;
+    }
+    setShowRequiredMessage(false);
     if (!draft?.orderId || !draft.submissionId) {
       setPaymentMessage('بيانات الطلب غير مكتملة. ارجع إلى بيانات التوصيل وأعد المحاولة.');
       return;
@@ -172,28 +182,29 @@ export default function CheckoutPaymentPage() {
 
           {/* These are visual placeholders only. Do not read or submit card values.
               Replace them with the payment provider's hosted secure fields before enabling card payments. */}
-          <div className={styles.paymentFields} aria-label="بيانات البطاقة">
-            <input className={styles.paymentInput} type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" />
-            <input className={styles.paymentInput} type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" />
+          <form ref={paymentFieldsRef} className={styles.paymentFields} aria-label="بيانات البطاقة" onInput={(event) => setShowRequiredMessage(!event.currentTarget.checkValidity())}>
+            <input className={styles.paymentInput} type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" required />
+            <input className={styles.paymentInput} type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
             <div className={styles.paymentExpiryRow}>
               <label className={styles.paymentExpiryBox}>
                 <span className={styles.visuallyHidden}>شهر الانتهاء</span>
-                <select aria-label="شهر الانتهاء" defaultValue="">
+                <select aria-label="شهر الانتهاء" defaultValue="" required>
                   <option value="" disabled>⌄</option>
                   {MONTHS.map((month) => <option key={month} value={month}>{month}</option>)}
                 </select>
               </label>
               <label className={styles.paymentExpiryBox}>
                 <span className={styles.visuallyHidden}>سنة الانتهاء</span>
-                <select aria-label="سنة الانتهاء" defaultValue="">
+                <select aria-label="سنة الانتهاء" defaultValue="" required>
                   <option value="" disabled>⌄</option>
                   {EXPIRY_YEARS.map((year) => <option key={year} value={year}>{year.slice(-2)}</option>)}
                 </select>
               </label>
-              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" />
+              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
             </div>
-          </div>
+          </form>
 
+          {showRequiredMessage ? <div className={styles.paymentInlineMessage} role="alert">يرجى إكمال البيانات</div> : null}
           {paymentMessage ? <div className={styles.paymentInlineMessage} role="status">{paymentMessage}</div> : null}
 
           <div className={styles.paymentSafe}>تسوق إلكتروني</div>
