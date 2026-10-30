@@ -241,3 +241,25 @@
   .infoRow { gap: 10px; font-size: 12px; }
   .infoRow span { flex-basis: 72px; }
 }
+
+.ordersList {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+.orderDetails {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 10px;
+  color: #77817b;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.orderExtra {
+  margin: 8px 0 0;
+  color: #77817b;
+  font-size: 11px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}

@@ -1,6 +1,7 @@
 'use client';
 
 const STORAGE_KEY = 'erd-algwal-customer-notification-key-v1';
+export const CUSTOMER_EMAIL_STORAGE_KEY = 'erd-algwal-account-email-v1';
 
 function createKey() {
   if (typeof window === 'undefined') return '';

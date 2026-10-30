@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
-import { getCustomerNotificationKey } from '@/lib/customer-notifications-client';
+import { CUSTOMER_EMAIL_STORAGE_KEY, getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
 type Region = {
   region_id: number;
@@ -108,13 +108,13 @@ export default function StoreCheckoutPage() {
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem('erd-algwal-checkout-draft-v1');
-      if (!raw) return;
-      const savedDraft = JSON.parse(raw) as Partial<CheckoutForm>;
+      const savedDraft = raw ? JSON.parse(raw) as Partial<CheckoutForm> : {};
+      const savedEmail = window.localStorage.getItem(CUSTOMER_EMAIL_STORAGE_KEY) || '';
       const restored: CheckoutForm = {
         ...EMPTY_FORM,
         fullName: typeof savedDraft.fullName === 'string' ? savedDraft.fullName : '',
         phone: typeof savedDraft.phone === 'string' ? sanitizeSaudiPhoneInput(savedDraft.phone) : '',
-        email: typeof savedDraft.email === 'string' ? savedDraft.email : '',
+        email: typeof savedDraft.email === 'string' && savedDraft.email.trim() ? savedDraft.email : savedEmail,
         idNumber: typeof savedDraft.idNumber === 'string' ? normalizeSaudiPhoneDigits(savedDraft.idNumber).replace(/[^0-9]/g, '').slice(0, 10) : '',
         regionId: typeof savedDraft.regionId === 'string' ? savedDraft.regionId : '',
         cityId: typeof savedDraft.cityId === 'string' ? savedDraft.cityId : '',
@@ -128,6 +128,7 @@ export default function StoreCheckoutPage() {
       };
       setForm(restored);
       setCitySearch(restored.city);
+      if (restored.email.trim()) window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, restored.email.trim());
     } catch {
       // A malformed local draft should never block checkout.
     }
@@ -364,7 +365,11 @@ export default function StoreCheckoutPage() {
                 </label>
                 <label className="checkout-field">
                   <span>البريد الإلكتروني <small>(اختياري)</small></span>
-                  <input name="email" type="email" value={form.email} onChange={(event) => setField('email', event.target.value)} placeholder="name@example.com" autoComplete="email" />
+                  <input name="email" type="email" value={form.email} onChange={(event) => {
+                    const value = event.target.value;
+                    setField('email', value);
+                    try { window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, value); } catch { /* Keep checkout usable without browser storage. */ }
+                  }} placeholder="name@example.com" autoComplete="email" />
                 </label>
                 <label className="checkout-field">
                   <span>رقم الهوية / الإقامة <b>*</b></span>
@@ -478,7 +483,7 @@ export default function StoreCheckoutPage() {
             </div>
             <div className="checkout-total-row"><span>عدد القطع</span><strong>{cartLines.reduce((sum, line) => sum + line.quantity, 0)}</strong></div>
             <div className="checkout-total-row"><span>قيمة المنتجات</span><strong>{formatPrice(total)}</strong></div>
-            <p className="checkout-shipping-note">تكلفة الشحن تُحدد لاحقًا، والدفع في الخطوة التالية.</p>
+            
             <div className="checkout-grand-total"><span>الإجمالي الحالي</span><strong>{formatPrice(total)}</strong></div>
             <Link href="/cart" className="checkout-edit-cart">تعديل محتويات السلة ←</Link>
           </aside>

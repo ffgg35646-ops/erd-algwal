@@ -1,48 +1,52 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import styles from './account.module.css';
-import { getCustomerNotificationKey } from '@/lib/customer-notifications-client';
+import { CUSTOMER_EMAIL_STORAGE_KEY, getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
 type SavedOrderItem = {
-  name?: string;
-  quantity?: number;
+  name: string;
+  quantity: number;
   unitPrice?: number;
   color?: string;
 };
 
-type CheckoutDraft = {
-  fullName?: string;
-  phone?: string;
-  email?: string;
-  region?: string;
-  regionName?: string;
-  city?: string;
-  neighborhood?: string;
-  street?: string;
-  building?: string;
-  orderId?: string;
-  orderNumber?: string;
-  total?: number;
-  currency?: string;
-  items?: SavedOrderItem[];
-  savedAt?: string;
-  stage?: string;
-};
-
-type CustomerNotification = {
+type CustomerOrder = {
+  id: string;
   orderNumber: string;
-  status: string;
-  statusLabel: string;
-  cancellationReason: string;
   createdAt: string;
+  status: string;
+  paymentStatus: string;
+  installment: boolean;
+  notes: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  items: SavedOrderItem[];
+  total: number;
+  currency: string;
 };
 
 type StoreSettings = {
   whatsappNumber?: string;
   barcodeImageUrl?: string;
   barcodeRemoved?: boolean;
+};
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  new: 'قيد المراجعة',
+  confirmed: 'تم التأكيد',
+  shipped: 'تم الشحن',
+  completed: 'مكتمل',
+  cancelled: 'ملغي'
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  pending: 'بانتظار الدفع',
+  paid: 'مدفوع',
+  not_recorded: 'غير مسجل',
+  failed: 'تعذر الدفع'
 };
 
 function formatPrice(value: number | undefined) {
@@ -55,13 +59,13 @@ function formatPrice(value: number | undefined) {
 }
 
 function formatDate(value?: string) {
-  if (!value) return '';
+  if (!value) return '—';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('ar-SA', { dateStyle: 'medium' });
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-function Icon({ name }: { name: 'user' | 'bag' | 'search' | 'location' | 'support' | 'shield' }) {
+function Icon({ name }: { name: 'user' | 'bag' | 'search' | 'support' | 'shield' }) {
   const common = { viewBox: '0 0 24 24', 'aria-hidden': true as const, focusable: false as const };
   switch (name) {
     case 'user':
@@ -70,8 +74,6 @@ function Icon({ name }: { name: 'user' | 'bag' | 'search' | 'location' | 'suppor
       return <svg {...common}><path d="M5 8h14l-1 12H6L5 8Z" /><path d="M9 9V6a3 3 0 0 1 6 0v3" /></svg>;
     case 'search':
       return <svg {...common}><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>;
-    case 'location':
-      return <svg {...common}><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg>;
     case 'support':
       return <svg {...common}><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z" /><path d="M9 9c1.2 2.6 2.2 3.6 4.8 5" /></svg>;
     case 'shield':
@@ -80,43 +82,53 @@ function Icon({ name }: { name: 'user' | 'bag' | 'search' | 'location' | 'suppor
 }
 
 export default function AccountPage() {
-  const [draft, setDraft] = useState<CheckoutDraft | null>(null);
-  const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
   const [email, setEmail] = useState('');
+  const [orders, setOrders] = useState<CustomerOrder[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [ordersLoaded, setOrdersLoaded] = useState(false);
   const [lookupMessage, setLookupMessage] = useState('');
-  const [foundOrder, setFoundOrder] = useState<CheckoutDraft | null>(null);
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [barcodeImageUrl, setBarcodeImageUrl] = useState('');
   const [barcodeRemoved, setBarcodeRemoved] = useState(false);
 
+  async function loadOrders() {
+    const key = getCustomerNotificationKey();
+    if (!key) {
+      setLookupMessage('تعذر قراءة بيانات هذا المتصفح. حدّث الصفحة وحاول مرة أخرى.');
+      setOrdersLoaded(true);
+      return;
+    }
+
+    setOrdersLoading(true);
+    setLookupMessage('');
+    try {
+      const response = await fetch('/api/orders?key=' + encodeURIComponent(key), { cache: 'no-store' });
+      const data = await response.json() as { ok?: boolean; orders?: CustomerOrder[]; error?: string };
+      if (!response.ok || !data.ok || !Array.isArray(data.orders)) {
+        throw new Error(data.error || 'تعذر تحميل تاريخ الطلبات.');
+      }
+      setOrders(data.orders);
+      setOrdersLoaded(true);
+      if (!data.orders.length) setLookupMessage('لا توجد طلبات مسجلة من هذا المتصفح حتى الآن.');
+    } catch (error) {
+      setLookupMessage(error instanceof Error ? error.message : 'تعذر تحميل تاريخ الطلبات.');
+      setOrdersLoaded(true);
+    } finally {
+      setOrdersLoading(false);
+    }
+  }
+
   useEffect(() => {
     let alive = true;
-
+    let savedEmail = '';
     try {
-      const raw = window.sessionStorage.getItem('erd-algwal-checkout-draft-v1');
-      if (raw) {
-        const saved = JSON.parse(raw) as CheckoutDraft;
-        if (alive && saved && typeof saved === 'object') {
-          setDraft(saved);
-          if (typeof saved.email === 'string') setEmail(saved.email);
-        }
-      }
+      savedEmail = window.localStorage.getItem(CUSTOMER_EMAIL_STORAGE_KEY) || '';
+      if (alive) setEmail(savedEmail);
     } catch {
-      // Ignore a damaged checkout draft; account details remain usable.
+      // The email field remains usable if browser storage is unavailable.
     }
 
-    const key = getCustomerNotificationKey();
-    if (key) {
-      fetch('/api/customer-notifications?key=' + encodeURIComponent(key), { cache: 'no-store' })
-        .then(async (response) => {
-          if (!response.ok) return;
-          const data = await response.json() as { notifications?: CustomerNotification[] };
-          if (alive && Array.isArray(data.notifications)) setNotifications(data.notifications);
-        })
-        .catch(() => {
-          // Order information stored in this browser remains visible if notifications are unavailable.
-        });
-    }
+    if (savedEmail.trim()) void loadOrders();
 
     fetch('/api/store-settings', { cache: 'no-store' })
       .then(async (response) => {
@@ -128,43 +140,41 @@ export default function AccountPage() {
         setBarcodeRemoved(data.barcodeRemoved === true);
       })
       .catch(() => {
-        // Keep the rest of the account page working if settings are unavailable.
+        // Keep the account page usable if store settings are unavailable.
       });
 
     return () => { alive = false; };
   }, []);
 
-  const address = useMemo(() => {
-    if (!draft) return '';
-    return [
-      draft.regionName || draft.region,
-      draft.city,
-      draft.neighborhood,
-      draft.street,
-      draft.building
-    ].filter((part) => typeof part === 'string' && part.trim()).join('، ');
-  }, [draft]);
-
-  const latestOrderNumber = draft?.orderNumber || notifications[0]?.orderNumber || '';
-  const latestStatus = latestOrderNumber
-    ? notifications.find((item) => item.orderNumber === latestOrderNumber)?.statusLabel || ''
-    : '';
-
-  function handleOrderLookup(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setFoundOrder(null);
+  function handleEmailChange(value: string) {
+    setEmail(value);
     setLookupMessage('');
+    try {
+      window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, value);
+    } catch {
+      // The current page still reflects the entered email.
+    }
+  }
 
-    const normalizedEmail = email.trim().toLocaleLowerCase('en-US');
-    if (draft?.orderNumber && draft.email && draft.email.trim().toLocaleLowerCase('en-US') === normalizedEmail) {
-      setFoundOrder(draft);
+  async function handleOrderLookup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      setLookupMessage('اكتب بريدك الإلكتروني أولًا.');
       return;
     }
-
-    setLookupMessage(
-      'لم نعثر على طلب بهذا البريد في جلسة المتصفح الحالية. إذا أتممت الشراء من جهاز آخر أو في جلسة سابقة، تواصل مع خدمة العملاء لمساعدتك في المتابعة.'
-    );
+    try {
+      window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, normalizedEmail);
+    } catch {
+      // Continue with the current browser session if storage is unavailable.
+    }
+    await loadOrders();
   }
+
+  const latestOrder = orders[0];
+  const latestOrderNumber = latestOrder?.orderNumber || '';
+  const latestStatus = latestOrder ? ORDER_STATUS_LABELS[latestOrder.status] || latestOrder.status : '';
+  const totalOrderValue = orders.reduce((sum, order) => sum + (Number(order.total) || 0), 0);
 
   const phoneDigits = whatsappNumber.replace(/\D/g, '');
   const whatsappHref = /^\d{10,15}$/.test(phoneDigits)
@@ -172,11 +182,6 @@ export default function AccountPage() {
         'مرحبًا، أحتاج مساعدة بخصوص ' + (latestOrderNumber ? 'الطلب ' + latestOrderNumber : 'طلب في متجر أرض الجوال')
       )
     : '';
-
-  const knownOrderCount = new Set([
-    ...(draft?.orderNumber ? [draft.orderNumber] : []),
-    ...notifications.map((item) => item.orderNumber)
-  ].filter(Boolean)).size;
 
   return (
     <main className={styles.page}>
@@ -189,8 +194,8 @@ export default function AccountPage() {
           <div className={styles.avatar}><Icon name="user" /></div>
           <div className={styles.welcomeCopy}>
             <small>مساحتك الشخصية</small>
-            <h1>{draft?.fullName ? 'أهلًا ' + draft.fullName.split(' ')[0] : 'أهلًا بك'}</h1>
-            <p>تابع طلباتك وراجع تفاصيل الشراء، وارجع لبيانات طلبك بسهولة من مكان واحد.</p>
+            <h1>أهلًا بك</h1>
+            <p>تابع مشترياتك وتفاصيل طلباتك من مكان واحد.</p>
           </div>
         </div>
         <Link href="/" className={styles.goldButton}>متابعة التسوق <span aria-hidden="true">←</span></Link>
@@ -198,12 +203,12 @@ export default function AccountPage() {
 
       <section className={styles.stats} aria-label="ملخص الطلبات">
         <div className={styles.stat}>
-          <span>الطلبات المعروفة على هذا الجهاز</span>
-          <strong>{knownOrderCount}</strong>
+          <span>عدد الطلبات</span>
+          <strong>{orders.length}</strong>
         </div>
         <div className={styles.stat}>
-          <span>قيمة آخر طلب محفوظ</span>
-          <strong>{draft?.orderNumber ? formatPrice(draft.total) : '—'}</strong>
+          <span>إجمالي قيمة الطلبات</span>
+          <strong>{orders.length ? formatPrice(totalOrderValue) : '—'}</strong>
         </div>
         <div className={styles.stat}>
           <span>آخر طلب</span>
@@ -211,19 +216,20 @@ export default function AccountPage() {
           {latestStatus ? <small>{latestStatus}</small> : null}
         </div>
       </section>
-      <p className={styles.scopeNote}>يعرض الملخص الطلب المحفوظ في جلسة المتصفح الحالية وإشعارات هذا الجهاز، وليس سجلًا كاملًا لحساب مسجّل.</p>
+      <p className={styles.scopeNote}>تاريخ الطلبات يعرض الطلبات المحفوظة في قاعدة بيانات المتجر من هذا المتصفح.</p>
 
       <section className={styles.card}>
         <div className={styles.cardHeading}>
           <div className={styles.sectionIcon}><Icon name="bag" /></div>
           <div>
-            <h2>طلباتي</h2>
-            <p className={styles.sub}>استخدم البريد الإلكتروني الذي أدخلته عند إتمام الطلب على هذا الجهاز.</p>
+            <h2>طلباتي — تاريخ الطلبات</h2>
+            <p className={styles.sub}>كل طلبات الشراء المسجلة من هذا المتصفح وتفاصيل كل طلب.</p>
           </div>
         </div>
+
         <form className={styles.lookup} onSubmit={handleOrderLookup}>
           <h3>اعثر على طلبك</h3>
-          <p className={styles.sub}>أدخل البريد الإلكتروني الذي استخدمته عند إتمام الشراء.</p>
+          <p className={styles.sub}>اكتب بريدك الإلكتروني وسيظل محفوظًا في هذا المتصفح.</p>
           <label htmlFor="account-email">البريد الإلكتروني</label>
           <input
             id="account-email"
@@ -232,30 +238,57 @@ export default function AccountPage() {
             inputMode="email"
             placeholder="name@example.com"
             value={email}
-            onChange={(event) => { setEmail(event.target.value); setLookupMessage(''); setFoundOrder(null); }}
+            onChange={(event) => handleEmailChange(event.target.value)}
             required
           />
-          <button type="submit" className={styles.greenButton}><Icon name="search" /> عرض الطلبات</button>
+          <button type="submit" className={styles.greenButton} disabled={ordersLoading}>
+            <Icon name="search" /> {ordersLoading ? 'جاري تحميل الطلبات...' : 'عرض تاريخ الطلبات'}
+          </button>
         </form>
 
         {lookupMessage ? <p className={styles.lookupMessage} role="status">{lookupMessage}</p> : null}
-        {foundOrder ? (
-          <article className={styles.orderResult} aria-live="polite">
-            <div className={styles.orderTop}>
-              <div><small>رقم الطلب</small><strong dir="ltr">{foundOrder.orderNumber}</strong></div>
-              <span className={styles.orderBadge}>{notifications.find((item) => item.orderNumber === foundOrder.orderNumber)?.statusLabel || 'تم تسجيل الطلب'}</span>
-            </div>
-            {foundOrder.savedAt ? <p className={styles.orderDate}>تاريخ الحفظ: {formatDate(foundOrder.savedAt)}</p> : null}
-            <div className={styles.orderItems}>
-              {(foundOrder.items || []).map((item, index) => (
-                <div className={styles.orderItem} key={(item.name || 'product') + '-' + index}>
-                  <span>{item.name || 'منتج'}{item.color ? ' · ' + item.color : ''} × {item.quantity || 1}</span>
-                  <strong>{formatPrice((item.unitPrice || 0) * (item.quantity || 1))}</strong>
+        {ordersLoading && !ordersLoaded ? <p className={styles.sub}>جاري تحميل الطلبات المحفوظة...</p> : null}
+
+        {orders.length ? (
+          <div className={styles.ordersList} aria-live="polite">
+            {orders.map((order) => (
+              <article className={styles.orderResult} key={order.id}>
+                <div className={styles.orderTop}>
+                  <div>
+                    <small>رقم الطلب</small>
+                    <strong dir="ltr">{order.orderNumber}</strong>
+                  </div>
+                  <span className={styles.orderBadge}>{ORDER_STATUS_LABELS[order.status] || order.status || 'مسجل'}</span>
                 </div>
-              ))}
-            </div>
-            <div className={styles.orderTotal}><span>إجمالي الطلب</span><strong>{formatPrice(foundOrder.total)}</strong></div>
-          </article>
+                <p className={styles.orderDate}>تاريخ الطلب: {formatDate(order.createdAt)}</p>
+
+                <div className={styles.orderItems}>
+                  {(order.items || []).map((item, index) => (
+                    <div className={styles.orderItem} key={order.id + '-' + index}>
+                      <span>
+                        {item.name || 'منتج'}
+                        {item.color ? ' · اللون: ' + item.color : ''}
+                        {' × '}{item.quantity || 1}
+                        {typeof item.unitPrice === 'number' ? ' — ' + formatPrice(item.unitPrice) + ' للقطعة' : ''}
+                      </span>
+                      <strong>{formatPrice((item.unitPrice || 0) * (item.quantity || 1))}</strong>
+                    </div>
+                  ))}
+                </div>
+
+                <div className={styles.orderTotal}>
+                  <span>إجمالي الطلب</span>
+                  <strong>{formatPrice(order.total)}</strong>
+                </div>
+                <div className={styles.orderDetails}>
+                  <span>حالة الدفع: {PAYMENT_STATUS_LABELS[order.paymentStatus] || order.paymentStatus || 'غير محددة'}</span>
+                  <span>طريقة الطلب: {order.installment ? 'تقسيط مطلوب' : 'شراء عادي'}</span>
+                </div>
+                {order.customerAddress ? <p className={styles.orderExtra}>عنوان التوصيل: {order.customerAddress}</p> : null}
+                {order.notes ? <p className={styles.orderExtra}>ملاحظات الطلب: {order.notes}</p> : null}
+              </article>
+            ))}
+          </div>
         ) : null}
       </section>
 
@@ -264,13 +297,13 @@ export default function AccountPage() {
           <div className={styles.sectionIcon}><Icon name="user" /></div>
           <div>
             <h2>بيانات التواصل</h2>
-            <p className={styles.sub}>البيانات المحفوظة مع آخر طلب في هذه الجلسة.</p>
+            <p className={styles.sub}>البريد الإلكتروني المحفوظ لهذا المتصفح.</p>
           </div>
         </div>
-        <div className={styles.infoRow}><span>الاسم</span><strong>{draft?.fullName || '—'}</strong></div>
-        <div className={styles.infoRow}><span>البريد الإلكتروني</span><strong className={styles.breakWord} dir={draft?.email ? 'ltr' : undefined}>{draft?.email || '—'}</strong></div>
-        <div className={styles.infoRow}><span>الجوال</span><strong dir={draft?.phone ? 'ltr' : undefined}>{draft?.phone || '—'}</strong></div>
-        <div className={styles.infoRow}><span>العنوان</span><strong>{address || '—'}</strong></div>
+        <div className={styles.infoRow}>
+          <span>البريد الإلكتروني</span>
+          <strong className={styles.breakWord} dir={email ? 'ltr' : undefined}>{email.trim() || 'لم يُضف بريد إلكتروني بعد'}</strong>
+        </div>
       </section>
 
       <section className={styles.card + ' ' + styles.helpCard}>

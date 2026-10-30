@@ -42,6 +42,52 @@ function validEmail(value: string) {
   return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value) && value.length <= 254;
 }
 
+const CUSTOMER_BROWSER_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export async function GET(request: NextRequest) {
+  const key = request.nextUrl.searchParams.get('key');
+  const noStore = { 'cache-control': 'no-store, max-age=0' };
+  if (!key || !CUSTOMER_BROWSER_KEY_PATTERN.test(key)) {
+    return NextResponse.json({ ok: false, error: 'مفتاح المتصفح غير صالح.' }, { status: 400, headers: noStore });
+  }
+
+  try {
+    const db = await getDb();
+    const savedOrders = await db.collection<StoreOrder>('orders')
+      .find({ source: 'website', customerNotificationKey: key })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .toArray();
+
+    return NextResponse.json({
+      ok: true,
+      orders: savedOrders.map((order) => ({
+        id: order._id.toHexString(),
+        orderNumber: order.orderNumber,
+        createdAt: new Date(order.createdAt).toISOString(),
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        installment: order.installment === true,
+        notes: order.notes || '',
+        customerName: order.customer?.name || '',
+        customerPhone: order.customer?.phone || '',
+        customerAddress: order.customer?.address || '',
+        items: (order.items || []).map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          ...(typeof item.unitPrice === 'number' ? { unitPrice: item.unitPrice } : {}),
+          ...(item.color ? { color: item.color } : {})
+        })),
+        total: Number(order.total || 0),
+        currency: order.currency || 'SAR'
+      }))
+    }, { headers: noStore });
+  } catch (error) {
+    console.error('Customer order history read failed:', error instanceof Error ? error.message : 'Unknown error');
+    return NextResponse.json({ ok: false, error: 'تعذر تحميل تاريخ الطلبات حاليًا.' }, { status: 500, headers: noStore });
+  }
+}
+
 export async function POST(request: NextRequest) {
   let body: CheckoutBody;
   try {
