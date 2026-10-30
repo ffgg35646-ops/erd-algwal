@@ -332,13 +332,10 @@ export default function StoreCheckoutPage() {
         <Link href="/">الرئيسية</Link><span>/</span><Link href="/cart">سلة المشتريات</Link><span>/</span><span>إنهاء الطلب</span>
       </div>
 
-      <div className="checkout-topline">
-        <div>
-          <span className="section-kicker">الخطوة الأولى من إتمام الطلب</span>
-          <h1>عنوان التوصيل</h1>
-          <p>اكتب بيانات التواصل وعنوان الاستلام عشان تكون جاهزة مع طلبك.</p>
+      <div className="checkout-topline checkout-topline-compact">
+        <div className="checkout-step-indicator checkout-step-indicator-plain">
+          <div><strong>الشحن والتوصيل</strong><small>الخطوة الأولى</small></div>
         </div>
-        <div className="checkout-step-indicator"><span>١</span><div><strong>الشحن والتوصيل</strong><small>الخطوة الأولى من ٢</small></div></div>
       </div>
 
       {!cartLines.length ? (
@@ -470,7 +467,7 @@ export default function StoreCheckoutPage() {
             </div>
           </form>
 
-          <aside className="checkout-order-summary">
+          <aside className="checkout-order-summary checkout-order-summary-compact">
             <h2>ملخص طلبك</h2>
             <div className="checkout-order-items">
               {cartLines.map(({ cartKey, product, color, quantity }) => product ? (
@@ -482,10 +479,8 @@ export default function StoreCheckoutPage() {
               ) : null)}
             </div>
             <div className="checkout-total-row"><span>عدد القطع</span><strong>{cartLines.reduce((sum, line) => sum + line.quantity, 0)}</strong></div>
-            <div className="checkout-total-row"><span>قيمة المنتجات</span><strong>{formatPrice(total)}</strong></div>
             
             <div className="checkout-grand-total"><span>الإجمالي الحالي</span><strong>{formatPrice(total)}</strong></div>
-            <Link href="/cart" className="checkout-edit-cart">تعديل محتويات السلة ←</Link>
           </aside>
         </div>
       )}

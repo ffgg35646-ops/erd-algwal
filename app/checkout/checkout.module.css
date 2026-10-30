@@ -424,3 +424,59 @@
 .checkoutShell.checkoutShell :global(.payment-method-logo) { font-size: 21px; font-weight: 900; line-height: 1; }
 .checkoutShell.checkoutShell :global(.visa-logo) { color: #1a3a8f; font-style: italic; }
 .checkoutShell.checkoutShell :global(.mada-logo) { color: #27261f; letter-spacing: -1px; }
+
+
+/* Compact checkout header and order summary. */
+.checkoutShell.checkoutShell :global(.checkout-topline-compact) {
+  justify-content: flex-start;
+  margin: 0 0 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.checkoutShell.checkoutShell :global(.checkout-step-indicator-plain) {
+  min-width: 0;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.checkoutShell.checkoutShell :global(.checkout-step-indicator-plain strong) {
+  font-size: 13px;
+}
+.checkoutShell.checkoutShell :global(.checkout-step-indicator-plain small) {
+  margin-top: 1px;
+  font-size: 10px;
+}
+.checkoutShell.checkoutShell :global(.checkout-order-summary-compact) {
+  padding: 12px !important;
+}
+.checkoutShell.checkoutShell :global(.checkout-order-summary-compact > h2) {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.checkoutShell.checkoutShell :global(.checkout-order-summary-compact .checkout-order-item) {
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 7px;
+  padding: 7px 0;
+}
+.checkoutShell.checkoutShell :global(.checkout-order-summary-compact .checkout-order-item img) {
+  width: 40px;
+  height: 40px;
+}
+.checkoutShell.checkoutShell :global(.checkout-order-summary-compact .checkout-total-row) {
+  padding: 7px 0;
+  font-size: 11px;
+}
+.checkoutShell.checkoutShell :global(.checkout-order-summary-compact .checkout-grand-total) {
+  margin: 8px 0 0;
+  padding: 9px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.checkoutShell.checkoutShell :global(.checkout-order-summary-compact .checkout-grand-total strong) {
+  font-size: 14px;
+}
