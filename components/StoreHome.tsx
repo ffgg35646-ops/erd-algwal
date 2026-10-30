@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useCart } from '@/components/CartProvider';
 import { formatPrice, type Product } from '@/lib/products';
 import StoreBannerSlider from '@/components/StoreBannerSlider';
@@ -140,11 +140,7 @@ export default function StoreHome() {
                     ))}
                   </div>
                 ) : (
-                  <div className="category-product-slider" aria-label={'منتجات ' + category.name}>
-                    {category.products.slice(0, 4).map((product) => (
-                      <StripProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
+                  <AutoProductSlider categoryName={category.name} products={category.products} />
                 )
               ) : (
                 <div className="category-no-products">سيتم عرض المنتجات هنا عند إضافتها من لوحة الإدارة.</div>
@@ -169,6 +165,114 @@ export default function StoreHome() {
         </div>
       </section>
     </main>
+  );
+}
+
+
+function AutoProductSlider({ categoryName, products }: { categoryName: string; products: Product[] }) {
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const activeStartRef = useRef(0);
+
+  useEffect(() => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+
+    let intervalId: number | undefined;
+    let resizeObserver: ResizeObserver | undefined;
+
+    const getCards = () => Array.from(slider.querySelectorAll<HTMLElement>('.strip-product-card'));
+
+    const getVisibleCount = (cards: HTMLElement[]) => {
+      if (!cards.length) return 1;
+      const computed = window.getComputedStyle(slider);
+      const gap = Number.parseFloat(computed.columnGap || computed.gap || '0') || 0;
+      const cardWidth = cards[0].getBoundingClientRect().width;
+      if (!cardWidth) return 1;
+      return Math.max(1, Math.floor((slider.clientWidth + gap) / (cardWidth + gap)));
+    };
+
+    const stopAutoplay = () => {
+      if (intervalId !== undefined) window.clearInterval(intervalId);
+      intervalId = undefined;
+    };
+
+    const syncActiveStart = () => {
+      const cards = getCards();
+      if (!cards.length) {
+        activeStartRef.current = 0;
+        return;
+      }
+      const containerRect = slider.getBoundingClientRect();
+      const isRtl = window.getComputedStyle(slider).direction === 'rtl';
+      const edge = isRtl ? containerRect.right : containerRect.left;
+      let closestIndex = 0;
+      let closestDistance = Number.POSITIVE_INFINITY;
+
+      cards.forEach((card, index) => {
+        const rect = card.getBoundingClientRect();
+        const cardEdge = isRtl ? rect.right : rect.left;
+        const distance = Math.abs(cardEdge - edge);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestIndex = index;
+        }
+      });
+      activeStartRef.current = closestIndex;
+    };
+
+    const startAutoplay = () => {
+      stopAutoplay();
+      const cards = getCards();
+      const visibleCount = getVisibleCount(cards);
+      if (cards.length <= visibleCount || slider.scrollWidth <= slider.clientWidth + 2) return;
+
+      intervalId = window.setInterval(() => {
+        const currentCards = getCards();
+        const currentVisibleCount = getVisibleCount(currentCards);
+        if (currentCards.length <= currentVisibleCount || slider.scrollWidth <= slider.clientWidth + 2) {
+          stopAutoplay();
+          activeStartRef.current = 0;
+          return;
+        }
+
+        const lastStart = currentCards.length - currentVisibleCount;
+        const currentStart = Math.min(activeStartRef.current, lastStart);
+        const nextStart = currentStart >= lastStart
+          ? 0
+          : Math.min(currentStart + currentVisibleCount, lastStart);
+        activeStartRef.current = nextStart;
+
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        currentCards[nextStart]?.scrollIntoView({
+          behavior: reducedMotion ? 'auto' : 'smooth',
+          block: 'nearest',
+          inline: 'start'
+        });
+      }, 5000);
+    };
+
+    slider.addEventListener('scroll', syncActiveStart, { passive: true });
+    window.addEventListener('resize', startAutoplay, { passive: true });
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(startAutoplay);
+      resizeObserver.observe(slider);
+    }
+    startAutoplay();
+
+    return () => {
+      stopAutoplay();
+      resizeObserver?.disconnect();
+      slider.removeEventListener('scroll', syncActiveStart);
+      window.removeEventListener('resize', startAutoplay);
+    };
+  }, [categoryName, products]);
+
+  return (
+    <div ref={sliderRef} className="category-product-slider" aria-label={'منتجات ' + categoryName}>
+      {products.map((product) => (
+        <StripProductCard key={product.id} product={product} />
+      ))}
+    </div>
   );
 }
 
