@@ -49,10 +49,6 @@ export default function MobileBottomNav() {
     window.dispatchEvent(new Event('store-open-categories'));
   }
 
-  function openAccount() {
-    window.dispatchEvent(new Event('store-open-customer-notifications'));
-  }
-
   return (
     <nav className="mobile-bottom-nav" aria-label="التنقل الرئيسي">
       <WhatsAppLink />
@@ -85,15 +81,15 @@ export default function MobileBottomNav() {
         </span>
         <span>السلة</span>
       </Link>
-      <button
-        type="button"
-        className="mobile-bottom-nav-item mobile-bottom-nav-account"
-        onClick={openAccount}
-        aria-label="حسابي وإشعارات الطلبات"
+      <Link
+        href="/account"
+        className={'mobile-bottom-nav-item mobile-bottom-nav-account' + (pathname === '/account' ? ' is-active' : '')}
+        aria-current={pathname === '/account' ? 'page' : undefined}
+        aria-label="حسابي"
       >
         <NavIcon name="account" />
         <span>حسابي</span>
-      </button>
+      </Link>
     </nav>
   );
 }
