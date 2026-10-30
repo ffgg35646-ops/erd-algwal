@@ -172,6 +172,8 @@ export async function POST(request: NextRequest) {
         ok: true,
         orderId: previous._id.toHexString(),
         orderNumber: previous.orderNumber,
+        total: Number(previous.total || 0),
+        currency: previous.currency || 'SAR',
         notificationSent: previous.telegramNotificationSent === true,
         duplicate: true
       });
@@ -273,6 +275,8 @@ export async function POST(request: NextRequest) {
       ok: true,
       orderId: _id.toHexString(),
       orderNumber: order.orderNumber,
+      total: order.total,
+      currency: order.currency,
       notificationSent,
       message: notificationSent
         ? 'تم حفظ الطلب وإرسال إشعار الإدارة.'
