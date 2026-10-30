@@ -9,6 +9,8 @@ import { formatPrice } from '@/lib/products';
 type CheckoutDraft = {
   orderId?: string;
   orderNumber?: string;
+  submissionId?: string;
+  paymentMethod?: 'mada' | 'visa';
   notificationSent?: boolean;
   fullName?: string;
   phone?: string;
@@ -32,6 +34,7 @@ export default function CheckoutPaymentPage() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'mada' | 'visa'>('mada');
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
 
   useEffect(() => {
     try {
@@ -52,9 +55,51 @@ export default function CheckoutPaymentPage() {
   const total = lines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
   const itemCount = lines.reduce((sum, line) => sum + line.quantity, 0);
 
-  function handlePay() {
-    const methodLabel = paymentMethod === 'mada' ? 'مدى' : 'Visa';
-    setPaymentMessage(`تم اختيار ${methodLabel}، لكن بوابة الدفع الإلكتروني لم تُربط بعد. لم يتم إرسال بيانات بطاقة أو خصم أي مبلغ. ستُفعّل هذه الخطوة بعد اختيار وربط مزود دفع آمن.`);
+  async function handlePay() {
+    if (paymentSubmitting) return;
+    if (!draft?.orderId || !draft.submissionId) {
+      setPaymentMessage('بيانات الطلب غير مكتملة. ارجع إلى بيانات التوصيل وأعد المحاولة.');
+      return;
+    }
+    let reviewToken = '';
+    try {
+      reviewToken = window.localStorage.getItem('erd-algwal-review-token') || '';
+    } catch {
+      reviewToken = '';
+    }
+    if (!reviewToken) {
+      setPaymentMessage('تعذر التحقق من الطلب. ارجع إلى بيانات التوصيل وأعد المحاولة.');
+      return;
+    }
+
+    setPaymentSubmitting(true);
+    setPaymentMessage('');
+    try {
+      const response = await fetch('/api/orders/payment-method', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          orderId: draft.orderId,
+          submissionId: draft.submissionId,
+          reviewToken,
+          paymentMethod
+        })
+      });
+      const result = await response.json() as { ok?: boolean; notificationSent?: boolean; error?: string };
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || 'تعذر إرسال اختيار طريقة الدفع إلى الإدارة.');
+      }
+
+      const methodLabel = paymentMethod === 'mada' ? 'مدى' : 'Visa';
+      setDraft((current) => current ? { ...current, paymentMethod } : current);
+      setPaymentMessage(result.notificationSent
+        ? `تم إرسال اختيار ${methodLabel} وبيانات الطلب إلى الإدارة. الدفع لم يُنفذ بعد لأن بوابة الدفع الإلكتروني لم تُربط.`
+        : `تم حفظ اختيار ${methodLabel} في الطلب، لكن تعذر إرسال إشعار تيليجرام للإدارة. لم يتم خصم أي مبلغ.`);
+    } catch (error) {
+      setPaymentMessage(error instanceof Error ? error.message : 'تعذر إرسال اختيار طريقة الدفع.');
+    } finally {
+      setPaymentSubmitting(false);
+    }
   }
 
   if (!hydrated || !draftLoaded) {
@@ -81,7 +126,6 @@ export default function CheckoutPaymentPage() {
         <div>
           <span className="section-kicker">الخطوة الثانية من إتمام الطلب</span>
           <h1>طريقة الدفع</h1>
-          <p>راجع المبلغ المستحق، ثم أكمل الدفع من خلال بوابة دفع آمنة.</p>
           {draft.orderNumber ? <p className="checkout-order-number">رقم الطلب: <strong>{draft.orderNumber}</strong></p> : null}
         </div>
         <div className="checkout-step-indicator"><span>٢</span><div><strong>طرق الدفع</strong><small>الخطوة الثانية من ٢</small></div></div>
@@ -89,28 +133,21 @@ export default function CheckoutPaymentPage() {
 
       <div className="checkout-layout payment-layout">
         <section className="checkout-form-card payment-form-card">
-          <div className="checkout-section-heading"><span className="checkout-section-number">٢</span><div><h2>طريقة الدفع</h2><p>بيانات البطاقة تُدخل داخل صفحة مزود الدفع عند تفعيله فقط.</p></div></div>
+          <div className="checkout-section-heading"><div><h2>طريقة الدفع</h2></div></div>
 
           <div className="payment-method-options" role="group" aria-label="اختيار طريقة البطاقة">
             <button type="button" className={paymentMethod === 'visa' ? 'payment-method-choice selected' : 'payment-method-choice'} aria-pressed={paymentMethod === 'visa'} onClick={() => { setPaymentMethod('visa'); setPaymentMessage(''); }}>
-              <strong className="payment-method-logo visa-logo">VISA</strong>
-              <span>بطاقة Visa</span>
+              <span className="payment-method-name">Visa</span>
             </button>
             <button type="button" className={paymentMethod === 'mada' ? 'payment-method-choice selected' : 'payment-method-choice'} aria-pressed={paymentMethod === 'mada'} onClick={() => { setPaymentMethod('mada'); setPaymentMessage(''); }}>
-              <strong className="payment-method-logo mada-logo">mada</strong>
-              <span>بطاقة مدى</span>
+              <span className="payment-method-name">مدى</span>
             </button>
           </div>
 
-          <div className="payment-secure-panel">
-            <div className="payment-secure-heading"><span className="secure-lock">⌑</span><div><strong>تسوق إلكتروني آمن</strong><small>حماية بيانات الدفع عبر مزود متخصص</small></div></div>
-            <p>في صفحة الدفع الفعلية، سيطلب مزود الدفع اسم حامل البطاقة ورقم البطاقة ورمز CVV. لن يحفظ متجر أرض الجوال هذه البيانات في MongoDB أو في المتصفح، ولن تُرسل إلى بوت تيليجرام.</p>
-            <div className="payment-field-preview">
-              <div><span>اسم حامل البطاقة</span><b>يُدخل في بوابة الدفع الآمنة</b></div>
-              <div><span>رقم البطاقة</span><b>يُدخل في بوابة الدفع الآمنة</b></div>
-              <div><span>رمز (CVV)</span><b>يُدخل في بوابة الدفع الآمنة</b></div>
-            </div>
-            <span className="payment-pending-tag"><span /> بوابة الدفع قيد الربط</span>
+          <p className="payment-pending-note">اختيار البطاقة يُسجّل كطريقة دفع مفضلة فقط. لن يتم خصم أي مبلغ قبل ربط بوابة الدفع.</p>
+          <div className="payment-amount-bar">
+            <span>المبلغ المستحق</span>
+            <strong>{formatPrice(total)}</strong>
           </div>
 
           {draft.notificationSent === false ? (
@@ -123,11 +160,11 @@ export default function CheckoutPaymentPage() {
             <div className="checkout-alert checkout-alert-error"><span>!</span><div><strong>طلب تقسيط محدد</strong><p>الدفعة المقدمة: {Number(draft.installmentDownPayment || 0).toLocaleString('en-US')} ريال — المدة: {draft.installmentMonths || '—'} شهور. يتم تأكيد الشروط عند تفعيل مزود التقسيط.</p></div></div>
           ) : null}
 
-          {paymentMessage ? <div className="checkout-alert checkout-alert-error" role="alert"><span>!</span>{paymentMessage}</div> : null}
+          {paymentMessage ? <div className="payment-feedback" role="status">{paymentMessage}</div> : null}
 
           <div className="checkout-form-actions payment-actions">
             <Link href="/checkout/store" className="outline-button">الرجوع لبيانات التوصيل</Link>
-            <button type="button" className="primary-button checkout-submit" onClick={handlePay}>إكمال الدفع <span aria-hidden="true">←</span></button>
+            <button type="button" className="primary-button checkout-submit" onClick={handlePay} disabled={paymentSubmitting}>{paymentSubmitting ? 'جارٍ إرسال الطلب...' : 'إكمال الدفع'} <span aria-hidden="true">←</span></button>
           </div>
         </section>
 
@@ -136,7 +173,7 @@ export default function CheckoutPaymentPage() {
           <div className="payment-customer-summary">
             <div><small>الاسم الكامل</small><strong>{draft.fullName}</strong></div>
             <div><small>رقم الجوال</small><strong dir="ltr">{draft.phone || '—'}</strong></div>
-            <div><small>عنوان التوصيل</small><strong>{[draft.region, draft.city, draft.addressDetails, draft.neighborhood, draft.street, draft.building].filter(Boolean).join('، ') || '—'}</strong></div>
+            <div><small>عنوان التوصيل</small><strong>{[draft.city, draft.addressDetails, draft.neighborhood, draft.street, draft.building].filter(Boolean).join('، ') || '—'}</strong></div>
           </div>
           <div className="checkout-order-items">
             {lines.map(({ cartKey, product, color, quantity }) => product ? (
@@ -149,7 +186,7 @@ export default function CheckoutPaymentPage() {
           </div>
           <div className="checkout-total-row"><span>عدد القطع</span><strong>{itemCount}</strong></div>
           <div className="checkout-total-row"><span>الشحن والتوصيل</span><strong>يُحدد لاحقًا</strong></div>
-          <div className="checkout-grand-total"><span>المبلغ المستحق حاليًا</span><strong>{formatPrice(total)}</strong></div>
+          
           <p className="checkout-shipping-note">المبلغ المعروض يساوي قيمة المنتجات فقط؛ قد يتغير بعد تحديد تكلفة الشحن وأي رسوم معلنة قبل الدفع.</p>
           <Link href="/checkout/store" className="checkout-edit-cart">تعديل بيانات التوصيل ←</Link>
         </aside>

@@ -24,6 +24,8 @@ export type StoreOrder = Document & {
   currency: 'SAR';
   status: OrderStatus;
   paymentStatus: 'pending' | 'paid' | 'not_recorded' | 'failed';
+  paymentMethod?: 'mada' | 'visa';
+  paymentMethodSelectedAt?: Date;
   installment: boolean;
   installmentDownPayment?: number;
   installmentMonths?: number;
@@ -64,6 +66,8 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     `العنوان: ${String(customer.address || '—')}`,
     `المنتجات:\n${itemText}`,
     `الإجمالي: ${total} ر.س`,
+    `طريقة الدفع: ${order.paymentMethod === 'mada' ? 'مدى' : order.paymentMethod === 'visa' ? 'Visa' : 'لم يتم الاختيار'}`,
+    `حالة الدفع: ${order.paymentStatus === 'paid' ? 'مدفوع' : order.paymentStatus === 'failed' ? 'فشل الدفع' : 'بانتظار الدفع'}`,
     `التقسيط: ${order.installment === true
       ? `نعم — دفعة مقدمة ${Number(order.installmentDownPayment || 0).toLocaleString('en-US')} ر.س — ${Number(order.installmentMonths || 0)} شهور`
       : 'لا'}`,

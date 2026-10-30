@@ -341,6 +341,7 @@ async function showCustomerOrders(db: Db, chatId: number) {
       'الاسم: ' + (customer.name || '—'),
       'الجوال: ' + (customer.phone || '—'),
       'الإجمالي: ' + total + ' ر.س',
+      'طريقة الدفع: ' + (order.paymentMethod === 'mada' ? 'مدى' : order.paymentMethod === 'visa' ? 'Visa' : 'لم يتم الاختيار'),
       'الحالة: ' + (typeof order.status === 'string' && order.status in ORDER_STATUS_LABELS ? ORDER_STATUS_LABELS[order.status as OrderStatus] : 'غير محدد')
     ].join('\n');
   }).join('\n\n──────────────\n\n');
