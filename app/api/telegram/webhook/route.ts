@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { ObjectId, type Db } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
-import { ensureDefaultCategories, type StoreCategory, type StoredProduct } from '@/lib/catalog';
+import { ensureDefaultCategories, ensureDefaultProducts, type StoreCategory, type StoredProduct } from '@/lib/catalog';
 import {
   adminReplyKeyboard,
   ORDER_STATUS_LABELS,
@@ -226,7 +226,8 @@ async function listSectionsForProduct(db: Db, chatId: number) {
 }
 
 async function listProductsForEdit(db: Db, chatId: number) {
-  const products = await db.collection<StoredProduct>('products').find({}).sort({ updatedAt: -1 }).limit(80).toArray();
+  await ensureDefaultProducts(db);
+  const products = await db.collection<StoredProduct>('products').find({ deleted: { $ne: true } }).sort({ updatedAt: -1 }).limit(80).toArray();
   if (!products.length) {
     await sendMainMenu(db, chatId, 'لا توجد منتجات مضافة من البوت حتى الآن.');
     return;
@@ -1093,9 +1094,12 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'confirm-delete-product') {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
-    const result = await db.collection('products').deleteOne({ _id: new ObjectId(id) });
+    const existing = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id) });
+    const result = existing?.seedId
+      ? await db.collection('products').updateOne({ _id: existing._id }, { $set: { deleted: true, updatedAt: new Date() } })
+      : await db.collection('products').deleteOne({ _id: new ObjectId(id) });
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
-    await sendMainMenu(db, chatId, result.deletedCount ? '🗑 تم حذف المنتج من المتجر.' : 'المنتج غير موجود أو سبق حذفه.');
+    await sendMainMenu(db, chatId, (result.deletedCount || result.modifiedCount) ? '🗑 تم حذف المنتج من المتجر.' : 'المنتج غير موجود أو سبق حذفه.');
     return;
   }
   if (action === 'edit-order') {
@@ -1468,6 +1472,7 @@ export async function POST(request: NextRequest) {
     const db = await getDb();
     await ensureTelegramIndexes(db);
     await ensureDefaultCategories(db);
+    await ensureDefaultProducts(db);
     const updates = db.collection('telegram_updates');
     try {
       await updates.insertOne({ updateId: update.update_id, status: 'processing', receivedAt: new Date() });
