@@ -2,70 +2,88 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
+import styles from './cart.module.css';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
 
+function CartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" />
+      <circle cx="10" cy="20" r="1.2" />
+      <circle cx="18" cy="20" r="1.2" />
+    </svg>
+  );
+}
+
 export default function CartPage() {
-  const { cart, hydrated, setQuantity, removeFromCart, catalogProducts: products } = useCart();
+  const { cart, hydrated, setQuantity, removeFromCart, catalogProducts: products, itemCount } = useCart();
 
   const lines = useMemo(
     () => Object.entries(cart).map(([cartKey, quantity]) => {
       const { productId, color } = parseCartItemKey(cartKey);
       return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
     }).filter((line) => Boolean(line.product)),
-    [cart]
+    [cart, products]
   );
 
   const total = lines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
 
   return (
-    <main className="container cart-page">
-      <div className="breadcrumbs"><Link href="/">الرئيسية</Link><span>/</span><span>سلة المشتريات</span></div>
-      <div className="cart-page-heading"><div><span className="section-kicker">اختياراتك محفوظة</span><h1>سلة المشتريات</h1></div><Link href="/#categories" className="text-link">مواصلة التسوق ←</Link></div>
+    <main className={styles.page}>
+      <div className={styles.breadcrumb}><Link href="/">الرئيسية</Link><span>/</span><span>سلة الشراء</span></div>
 
       {!hydrated ? (
-        <div className="cart-loading">جاري تحميل سلتك...</div>
+        <div className={styles.loading} role="status">جاري تحميل سلتك...</div>
       ) : lines.length === 0 ? (
-        <div className="empty-cart">
-          <div className="empty-cart-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg></div>
-          <h2>سلتك لسه فاضية</h2>
-          <p>تصفح المنتجات واضغط على علامة السلة لإضافة اللي يعجبك.</p>
-          <Link href="/#categories" className="primary-button">ابدأ التسوق</Link>
-        </div>
+        <section className={styles.empty} aria-labelledby="cart-empty-title">
+          <div className={styles.emptyIcon}><CartIcon /></div>
+          <h1 id="cart-empty-title">السلة فارغة</h1>
+          <Link href="/#categories" className={styles.continueLink}>العودة للتسوق</Link>
+        </section>
       ) : (
-        <div className="cart-layout">
-          <section className="cart-items" aria-label="المنتجات في السلة">
+        <section className={styles.cart} aria-labelledby="cart-title">
+          <div className={styles.cartHeading}>
+            <div>
+              <span className={styles.kicker}>اختياراتك محفوظة</span>
+              <h1 id="cart-title">سلة الشراء</h1>
+            </div>
+            <span className={styles.countPill}>{itemCount} {itemCount === 1 ? 'قطعة' : 'قطع'}</span>
+          </div>
+
+          <div className={styles.items}>
             {lines.map(({ cartKey, color, product, quantity }) => product ? (
-              <article className="cart-line" key={cartKey}>
-                <Link href={'/products/' + product.id} className="cart-line-image"><img src={product.image} alt={product.name} loading="lazy" /></Link>
-                <div className="cart-line-info">
-                  <span className="product-category">{product.category}</span>
-                  <Link href={'/products/' + product.id} className="cart-line-name">{product.name}</Link>
-                  <strong>{formatPrice(product.price)}</strong>
-                  {color ? <span className="cart-line-color">اللون: {color}</span> : null}
-                  <button type="button" className="remove-line" onClick={() => removeFromCart(cartKey)}>حذف المنتج</button>
-                </div>
-                <div className="cart-line-controls">
-                  <div className="quantity-control">
-                    <button type="button" onClick={() => setQuantity(cartKey, quantity - 1)} aria-label="تقليل الكمية">−</button>
-                    <span>{quantity}</span>
-                    <button type="button" onClick={() => setQuantity(cartKey, quantity + 1)} aria-label="زيادة الكمية">+</button>
+              <article className={styles.item} key={cartKey}>
+                <Link href={'/products/' + product.id} className={styles.thumb} aria-label={'تفاصيل ' + product.name}>
+                  <img src={product.image} alt={product.name} loading="lazy" />
+                </Link>
+                <div className={styles.info}>
+                  <span className={styles.category}>{product.category}</span>
+                  <Link href={'/products/' + product.id} className={styles.name}>{product.name}</Link>
+                  {color ? <p className={styles.variant}>اللون: {color}</p> : null}
+                  {product.storageOptions?.length ? <p className={styles.variant}>السعة: {product.storageOptions.join(' / ')}</p> : null}
+                  <div className={styles.price}>{formatPrice(product.price)}</div>
+                  <div className={styles.itemActions}>
+                    <div className={styles.quantity} aria-label="الكمية">
+                      <button type="button" onClick={() => setQuantity(cartKey, quantity + 1)} aria-label={'زيادة كمية ' + product.name}>+</button>
+                      <span aria-live="polite">{quantity}</span>
+                      <button type="button" onClick={() => setQuantity(cartKey, quantity - 1)} aria-label={'تقليل كمية ' + product.name}>−</button>
+                    </div>
+                    <button type="button" className={styles.remove} onClick={() => removeFromCart(cartKey)}>حذف</button>
                   </div>
-                  <strong className="line-total">{formatPrice(product.price * quantity)}</strong>
                 </div>
               </article>
             ) : null)}
-          </section>
-          <aside className="cart-summary">
-            <h2>ملخص السلة</h2>
-            <div className="summary-row"><span>عدد القطع</span><strong>{lines.reduce((count, line) => count + line.quantity, 0)}</strong></div>
-            <div className="summary-row"><span>قيمة المنتجات</span><strong>{formatPrice(total)}</strong></div>
-            <div className="summary-divider" />
-            <div className="summary-total"><span>الإجمالي</span><strong>{formatPrice(total)}</strong></div>
-            <p className="cart-next-step">راجع بيانات السلة، ثم أكمل بيانات التوصيل لإرسال طلبك.</p>
-            <div className="checkout-summary-actions"><Link href="/checkout" className="primary-button">إتمام الطلب <span aria-hidden="true">←</span></Link><Link href="/#categories" className="outline-button summary-back">إضافة منتجات أخرى</Link></div>
+          </div>
+
+          <aside className={styles.summary} aria-label="ملخص السلة">
+            <div className={styles.summaryRow}><span>المجموع الفرعي</span><strong>{formatPrice(total)}</strong></div>
+            <div className={styles.summaryRow}><span>الشحن</span><strong className={styles.shipping}>يحسب عند الدفع</strong></div>
+            <div className={styles.summaryTotal}><span>الإجمالي</span><strong>{formatPrice(total)}</strong></div>
+            <Link href="/checkout" className={styles.checkoutButton}>إتمام الطلب</Link>
+            <Link href="/#categories" className={styles.continueButton}>العودة للتسوق</Link>
           </aside>
-        </div>
+        </section>
       )}
     </main>
   );
