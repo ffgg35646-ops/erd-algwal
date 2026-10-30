@@ -114,7 +114,7 @@ export default function StoreCheckoutPage() {
         ...EMPTY_FORM,
         fullName: typeof savedDraft.fullName === 'string' ? savedDraft.fullName : '',
         phone: typeof savedDraft.phone === 'string' ? sanitizeSaudiPhoneInput(savedDraft.phone) : '',
-        email: typeof savedDraft.email === 'string' && savedDraft.email.trim() ? savedDraft.email : savedEmail,
+        email: savedEmail.trim() || (typeof savedDraft.email === 'string' ? savedDraft.email : ''),
         idNumber: typeof savedDraft.idNumber === 'string' ? normalizeSaudiPhoneDigits(savedDraft.idNumber).replace(/[^0-9]/g, '').slice(0, 10) : '',
         regionId: typeof savedDraft.regionId === 'string' ? savedDraft.regionId : '',
         cityId: typeof savedDraft.cityId === 'string' ? savedDraft.cityId : '',

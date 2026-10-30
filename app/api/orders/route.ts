@@ -56,7 +56,6 @@ export async function GET(request: NextRequest) {
     const savedOrders = await db.collection<StoreOrder>('orders')
       .find({ source: 'website', customerNotificationKey: key })
       .sort({ createdAt: -1 })
-      .limit(100)
       .toArray();
 
     return NextResponse.json({
