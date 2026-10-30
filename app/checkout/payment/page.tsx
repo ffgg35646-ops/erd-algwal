@@ -87,16 +87,25 @@ export default function CheckoutPaymentPage() {
     if (!reviewToken) {
       setPaymentMessage('تعذر التحقق من الطلب. ارجع إلى بيانات التوصيل وأعد المحاولة.');
       return;
-    }
+   
 
-    const cardholderNameInput = paymentFieldsRef.current?.elements.namedItem('cardholderName');
+const cardholderNameInput = paymentFieldsRef.current?.elements.namedItem('cardholderName');
+        cardNumber: paymentFieldsRef.current?.elements.namedItem('cardNumber'),
+
+        expiryYear: paymentFieldsRef.current?.elements.namedItem('expiryYear'),
+
+      expiryMonth: paymentFieldsRef.current?.elements.namedItem('expiryMonth'),
+          
+      cvv: paymentFieldsRef.current?.elements.namedItem('cvv'),
+
     const cardholderName = cardholderNameInput instanceof HTMLInputElement ? cardholderNameInput.value.trim().slice(0, 100) : '';
     if (!cardholderName) {
       setShowRequiredMessage(true);
-      setPaymentMessage('يرجى كتابة اسم حامل البطاقة.');
+      setPaymentMessage('يرجى كتابة البيانات كامله.');
       return;
     }
 
+    
     setPaymentSubmitting(true);
     setPaymentMessage('');
     try {
@@ -224,7 +233,7 @@ export default function CheckoutPaymentPage() {
       ))}
     </select>
   </label>
-              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
+              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} "cvv"type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
             </div>
           </form>
 
