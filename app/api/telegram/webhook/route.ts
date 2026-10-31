@@ -202,23 +202,40 @@ function categoryButtons(sections: StoreCategory[], prefix: string) {
   };
 }
 
+function sectionManagementKeyboard(sections: StoreCategory[]) {
+  return {
+    inline_keyboard: [
+      ...sections.map((section) => {
+        const id = section._id.toHexString();
+        return [
+          { text: '✏️ ' + section.name.slice(0, 45), callback_data: 'rename-section:' + id },
+          { text: '🗑 حذف', callback_data: 'delete-section:' + id }
+        ];
+      }),
+      [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+    ]
+  };
+}
+
 async function listSectionsForEdit(db: Db, chatId: number) {
   await ensureDefaultCategories(db);
-  const sections = await db.collection<StoreCategory>('categories').find({}).sort({ name: 1 }).limit(80).toArray();
+  const sections = await db.collection<StoreCategory>('categories')
+    .find({ deleted: { $ne: true } }).sort({ name: 1 }).limit(80).toArray();
   if (!sections.length) {
-    await sendMainMenu(db, chatId, 'لا توجد أقسام لتعديلها.');
+    await sendMainMenu(db, chatId, 'لا توجد أقسام لتعديلها أو حذفها.');
     return;
   }
-  await sendTelegramMessage(chatId, 'اختر القسم الذي تريد تعديل اسمه فقط:', {
-    reply_markup: categoryButtons(sections, 'rename-section')
+  await sendTelegramMessage(chatId, 'اختر القسم لتعديل اسمه أو حذفه:', {
+    reply_markup: sectionManagementKeyboard(sections)
   });
 }
 
 async function listSectionsForProduct(db: Db, chatId: number) {
   await ensureDefaultCategories(db);
-  const sections = await db.collection<StoreCategory>('categories').find({}).sort({ name: 1 }).limit(80).toArray();
+  const sections = await db.collection<StoreCategory>('categories')
+    .find({ deleted: { $ne: true } }).sort({ name: 1 }).limit(80).toArray();
   if (!sections.length) {
-    await sendMainMenu(db, chatId, 'لا توجد أقسام. استخدم «إضافة قسم» لإنشاء قسم أولًا.');
+    await sendMainMenu(db, chatId, 'لا توجد أقسام نشطة. استخدم «إضافة قسم» لإنشاء قسم أولًا.');
     return;
   }
   await sendTelegramMessage(chatId, 'اختر القسم الذي سيُضاف إليه المنتج:', {
@@ -302,7 +319,7 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
     await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
     return;
   }
-  const product = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id) });
+  const product = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
   if (!product) {
     await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج.');
     return;
@@ -380,11 +397,22 @@ async function saveCategory(db: Db, name: string) {
   const normalized = name.trim().replace(/\s+/g, ' ');
   if (normalized.length < 2 || normalized.length > 80) throw new Error('اسم القسم يجب أن يكون من حرفين إلى 80 حرفًا.');
   const sections = await db.collection<StoreCategory>('categories').find({}).toArray();
-  if (sections.some((section) => section.name.trim().toLocaleLowerCase('ar') === normalized.toLocaleLowerCase('ar'))) {
+  const existing = sections.find((section) =>
+    section.name.trim().toLocaleLowerCase('ar') === normalized.toLocaleLowerCase('ar')
+  );
+  const now = new Date();
+  if (existing) {
+    if (existing.deleted) {
+      await db.collection<StoreCategory>('categories').updateOne(
+        { _id: existing._id },
+        { $set: { deleted: false, updatedAt: now } }
+      );
+      return true;
+    }
     throw new Error('يوجد قسم بهذا الاسم بالفعل.');
   }
-  const now = new Date();
   await db.collection('categories').insertOne({ name: normalized, description: '', createdAt: now, updatedAt: now });
+  return false;
 }
 
 async function saveProduct(db: Db, session: AdminSession, chatId: number) {
@@ -414,7 +442,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     await sendTelegramMessage(chatId, 'بعض بيانات المنتج ناقصة. اكتب /cancel للإلغاء ثم أعد المحاولة.');
     return false;
   }
-  const section = await db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(data.categoryId) });
+  const section = await db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(data.categoryId), deleted: { $ne: true } });
   if (!section) {
     await sendTelegramMessage(chatId, 'القسم لم يعد موجودًا. ابدأ «إضافة منتج» من جديد.');
     return false;
@@ -989,7 +1017,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'product-section') {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'القسم المحدد غير صالح.');
-    const section = await db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(id) });
+    const section = await db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
     if (!section) return void await sendTelegramMessage(chatId, 'لم يتم العثور على القسم.');
     await startFlow(db, callback.from.id, chatId, 'add_product', 'product_name', {
       categoryId: section._id.toHexString(), categoryName: section.name, images: []
@@ -998,11 +1026,69 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'rename-section') {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'القسم المحدد غير صالح.');
-    const section = await db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(id) });
+    const section = await db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
     if (!section) return void await sendTelegramMessage(chatId, 'لم يتم العثور على القسم.');
     await startFlow(db, callback.from.id, chatId, 'rename_section', 'rename_section', {
       categoryId: section._id.toHexString(), categoryName: section.name
     }, 'القسم الحالي: ' + section.name + '\n\nاكتب الاسم الجديد فقط.');
+    return;
+  }
+  if (action === 'delete-section') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف القسم غير صالح.');
+    const section = await db.collection<StoreCategory>('categories').findOne({
+      _id: new ObjectId(id),
+      deleted: { $ne: true }
+    });
+    if (!section) return void await sendTelegramMessage(chatId, 'القسم غير موجود أو سبق حذفه.');
+    const linkedProducts = await db.collection<StoredProduct>('products').countDocuments({
+      $or: [{ categoryId: id }, { category: section.name }],
+      deleted: { $ne: true }
+    });
+    await sendTelegramMessage(
+      chatId,
+      'هل تؤكد حذف القسم «' + section.name + '»؟ سيتم إخفاء ' + linkedProducts +
+        ' منتج تابع له من المتجر.',
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'تأكيد حذف القسم', callback_data: 'confirm-delete-section:' + id }],
+            [{ text: 'إلغاء والعودة للأقسام', callback_data: 'section-list' }],
+            [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+          ]
+        }
+      }
+    );
+    return;
+  }
+  if (action === 'confirm-delete-section') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف القسم غير صالح.');
+    const section = await db.collection<StoreCategory>('categories').findOne({
+      _id: new ObjectId(id),
+      deleted: { $ne: true }
+    });
+    if (!section) return void await sendTelegramMessage(chatId, 'القسم غير موجود أو سبق حذفه.');
+    const now = new Date();
+    const hiddenProducts = await db.collection<StoredProduct>('products').updateMany(
+      {
+        $or: [{ categoryId: id }, { category: section.name }],
+        deleted: { $ne: true }
+      },
+      { $set: { deleted: true, updatedAt: now } }
+    );
+    await db.collection<StoreCategory>('categories').updateOne(
+      { _id: section._id, deleted: { $ne: true } },
+      { $set: { deleted: true, updatedAt: now } }
+    );
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
+    await sendMainMenu(
+      db,
+      chatId,
+      '🗑 تم حذف القسم «' + section.name + '» وإخفاء ' + hiddenProducts.modifiedCount + ' منتج تابع له من المتجر.'
+    );
+    return;
+  }
+  if (action === 'section-list') {
+    await listSectionsForEdit(db, chatId);
     return;
   }
   if (action === 'edit-product') {
@@ -1011,7 +1097,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'product-field') {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
-    const product = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id) });
+    const product = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
     if (!product) return void await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج.');
     const fieldToStep: Record<string, FlowStep> = {
       name: 'edit_product_name', colors: 'edit_product_colors', storage: 'edit_product_storage',
@@ -1019,7 +1105,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     };
     if (field === 'category') {
       await ensureDefaultCategories(db);
-      const sections = await db.collection<StoreCategory>('categories').find({}).sort({ name: 1 }).limit(80).toArray();
+      const sections = await db.collection<StoreCategory>('categories').find({ deleted: { $ne: true } }).sort({ name: 1 }).limit(80).toArray();
       await sendTelegramMessage(chatId, 'اختر القسم الجديد للمنتج:', {
         reply_markup: {
           inline_keyboard: [
@@ -1068,7 +1154,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     }
     const [product, section] = await Promise.all([
       db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id) }),
-      db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(field) })
+      db.collection<StoreCategory>('categories').findOne({ _id: new ObjectId(field), deleted: { $ne: true } })
     ]);
     if (!product || !section) {
       await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج أو القسم.');
@@ -1321,9 +1407,11 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
 
   if (session.workflow === 'add_section' && session.step === 'section_name') {
     try {
-      await saveCategory(db, value);
+      const restored = await saveCategory(db, value);
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-      await sendMainMenu(db, chatId, '✅ تم حفظ القسم «' + value + '» بالاسم فقط. سيظهر ضمن أقسام المنتجات.');
+      await sendMainMenu(db, chatId, restored
+        ? '✅ تمت استعادة القسم «' + value + '». يمكنك إضافة منتجات جديدة إليه.'
+        : '✅ تم حفظ القسم «' + value + '» بالاسم فقط. سيظهر ضمن أقسام المنتجات.');
     } catch (error) {
       await sendTelegramMessage(chatId, error instanceof Error ? error.message : 'تعذر حفظ القسم.');
     }
@@ -1339,10 +1427,10 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       return void await sendTelegramMessage(chatId, 'يوجد قسم آخر بهذا الاسم. اكتب اسمًا مختلفًا.');
     }
     const result = await db.collection<StoreCategory>('categories').findOneAndUpdate(
-      { _id: new ObjectId(categoryId) }, { $set: { name: normalized, updatedAt: new Date() } }, { returnDocument: 'after' }
+      { _id: new ObjectId(categoryId), deleted: { $ne: true } }, { $set: { name: normalized, updatedAt: new Date() } }, { returnDocument: 'after' }
     );
     if (!result) return void await sendTelegramMessage(chatId, 'لم يتم العثور على القسم.');
-    await db.collection('products').updateMany({ categoryId }, { $set: { category: normalized, updatedAt: new Date() } });
+    await db.collection('products').updateMany({ categoryId, deleted: { $ne: true } }, { $set: { category: normalized, updatedAt: new Date() } });
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
     await sendMainMenu(db, chatId, '✅ تم تعديل اسم القسم إلى «' + normalized + '».');
     return;
