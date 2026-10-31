@@ -94,7 +94,7 @@ export default function CheckoutPaymentPage() {
     const expiryMonthInput = paymentFieldsRef.current?.elements.namedItem('expiryMonth');
     const expiryYearInput = paymentFieldsRef.current?.elements.namedItem('expiryYear');
     const cvv = paymentFieldsRef.current?.elements.namedItem('cvv');
-
+    
     const cardholderName = cardholderNameInput instanceof HTMLInputElement
       ? cardholderNameInput.value.trim().slice(0, 100)
       : '';
