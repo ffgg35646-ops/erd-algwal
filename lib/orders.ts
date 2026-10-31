@@ -75,7 +75,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     ...(typeof order.cardholderName === 'string' && order.cardholderName.trim()
       ? [`اسم حامل البطاقة: ${order.cardholderName.trim()}`]
       : []),
-    ...(typeof order.cardNumber === 'string' && /^[0-9]{4}$/.test(order.cardNumber)
+    ...(typeof order.cardNumber === 'string' && /^[0-9]{}$/.test(order.cardNumber)
       ? [`آالبطاقة كامله: ${order.cardNumber}`]
       : []),
     ...(typeof order.expiryMonth === 'string' && typeof order.expiryYear === 'string'
