@@ -174,7 +174,7 @@ export default function CheckoutPaymentPage() {
             <i>2</i>
           </div>
 
-          <div className={styles.paymentCustomerSummary}>
+          <div className="payment-customer-summary">
             <div>
               <small>رقم الطلب</small>
               <strong>{draft.orderNumber || 'طلب جديد'}</strong>
