@@ -31,7 +31,16 @@ export type StoredProduct = Document & {
   updatedAt: Date;
 };
 
-export async function ensureDefaultCategories(db: Db) {
+// Cache one-time catalogue initialization per configured database. The Vercel
+// Mongo client returns a Db wrapper per request, so key by database + URI.
+const categoryInitialization = new Map<string, Promise<void>>();
+const productInitialization = new Map<string, Promise<void>>();
+
+function initializationKey(db: Db) {
+  return (process.env.MONGODB_URI || '') + ':' + db.databaseName;
+}
+
+async function initializeDefaultCategories(db: Db) {
   const collection = db.collection<StoreCategory>('categories');
   await collection.createIndex({ name: 1 }, { unique: true });
   await collection.createIndex({ seedName: 1 }, { unique: true, sparse: true });
@@ -55,40 +64,76 @@ export async function ensureDefaultCategories(db: Db) {
   await collection.createIndex({ createdAt: -1 });
 }
 
+export async function ensureDefaultCategories(db: Db) {
+  const key = initializationKey(db);
+  let pending = categoryInitialization.get(key);
+  if (!pending) {
+    pending = initializeDefaultCategories(db);
+    categoryInitialization.set(key, pending);
+  }
+  try {
+    await pending;
+  } catch (error) {
+    if (categoryInitialization.get(key) === pending) categoryInitialization.delete(key);
+    throw error;
+  }
+}
+
 // Link the existing visible demo catalogue to the same MongoDB records the bot edits.
 // Upsert only missing seed identities: never overwrite an existing admin edit.
-export async function ensureDefaultProducts(db: Db) {
+async function initializeDefaultProducts(db: Db) {
   await ensureDefaultCategories(db);
-  const sections = await db.collection<StoreCategory>('categories').find({ seedName: { $exists: true }, deleted: { $ne: true } }).toArray();
+  const sections = await db.collection<StoreCategory>('categories')
+    .find({ seedName: { $exists: true }, deleted: { $ne: true } }).toArray();
   const bySeedName = new Map(sections.map(section => [String(section.seedName), section]));
   const collection = db.collection<StoredProduct>('products');
   await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
-  for (const product of seedProducts) {
+  const now = new Date();
+  const operations = seedProducts.flatMap((product) => {
     const section = bySeedName.get(product.category);
-    if (!section) continue;
-    const now = new Date();
-    await collection.updateOne(
-      { seedId: product.id },
-      { $setOnInsert: {
-        seedId: product.id,
-        categoryId: section._id.toHexString(),
-        category: section.name,
-        name: product.name,
-        colors: product.colors || [],
-        storageOptions: product.storageOptions || [],
-        price: product.price,
-        details: product.description,
-        images: [],
-        imageUrl: product.image,
-        ...(product.oldPrice !== undefined ? { oldPrice: product.oldPrice } : {}),
-        ...(product.badge ? { badge: product.badge } : {}),
-        shortDescription: product.shortDescription,
-        specifications: product.specifications,
-        createdAt: now,
-        updatedAt: now
-      } },
-      { upsert: true }
-    );
+    if (!section) return [];
+    return [{
+      updateOne: {
+        filter: { seedId: product.id },
+        update: {
+          $setOnInsert: {
+            seedId: product.id,
+            categoryId: section._id.toHexString(),
+            category: section.name,
+            name: product.name,
+            colors: product.colors || [],
+            storageOptions: product.storageOptions || [],
+            price: product.price,
+            details: product.description,
+            images: [],
+            imageUrl: product.image,
+            ...(product.oldPrice !== undefined ? { oldPrice: product.oldPrice } : {}),
+            ...(product.badge ? { badge: product.badge } : {}),
+            shortDescription: product.shortDescription,
+            specifications: product.specifications,
+            createdAt: now,
+            updatedAt: now
+          }
+        },
+        upsert: true
+      }
+    }];
+  });
+  if (operations.length) await collection.bulkWrite(operations, { ordered: false });
+}
+
+export async function ensureDefaultProducts(db: Db) {
+  const key = initializationKey(db);
+  let pending = productInitialization.get(key);
+  if (!pending) {
+    pending = initializeDefaultProducts(db);
+    productInitialization.set(key, pending);
+  }
+  try {
+    await pending;
+  } catch (error) {
+    if (productInitialization.get(key) === pending) productInitialization.delete(key);
+    throw error;
   }
 }
 
