@@ -7,6 +7,7 @@ export type StoreCategory = Document & {
   description?: string;
   createdAt: Date;
   updatedAt: Date;
+  deleted?: boolean;
 };
 
 export type StoredProduct = Document & {
@@ -58,7 +59,7 @@ export async function ensureDefaultCategories(db: Db) {
 // Upsert only missing seed identities: never overwrite an existing admin edit.
 export async function ensureDefaultProducts(db: Db) {
   await ensureDefaultCategories(db);
-  const sections = await db.collection<StoreCategory>('categories').find({ seedName: { $exists: true } }).toArray();
+  const sections = await db.collection<StoreCategory>('categories').find({ seedName: { $exists: true }, deleted: { $ne: true } }).toArray();
   const bySeedName = new Map(sections.map(section => [String(section.seedName), section]));
   const collection = db.collection<StoredProduct>('products');
   await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
@@ -93,7 +94,7 @@ export async function ensureDefaultProducts(db: Db) {
 
 export async function listCategories(db: Db) {
   await ensureDefaultCategories(db);
-  return db.collection<StoreCategory>('categories').find({}).sort({ createdAt: 1, name: 1 }).toArray();
+  return db.collection<StoreCategory>('categories').find({ deleted: { $ne: true } }).sort({ createdAt: 1, name: 1 }).toArray();
 }
 
 export function serializeStoredProduct(product: StoredProduct): Product & {
