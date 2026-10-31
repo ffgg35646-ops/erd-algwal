@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
+import { getStorePolicyVersion } from '@/lib/store-policy';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,20 +68,21 @@ export async function GET() {
 
   try {
     const db = await getDb();
-    const docs = await db.collection<{ _id: string; content?: string; updatedAt?: Date }>('store_pages')
+    const docs = await db.collection<{ _id: string; content?: string; updatedAt?: Date | string }>('store_pages')
       .find({ _id: { $in: keys } })
       .toArray();
     const saved = new Map(docs.map((doc) => [String(doc._id), doc] as const));
     const pages = keys.map((key) => {
       const doc = saved.get(key);
-      const content = typeof doc?.content === 'string' ? doc.content : STORE_CONTENT_PAGES[key].fallback;
+      const savedContent = typeof doc?.content === 'string' ? doc.content.trim() : '';
+      const configured = savedContent.length > 0;
       return {
         key,
         title: STORE_CONTENT_PAGES[key].title,
         group: STORE_CONTENT_PAGES[key].group,
-        content,
-        updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt.toISOString() : null,
-        configured: typeof doc?.content === 'string' && doc.content.trim().length > 0
+        content: configured ? savedContent : STORE_CONTENT_PAGES[key].fallback,
+        updatedAt: configured ? getStorePolicyVersion(savedContent, doc?.updatedAt) : null,
+        configured
       };
     });
     return NextResponse.json({ pages }, { headers: noStore });
