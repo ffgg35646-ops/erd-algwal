@@ -457,8 +457,15 @@ export default function StoreCheckoutPage() {
                             role="option"
                             aria-selected={form.city === city.name_ar}
                             key={city.city_id}
-                            onPointerDown={(event) => event.preventDefault()}
-                            onClick={() => chooseCity(city)}
+                            onPointerDown={(event) => {
+                              // Select on pointer-down so mobile taps are not lost when the input blurs.
+                              event.preventDefault();
+                              chooseCity(city);
+                            }}
+                            onClick={() => {
+                              // Keep keyboard activation working; pointer users are handled above.
+                              if (form.city !== city.name_ar) chooseCity(city);
+                            }}
                           >
                             <span>{city.name_ar}</span>
                             <small>{city.name_en}</small>
