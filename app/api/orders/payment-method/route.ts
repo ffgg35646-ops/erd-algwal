@@ -44,7 +44,7 @@ const cardNumber = typeof body.cardNumber === 'string'
 const expiryMonth = typeof body.expiryMonth === 'string' ? body.expiryMonth.trim() : '';
 const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() : '';
   ';
-  const cvv = typeof body.expiryYear === 'string' ? body.cvv.trim() : '';
+  const cvv = typeof body.cvv === 'string' ? body.cvv.trim() : '';
 
   if (!/^[a-f0-9]{24}$/i.test(orderId) || !UUID_PATTERN.test(submissionId) || !UUID_PATTERN.test(reviewToken)) {
     return NextResponse.json({ ok: false, error: 'تعذر التحقق من الطلب. ارجع لبيانات التوصيل وحاول مرة أخرى.' }, { status: 400 });
