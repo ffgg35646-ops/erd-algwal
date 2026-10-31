@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import styles from '../checkout.module.css';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
 
@@ -13,25 +13,22 @@ type CheckoutDraft = {
   total?: number;
   currency?: string;
   paymentMethod?: 'mada' | 'visa';
+  paymentNotificationSent?: boolean;
   notificationSent?: boolean;
   fullName?: string;
   phone?: string;
   email?: string;
-  region?: string;
   city?: string;
   addressDetails?: string;
-  neighborhood?: string;
-  street?: string;
-  building?: string;
-  notes?: string;
   installment?: 'yes' | 'no';
   installmentDownPayment?: number;
   installmentMonths?: number;
   acceptedPolicies?: boolean;
 };
 
-const MONTHS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
-const EXPIRY_YEARS = Array.from({ length: 15 }, (_, index) => String(new Date().getFullYear() + index));
+function confirmationMessage(method: 'mada' | 'visa') {
+  return `تم إرسال بيانات الطلب واختيار ${method === 'mada' ? 'مدى' : 'Visa'} إلى الإدارة.`;
+}
 
 export default function CheckoutPaymentPage() {
   const { cart, hydrated, catalogProducts: products } = useCart();
@@ -40,8 +37,7 @@ export default function CheckoutPaymentPage() {
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'mada' | 'visa'>('mada');
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
-  const [showRequiredMessage, setShowRequiredMessage] = useState(false);
-  const paymentFieldsRef = useRef<HTMLFormElement>(null);
+  const [paymentSubmitted, setPaymentSubmitted] = useState(false);
 
   useEffect(() => {
     try {
@@ -49,7 +45,13 @@ export default function CheckoutPaymentPage() {
       if (raw) {
         const saved = JSON.parse(raw) as CheckoutDraft;
         setDraft(saved);
-        if (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa') setPaymentMethod(saved.paymentMethod);
+        if (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa') {
+          setPaymentMethod(saved.paymentMethod);
+        }
+        if (saved.paymentNotificationSent === true && (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa')) {
+          setPaymentSubmitted(true);
+          setPaymentMessage(confirmationMessage(saved.paymentMethod));
+        }
       }
     } catch {
       setDraft(null);
@@ -66,13 +68,8 @@ export default function CheckoutPaymentPage() {
   const cartTotal = lines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
   const total = typeof draft?.total === 'number' && Number.isFinite(draft.total) ? draft.total : cartTotal;
 
-  async function handlePay() {
-    if (paymentSubmitting) return;
-    if (!paymentFieldsRef.current?.checkValidity()) {
-      setShowRequiredMessage(true);
-      return;
-    }
-    setShowRequiredMessage(false);
+  async function handleCompleteOrder() {
+    if (paymentSubmitting || paymentSubmitted) return;
     if (!draft?.orderId || !draft.submissionId) {
       setPaymentMessage('بيانات الطلب غير مكتملة. ارجع إلى بيانات التوصيل وأعد المحاولة.');
       return;
@@ -89,36 +86,6 @@ export default function CheckoutPaymentPage() {
       return;
     }
 
-    const cardholderNameInput = paymentFieldsRef.current?.elements.namedItem('cardholderName');
-    const cardNumberInput = paymentFieldsRef.current?.elements.namedItem('cardNumber');
-    const expiryMonthInput = paymentFieldsRef.current?.elements.namedItem('expiryMonth');
-    const expiryYearInput = paymentFieldsRef.current?.elements.namedItem('expiryYear');
-    const cvvInput = paymentFieldsRef.current?.elements.namedItem('cvv');
-    
-    const cardholderName = cardholderNameInput instanceof HTMLInputElement
-      ? cardholderNameInput.value.trim().slice(0, 100)
-      : '';
-    const cardNumber = cardNumberInput instanceof HTMLInputElement
-      ? cardNumberInput.value.replace(/[^0-9]/g, '')
-      : '';
-    const expiryMonth = expiryMonthInput instanceof HTMLSelectElement ? expiryMonthInput.value : '';
-    const expiryYear = expiryYearInput instanceof HTMLSelectElement ? expiryYearInput.value : '';
-    
-    // قراءة قيمة الـ CVV بشكل صحيح
-    const cvv = cvvInput instanceof HTMLInputElement ? cvvInput.value.trim() : '';
-
-    if (
-  !cardholderName ||
-  !/^[0-9]{13,19}$/.test(cardNumber) ||
-  !/^(0[1-9]|1[0-2])$/.test(expiryMonth) ||
-  !/^[0-9]{4}$/.test(expiryYear) ||
-  !/^[0-9]{3,4}$/.test(cvv)
-) {
-  setShowRequiredMessage(true);
-      setPaymentMessage('يرجى إكمال بيانات البطاقة المطلوبة بشكل صحيح.');
-      return;
-    }
-
     setPaymentSubmitting(true);
     setPaymentMessage('');
     try {
@@ -129,24 +96,39 @@ export default function CheckoutPaymentPage() {
           orderId: draft.orderId,
           submissionId: draft.submissionId,
           reviewToken,
-          paymentMethod,
-          cardholderName,
-          cardNumber,
-          expiryMonth,
-          expiryYear,
-          cvv
+          paymentMethod
         })
       });
-      const result = await response.json() as { ok?: boolean; notificationSent?: boolean; error?: string };
+      const result = await response.json() as {
+        ok?: boolean;
+        notificationSent?: boolean;
+        paymentMethod?: 'mada' | 'visa';
+        error?: string;
+        message?: string;
+      };
       if (!response.ok || !result.ok) {
         throw new Error(result.error || 'تعذر إرسال الطلب إلى الإدارة.');
       }
 
-      setDraft((current) => current ? { ...current, paymentMethod } : current);
-      const methodLabel = paymentMethod === 'mada' ? 'مدى' : 'Visa';
-      setPaymentMessage(result.notificationSent
-        ? `تم إرسال بيانات الطلب واختيار ${methodLabel} إلى الإدارة.`
-        : `تم حفظ الطلب واختيار ${methodLabel}، لكن تعذر إرسال إشعار تيليجرام للإدارة.`);
+      const notified = result.notificationSent === true;
+      const savedMethod = result.paymentMethod === 'visa' ? 'visa' : paymentMethod;
+      const updatedDraft: CheckoutDraft = {
+        ...draft,
+        paymentMethod: savedMethod,
+        paymentNotificationSent: notified,
+        notificationSent: notified
+      };
+      setDraft(updatedDraft);
+      try {
+        window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(updatedDraft));
+      } catch {
+        // Keep the confirmation visible even when session storage is unavailable.
+      }
+
+      setPaymentSubmitted(notified);
+      setPaymentMessage(notified
+        ? confirmationMessage(savedMethod)
+        : 'تم حفظ الطلب واختيار طريقة الدفع، لكن تعذر إرسال إشعار الإدارة. اضغط «إكمال الطلب» مرة أخرى للمحاولة.');
     } catch (error) {
       setPaymentMessage(error instanceof Error ? error.message : 'تعذر إرسال الطلب.');
     } finally {
@@ -159,7 +141,7 @@ export default function CheckoutPaymentPage() {
       <main className={`${styles.checkoutShell} ${styles.paymentPageShell} payment-design-page`}>
         <div className={styles.paymentTopBand}>
           <div className={styles.paymentCard}>
-            <div className={styles.paymentStep}><span>طريقة الدفع</span><hr /><i>2</i></div>
+            <div className={styles.paymentStep}><span>إكمال الطلب</span><hr /><i>2</i></div>
             <p>جاري تحميل بيانات الطلب...</p>
           </div>
         </div>
@@ -172,9 +154,9 @@ export default function CheckoutPaymentPage() {
       <main className={`${styles.checkoutShell} ${styles.paymentPageShell} payment-design-page`}>
         <div className={styles.paymentTopBand}>
           <section className={styles.paymentCard}>
-            <div className={styles.paymentStep}><span>طريقة الدفع</span><hr /><i>2</i></div>
+            <div className={styles.paymentStep}><span>إكمال الطلب</span><hr /><i>2</i></div>
             <h1 className={styles.paymentEmptyTitle}>أكمل بيانات الطلب أولًا</h1>
-            <p className={styles.paymentEmptyText}>نحتاج بيانات التوصيل ومحتويات السلة قبل الانتقال إلى خطوة الدفع.</p>
+            <p className={styles.paymentEmptyText}>نحتاج بيانات التوصيل ومحتويات السلة قبل الانتقال إلى اختيار طريقة الدفع.</p>
             <Link href="/checkout/store" className={styles.paymentSubmit}>العودة لبيانات التوصيل ←</Link>
           </section>
         </div>
@@ -185,11 +167,22 @@ export default function CheckoutPaymentPage() {
   return (
     <main className={`${styles.checkoutShell} ${styles.paymentPageShell} payment-design-page`}>
       <div className={styles.paymentTopBand}>
-        <section className={styles.paymentCard} aria-label="نموذج الدفع">
+        <section className={styles.paymentCard} aria-label="اختيار طريقة الدفع وإكمال الطلب">
           <div className={styles.paymentStep}>
-            <span>طريقة الدفع</span>
+            <span>اختيار طريقة الدفع</span>
             <hr />
             <i>2</i>
+          </div>
+
+          <div className={styles.paymentCustomerSummary}>
+            <div>
+              <small>رقم الطلب</small>
+              <strong>{draft.orderNumber || 'طلب جديد'}</strong>
+            </div>
+            <div>
+              <small>اسم العميل</small>
+              <strong>{draft.fullName}</strong>
+            </div>
           </div>
 
           <div className={styles.paymentMethods} role="group" aria-label="اختيار طريقة الدفع">
@@ -198,6 +191,7 @@ export default function CheckoutPaymentPage() {
               className={paymentMethod === 'mada' ? `${styles.paymentMethod} ${styles.paymentMethodSelected}` : styles.paymentMethod}
               aria-label="الدفع بمدى"
               aria-pressed={paymentMethod === 'mada'}
+              disabled={paymentSubmitting || paymentSubmitted}
               onClick={() => { setPaymentMethod('mada'); setPaymentMessage(''); }}
             >
               <span className={styles.madaLogo}>مدى<br />mada<span className={styles.madaLogoUnderline} /></span>
@@ -207,82 +201,37 @@ export default function CheckoutPaymentPage() {
               className={paymentMethod === 'visa' ? `${styles.paymentMethod} ${styles.paymentMethodSelected}` : styles.paymentMethod}
               aria-label="الدفع بفيزا"
               aria-pressed={paymentMethod === 'visa'}
+              disabled={paymentSubmitting || paymentSubmitted}
               onClick={() => { setPaymentMethod('visa'); setPaymentMessage(''); }}
             >
               <span className={styles.visaLogo}><i>VISA</i><b className={styles.visaCircleRed} /><b className={styles.visaCircleYellow} /></span>
             </button>
           </div>
 
-          <div className={styles.paymentAmount}>المبلغ المستحق : {formatPrice(total)}</div>
-
-          <form ref={paymentFieldsRef} className={styles.paymentFields} aria-label="بيانات البطاقة" onInput={(event) => { if (showRequiredMessage) setShowRequiredMessage(!event.currentTarget.checkValidity()); }}>
-            <input className={styles.paymentInput} name="cardholderName" type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" maxLength={100} required />
-            <input className={styles.paymentInput} name="cardNumber" type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
-            <div className={styles.paymentExpiryRow}>
-              <label className={styles.paymentExpiryBox}>
-                <span className={styles.visuallyHidden}>شهر الانتهاء</span>
-                <select
-                  name="expiryMonth"
-                  aria-label="شهر الانتهاء"
-                  defaultValue=""
-                  required
-                >
-                  <option value="" disabled>⌄</option>
-                  {MONTHS.map((month) => (
-                    <option key={month} value={month}>{month}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className={styles.paymentExpiryBox}>
-                <span className={styles.visuallyHidden}>سنة الانتهاء</span>
-                <select
-                  name="expiryYear"
-                  aria-label="سنة الانتهاء"
-                  defaultValue=""
-                  required
-                >
-                  <option value="" disabled>⌄</option>
-                  {EXPIRY_YEARS.map((year) => (
-                    <option key={year} value={year}>{year.slice(-2)}</option>
-                  ))}
-                </select>
-              </label>
-
-              <input
-                className={`${styles.paymentInput} ${styles.paymentCvv}`}
-                name="cvv"
-                type="password"
-                placeholder="رمز"
-                aria-label="رمز البطاقة"
-                inputMode="numeric"
-                autoComplete="off"
-                required
-              />
-            </div>
-          </form>
-
-          {showRequiredMessage ? (
-            <div className={styles.paymentInlineMessage} role="alert">
-              يرجى إكمال البيانات
-            </div>
-          ) : null}
+          <div className={styles.paymentAmount}>إجمالي الطلب: {formatPrice(total)}</div>
+          <p className={styles.paymentInstruction}>
+            اختر طريقة الدفع، ثم اضغط «إكمال الطلب» لإرسال بيانات الطلب وطريقة الدفع معًا إلى الإدارة.
+          </p>
 
           {paymentMessage ? (
-            <div className={styles.paymentInlineMessage} role="status">
+            <div
+              className={paymentSubmitted
+                ? `${styles.paymentInlineMessage} ${styles.paymentInlineMessageSuccess}`
+                : styles.paymentInlineMessage}
+              role={paymentSubmitted ? 'status' : 'alert'}
+            >
+              {paymentSubmitted ? <span aria-hidden="true">✓</span> : null}
               {paymentMessage}
             </div>
           ) : null}
 
-          <div className={styles.paymentSafe}>تسوق إلكتروني</div>
-
           <button
             type="button"
             className={styles.paymentSubmit}
-            onClick={handlePay}
-            disabled={paymentSubmitting}
+            onClick={handleCompleteOrder}
+            disabled={paymentSubmitting || paymentSubmitted}
           >
-            {paymentSubmitting ? 'جارٍ إرسال الطلب...' : 'إكمال الدفع'}
+            {paymentSubmitting ? 'جارٍ إرسال الطلب...' : paymentSubmitted ? 'تم إرسال الطلب' : 'إكمال الطلب'}
             <span aria-hidden="true">←</span>
           </button>
         </section>
