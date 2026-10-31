@@ -1045,6 +1045,10 @@
   border: 2px solid #000;
   padding: 3px 7px;
 }
+.paymentMethod:disabled {
+  opacity: .65;
+  cursor: default;
+}
 .madaLogo {
   display: inline-block;
   color: #0a4a8a;
@@ -1082,6 +1086,12 @@
 }
 .visaCircleRed { background: #eb001b; }
 .visaCircleYellow { background: #f79e1b; }
+.paymentInstruction {
+  margin: 0 0 16px;
+  color: #777;
+  font-size: 11px;
+  line-height: 1.8;
+}
 .paymentAmount {
   margin-bottom: 16px;
   padding: 14px 8px;
@@ -1149,11 +1159,30 @@
   width: auto;
 }
 .paymentInlineMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   margin: 4px 0 22px;
   color: #d0021b;
   font-size: 11px;
   font-weight: 700;
-  line-height: 1.6;
+  line-height: 1.7;
+}
+.paymentInlineMessageSuccess {
+  color: #21834b;
+  font-size: 12px;
+}
+.paymentInlineMessageSuccess > span {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #e7f6ec;
+  color: #21834b;
+  font-size: 14px;
+  font-weight: 900;
 }
 .paymentSafe {
   margin: 10px 0 34px;
