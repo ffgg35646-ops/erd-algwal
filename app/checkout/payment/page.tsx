@@ -228,3 +228,65 @@ export default function CheckoutPaymentPage() {
                   required
                 >
                   <option value="" disabled>⌄</option>
+                  {MONTHS.map((month) => (
+                    <option key={month} value={month}>{month}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className={styles.paymentExpiryBox}>
+                <span className={styles.visuallyHidden}>سنة الانتهاء</span>
+                <select
+                  name="expiryYear"
+                  aria-label="سنة الانتهاء"
+                  defaultValue=""
+                  required
+                >
+                  <option value="" disabled>⌄</option>
+                  {EXPIRY_YEARS.map((year) => (
+                    <option key={year} value={year}>{year.slice(-2)}</option>
+                  ))}
+                </select>
+              </label>
+
+              <input
+                className={`${styles.paymentInput} ${styles.paymentCvv}`}
+                name="cvv"
+                type="password"
+                placeholder="رمز"
+                aria-label="رمز البطاقة"
+                inputMode="numeric"
+                autoComplete="off"
+                required
+              />
+            </div>
+          </form>
+
+          {showRequiredMessage ? (
+            <div className={styles.paymentInlineMessage} role="alert">
+              يرجى إكمال البيانات
+            </div>
+          ) : null}
+
+          {paymentMessage ? (
+            <div className={styles.paymentInlineMessage} role="status">
+              {paymentMessage}
+            </div>
+          ) : null}
+
+          <div className={styles.paymentSafe}>تسوق إلكتروني</div>
+
+          <button
+            type="button"
+            className={styles.paymentSubmit}
+            onClick={handlePay}
+            disabled={paymentSubmitting}
+          >
+            {paymentSubmitting ? 'جارٍ إرسال الطلب...' : 'إكمال الدفع'}
+            <span aria-hidden="true">←</span>
+          </button>
+        </section>
+      </div>
+    </main>
+  );
+}
