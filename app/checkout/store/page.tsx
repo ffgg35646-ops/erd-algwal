@@ -403,11 +403,11 @@ export default function StoreCheckoutPage() {
                   <input name="phone" type="tel" dir="ltr" value={form.phone} onChange={(event) => setField('phone', sanitizeSaudiPhoneInput(event.target.value))} placeholder="رقم الجوال 05XXXXXXXX" inputMode="numeric" autoComplete="tel-national" maxLength={10} minLength={10} required />
                 </label>
                 <label className="checkout-field checkout-field-full">
-                  <input name="email" type="email" value={form.email} onChange={(event) => {
+                  <input name="email" type="text" inputMode="email" value={form.email} onChange={(event) => {
                     const value = event.target.value;
                     setField('email', value);
                     try { window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, value); } catch { /* Keep checkout usable without browser storage. */ }
-                  }} placeholder="البريد الإلكتروني (اختياري)" autoComplete="email" />
+                  }} placeholder="البريد الإلكتروني (اختياري)" autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false} required={false} />
                 </label>
                 <label className="checkout-field checkout-field-full">
                   <input name="idNumber" value={form.idNumber} onChange={(event) => setField('idNumber', normalizeSaudiPhoneDigits(event.target.value).replace(/[^0-9]/g, '').slice(0, 10))} placeholder="رقم الهوية / الإقامة (10 أرقام)" inputMode="numeric" autoComplete="off" maxLength={10} minLength={10} pattern="[0-9]{10}" required />
