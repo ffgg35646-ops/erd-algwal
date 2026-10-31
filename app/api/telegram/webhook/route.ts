@@ -299,7 +299,7 @@ const ARABIC_PRODUCT_SEARCH_LETTERS = [
 function normalizeProductSearch(value: string) {
   return value
     .normalize('NFKC')
-    .replace(/[\\u064B-\\u065F\\u0670\\u06D6-\\u06ED]/g, '')
+    .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
     .replace(/[أإآٱ]/g, 'ا')
     .replace(/ى/g, 'ي')
     .toLocaleLowerCase('ar')
@@ -370,7 +370,7 @@ async function showCategoryProductsForEdit(
       : 'منتجات هذا القسم: ' + matches.length,
     matches.length > 40 ? 'يتم عرض أول 40 نتيجة. أضف حروفًا لتضييق البحث.' : '',
     ''
-  ].filter(Boolean).join('\\n');
+  ].filter(Boolean).join('\n');
 
   const keyboard = [
     ...shown.map((product) => [{
@@ -1748,92 +1748,3 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
   }
 
   const session = await db.collection<AdminSession>('telegram_sessions').findOne({ telegramUserId: from.id });
-  if (session) {
-    if (Date.now() - new Date(session.updatedAt).getTime() > 30 * 60 * 1000) {
-      await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
-      await sendMainMenu(db, chatId, 'انتهت المهلة. ابدأ العملية مرة أخرى من القائمة.');
-      return;
-    }
-    await handleFlowMessage(db, session, message);
-    return;
-  }
-  await sendMainMenu(db, chatId, 'استخدم أزرار القائمة لإدارة المتجر.');
-}
-
-export async function POST(request: NextRequest) {
-  const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (!webhookSecret || !isSecretValid(request.headers.get('x-telegram-bot-api-secret-token'), webhookSecret)) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized webhook request' }, { status: 401 });
-  }
-
-  let update: TelegramUpdate;
-  try {
-    update = await request.json() as TelegramUpdate;
-  } catch {
-    return NextResponse.json({ ok: false, error: 'Invalid Telegram update' }, { status: 400 });
-  }
-  if (!Number.isSafeInteger(update.update_id)) {
-    return NextResponse.json({ ok: false, error: 'Invalid Telegram update' }, { status: 400 });
-  }
-
-  // Acknowledge inline-button clicks immediately so Telegram does not keep
-  // the button spinner open while database work is running.
-  if (update.callback_query) {
-    try {
-      await telegramApi('answerCallbackQuery', {
-        callback_query_id: update.callback_query.id,
-        ...(!isAuthorized(update.callback_query.from.id)
-          ? { text: 'غير مصرح لك بالإدارة.', show_alert: true }
-          : {})
-      });
-    } catch (error) {
-      console.warn('Telegram callback acknowledgement failed:', error instanceof Error ? error.message : 'Unknown error');
-    }
-  }
-
-  // Keep Telegram's webhook request short. The saved update is processed after
-  // the HTTP 200 response, while the Vercel Function remains alive.
-  after(async () => {
-    let db: Db | undefined;
-    try {
-      db = await getDb();
-      await ensureTelegramIndexesOnce(db);
-      await ensureDefaultProducts(db);
-      const updates = db.collection('telegram_updates');
-
-      try {
-        await updates.insertOne({ updateId: update.update_id, status: 'processing', receivedAt: new Date() });
-      } catch (error) {
-        if (typeof error === 'object' && error !== null && 'code' in error && error.code === 11000) {
-          return;
-        }
-        throw error;
-      }
-
-      await handleUpdate(db, update);
-      await updates.updateOne(
-        { updateId: update.update_id },
-        { $set: { status: 'processed', processedAt: new Date() } }
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error('Telegram background update failed:', message);
-      if (db) {
-        await db.collection('telegram_updates').updateOne(
-          { updateId: update.update_id },
-          { $set: { status: 'failed', error: message.slice(0, 500), failedAt: new Date() } }
-        ).catch((statusError) => {
-          console.error('Could not save Telegram update failure:', statusError);
-        });
-      }
-      const senderId = update.callback_query?.from.id ?? update.message?.from?.id;
-      if (senderId && isAuthorized(senderId)) {
-        await sendTelegramMessage(senderId, 'تعذر إكمال العملية. حاول مرة أخرى.').catch((notifyError) => {
-          console.error('Could not notify Telegram admin:', notifyError);
-        });
-      }
-    }
-  });
-
-  return NextResponse.json({ ok: true, queued: true });
-}
