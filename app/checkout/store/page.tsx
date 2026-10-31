@@ -191,9 +191,10 @@ export default function StoreCheckoutPage() {
       city.name_en.toLocaleLowerCase('en').includes(term)
     );
   }, [saudiCities, citySearch]);
+  const visibleCityOptions = cityOptions.slice(0, 80);
 
   function chooseCity(city: SaudiCity) {
-    setCitySearch('');
+    setCitySearch(city.name_ar);
     setField('city', city.name_ar);
     setCityDropdownOpen(false);
   }
@@ -406,7 +407,7 @@ export default function StoreCheckoutPage() {
                     const value = event.target.value;
                     setField('email', value);
                     try { window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, value); } catch { /* Keep checkout usable without browser storage. */ }
-                  }} placeholder="البريد الإلكتروني" autoComplete="email" required />
+                  }} placeholder="البريد الإلكتروني (اختياري)" autoComplete="email" />
                 </label>
                 <label className="checkout-field checkout-field-full">
                   <input name="idNumber" value={form.idNumber} onChange={(event) => setField('idNumber', normalizeSaudiPhoneDigits(event.target.value).replace(/[^0-9]/g, '').slice(0, 10))} placeholder="رقم الهوية / الإقامة (10 أرقام)" inputMode="numeric" autoComplete="off" maxLength={10} minLength={10} pattern="[0-9]{10}" required />
@@ -419,10 +420,10 @@ export default function StoreCheckoutPage() {
                 <div className="checkout-field checkout-field-full city-combobox">
                   <input
                     name="city"
-                    value={citySearch}
+                    value={cityDropdownOpen ? citySearch : form.city}
                     onChange={(event) => {
                       setCitySearch(event.target.value);
-                      setField('city', event.target.value);
+                      setField('city', '');
                       setCityDropdownOpen(true);
                     }}
                     onFocus={(event) => {
@@ -450,13 +451,13 @@ export default function StoreCheckoutPage() {
                       ) : citiesLoadError ? (
                         <p className="city-options-status">{citiesLoadError}</p>
                       ) : cityOptions.length ? (
-                        cityOptions.map((city) => (
+                        visibleCityOptions.map((city) => (
                           <button
                             type="button"
                             role="option"
                             aria-selected={form.city === city.name_ar}
                             key={city.city_id}
-                            onMouseDown={(event) => event.preventDefault()}
+                            onPointerDown={(event) => event.preventDefault()}
                             onClick={() => chooseCity(city)}
                           >
                             <span>{city.name_ar}</span>
