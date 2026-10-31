@@ -17,6 +17,21 @@ import { formatOrderForAdmin, getRecentOrders, type StoreOrder } from '@/lib/ord
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+let telegramIndexesPromise: Promise<void> | undefined;
+
+async function ensureTelegramIndexesOnce(db: Db) {
+  if (!telegramIndexesPromise) {
+    const pending = ensureTelegramIndexes(db);
+    telegramIndexesPromise = pending;
+  }
+  try {
+    await telegramIndexesPromise;
+  } catch (error) {
+    telegramIndexesPromise = undefined;
+    throw error;
+  }
+}
+
 type TelegramUser = { id: number; first_name?: string; username?: string };
 type TelegramPhoto = { file_id: string; file_unique_id: string; width: number; height: number };
 type TelegramChat = { id: number; type?: 'private' | 'group' | 'supergroup' | 'channel' };
@@ -1578,9 +1593,7 @@ export async function POST(request: NextRequest) {
     }
 
     const db = await getDb();
-    await ensureTelegramIndexes(db);
-    await ensureDefaultCategories(db);
-    await ensureDefaultProducts(db);
+    await ensureTelegramIndexesOnce(db);
     const updates = db.collection('telegram_updates');
     try {
       await updates.insertOne({ updateId: update.update_id, status: 'processing', receivedAt: new Date() });
