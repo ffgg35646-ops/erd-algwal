@@ -776,7 +776,6 @@ async function showFooterBarcodeMenu(db: Db, chatId: number) {
 }
 
 async function handleCallback(db: Db, callback: TelegramCallback) {
-  await telegramApi('answerCallbackQuery', { callback_query_id: callback.id });
   const chat = callback.message?.chat;
   const chatId = chat?.id;
   if (!chatId || chat.type !== 'private' || chatId !== callback.from.id || !callback.data) return;
@@ -1472,10 +1471,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
 
 async function handleUpdate(db: Db, update: TelegramUpdate) {
   if (update.callback_query) {
-    if (!isAuthorized(update.callback_query.from.id)) {
-      await telegramApi('answerCallbackQuery', { callback_query_id: update.callback_query.id, text: 'غير مصرح لك بالإدارة.', show_alert: true });
-      return;
-    }
+    if (!isAuthorized(update.callback_query.from.id)) return;
     await handleCallback(db, update.callback_query);
     return;
   }
@@ -1564,6 +1560,23 @@ export async function POST(request: NextRequest) {
   try {
     const update = await request.json() as TelegramUpdate;
     if (!Number.isSafeInteger(update.update_id)) return NextResponse.json({ ok: false, error: 'Invalid Telegram update' }, { status: 400 });
+
+    // Telegram requires callback queries to be acknowledged quickly. Do this
+    // before connecting to MongoDB or initializing the catalog.
+    if (update.callback_query) {
+      try {
+        await telegramApi('answerCallbackQuery', {
+          callback_query_id: update.callback_query.id,
+          ...(!isAuthorized(update.callback_query.from.id)
+            ? { text: 'غير مصرح لك بالإدارة.', show_alert: true }
+            : {})
+        });
+      } catch (error) {
+        // An expired callback must not prevent the actual update from being processed.
+        console.warn('Telegram callback acknowledgement failed:', error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
+
     const db = await getDb();
     await ensureTelegramIndexes(db);
     await ensureDefaultCategories(db);
