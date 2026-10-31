@@ -2,8 +2,8 @@ import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { ensureDefaultProducts, findStoredProduct } from '@/lib/catalog';
-import { sendNewOrderToAdmin, makeOrderNumber, type StoreOrder } from '@/lib/orders';
-import { adminReplyKeyboard, ensureTelegramIndexes, sendTelegramMessage } from '@/lib/telegram';
+import { makeOrderNumber, type StoreOrder } from '@/lib/orders';
+import { ensureTelegramIndexes } from '@/lib/telegram';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -255,32 +255,16 @@ export async function POST(request: NextRequest) {
 
     await orders.insertOne(order);
 
-    let notificationSent = false;
-    try {
-      await sendNewOrderToAdmin(order);
-      const adminId = process.env.TELEGRAM_ADMIN_ID;
-      if (adminId) {
-        const unreadCount = await orders.countDocuments({ source: 'website', adminSeenAt: null });
-        await sendTelegramMessage(Number(adminId), 'لديك طلبات جديدة. يمكنك فتح «طلبات العملاء» من القائمة لعرضها.', {
-          reply_markup: adminReplyKeyboard(unreadCount)
-        });
-      }
-      notificationSent = true;
-      await orders.updateOne({ _id }, { $set: { telegramNotificationSent: true, telegramNotifiedAt: new Date() } });
-    } catch (error) {
-      console.error('Order saved but Telegram notification failed:', error instanceof Error ? error.message : 'Unknown error');
-    }
-
+    // Keep the order as a draft until the customer chooses a payment method
+    // and presses "Complete order" on the next step. Admin receives one combined message.
     return NextResponse.json({
       ok: true,
       orderId: _id.toHexString(),
       orderNumber: order.orderNumber,
       total: order.total,
       currency: order.currency,
-      notificationSent,
-      message: notificationSent
-        ? 'تم حفظ الطلب وإرسال إشعار الإدارة.'
-        : 'تم حفظ الطلب، لكن تعذر إرسال إشعار تيليجرام. سيظل محفوظًا في قاعدة البيانات.'
+      notificationSent: false,
+      message: 'تم حفظ بيانات الطلب. اختر طريقة الدفع ثم اضغط «إكمال الطلب» لإرسال الطلب كاملًا للإدارة.'
     }, { status: 201 });
   } catch (error) {
     console.error('Create order failed:', error instanceof Error ? error.message : 'Unknown error');
