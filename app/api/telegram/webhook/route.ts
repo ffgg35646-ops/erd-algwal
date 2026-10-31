@@ -56,6 +56,7 @@ type FlowData = {
   footerSettingKey?: 'vat' | 'barcode';
   content?: string;
   searchQuery?: string;
+  searchMessageId?: number;
 };
 
 type FlowStep =
@@ -287,15 +288,6 @@ async function listProductSectionsForEdit(db: Db, chatId: number) {
   });
 }
 
-const ARABIC_PRODUCT_SEARCH_LETTERS = [
-  'ا', 'أ', 'إ', 'آ', 'ب', 'ت',
-  'ث', 'ج', 'ح', 'خ', 'د', 'ذ',
-  'ر', 'ز', 'س', 'ش', 'ص', 'ض',
-  'ط', 'ظ', 'ع', 'غ', 'ف', 'ق',
-  'ك', 'ل', 'م', 'ن', 'ه', 'و',
-  'ي'
-];
-
 function normalizeProductSearch(value: string) {
   return value
     .normalize('NFKC')
@@ -304,25 +296,6 @@ function normalizeProductSearch(value: string) {
     .replace(/ى/g, 'ي')
     .toLocaleLowerCase('ar')
     .trim();
-}
-
-function productSearchKeyboard(categoryId: string) {
-  const rows: Array<Array<{ text: string; callback_data: string }>> = [];
-  for (let index = 0; index < ARABIC_PRODUCT_SEARCH_LETTERS.length; index += 6) {
-    rows.push(ARABIC_PRODUCT_SEARCH_LETTERS.slice(index, index + 6).map((letter) => ({
-      text: letter,
-      callback_data: 'product-search:' + categoryId + ':' + letter
-    })));
-  }
-  rows.push([
-    { text: '⌫ حذف حرف', callback_data: 'product-search:' + categoryId + ':backspace' },
-    { text: 'مسح البحث', callback_data: 'product-search:' + categoryId + ':clear' }
-  ]);
-  rows.push([
-    { text: '↩ رجوع للأقسام', callback_data: 'edit-products-back' },
-    { text: 'القائمة الرئيسية', callback_data: 'main-menu' }
-  ]);
-  return rows;
 }
 
 async function showCategoryProductsForEdit(
@@ -363,12 +336,10 @@ async function showCategoryProductsForEdit(
   const shown = matches.slice(0, 40);
   const heading = [
     '📂 القسم: ' + section.name,
-    '🔎 البحث: ' + (searchQuery || 'اضغط حروف البحث بالأسفل أو اكتب كلمة البحث وأرسلها'),
+    normalizedQuery ? 'نتائج البحث عن: ' + searchQuery : 'كل منتجات القسم',
     '',
-    normalizedQuery
-      ? 'نتائج البحث داخل قسم «' + section.name + '»: ' + matches.length
-      : 'منتجات هذا القسم: ' + matches.length,
-    matches.length > 40 ? 'يتم عرض أول 40 نتيجة. أضف حروفًا لتضييق البحث.' : '',
+    'عدد المنتجات: ' + matches.length,
+    matches.length > 40 ? 'يتم عرض أول 40 منتجًا.' : '',
     ''
   ].filter(Boolean).join('\n');
 
@@ -377,8 +348,18 @@ async function showCategoryProductsForEdit(
       text: (product.name + ' — ' + Number(product.price || 0).toLocaleString('en-US') + ' ر.س').slice(0, 60),
       callback_data: 'edit-product:' + product._id.toHexString()
     }]),
-    ...productSearchKeyboard(categoryId)
+    [{
+      text: normalizedQuery ? '🔎 تغيير البحث' : '🔎 بحث عن منتج',
+      callback_data: 'product-search-start:' + categoryId
+    }],
+    ...(normalizedQuery ? [[{
+      text: 'عرض كل منتجات القسم',
+      callback_data: 'product-search-clear:' + categoryId
+    }]] : []),
+    [{ text: '↩ رجوع للأقسام', callback_data: 'edit-products-back' }],
+    [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
   ];
+
   const text = heading + (matches.length
     ? 'اضغط على المنتج الذي تريد تعديله.'
     : 'لا توجد منتجات مطابقة داخل هذا القسم.');
@@ -395,7 +376,7 @@ async function showCategoryProductsForEdit(
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       if (!message.toLowerCase().includes('message is not modified')) {
-        console.warn('Could not refresh category product search:', message);
+        console.warn('Could not refresh category product list:', message);
       } else {
         return;
       }
@@ -1170,11 +1151,16 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       chatId,
       workflow: 'edit_product_search',
       step: 'search_products',
-      data: { categoryId: section._id.toHexString(), categoryName: section.name, searchQuery: '' },
+      data: {
+        categoryId: section._id.toHexString(),
+        categoryName: section.name,
+        searchQuery: '',
+        searchMessageId: callback.message?.message_id
+      },
       updatedAt: new Date()
     };
     await saveSession(db, session);
-    await showCategoryProductsForEdit(db, chatId, section._id.toHexString());
+    await showCategoryProductsForEdit(db, chatId, section._id.toHexString(), '', callback.message?.message_id);
     return;
   }
   if (action === 'edit-products-back') {
@@ -1182,7 +1168,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await listProductSectionsForEdit(db, chatId);
     return;
   }
-  if (action === 'product-search') {
+  if (action === 'product-search-start') {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'القسم المحدد غير صالح.');
     const session = await db.collection<AdminSession>('telegram_sessions').findOne({
       telegramUserId: callback.from.id,
@@ -1190,26 +1176,34 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       step: 'search_products'
     });
     if (!session || session.data.categoryId !== id) {
-      await sendTelegramMessage(chatId, 'انتهت جلسة البحث. افتح «تعديل المنتج» واختر القسم مرة أخرى.');
+      await sendTelegramMessage(chatId, 'افتح «تعديل المنتج» واختر القسم مرة أخرى.');
       return;
     }
-
-    const currentQuery = session.data.searchQuery || '';
-    if (field === 'clear') {
-      session.data.searchQuery = '';
-    } else if (field === 'backspace') {
-      session.data.searchQuery = [...currentQuery].slice(0, -1).join('');
-    } else if (field && field.length <= 4) {
-      session.data.searchQuery = (currentQuery + field).slice(0, 40);
-    }
+    session.data.searchMessageId = callback.message?.message_id;
     await saveSession(db, session);
-    await showCategoryProductsForEdit(
-      db,
-      chatId,
-      id,
-      session.data.searchQuery || '',
-      callback.message?.message_id
-    );
+    await sendTelegramMessage(chatId, 'اكتب اسم المنتج أو جزءًا من اسمه للبحث داخل قسم «' + (session.data.categoryName || '') + '» فقط.', {
+      reply_markup: {
+        force_reply: true,
+        selective: true,
+        input_field_placeholder: 'اسم المنتج...'
+      }
+    });
+    return;
+  }
+  if (action === 'product-search-clear') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'القسم المحدد غير صالح.');
+    const session = await db.collection<AdminSession>('telegram_sessions').findOne({
+      telegramUserId: callback.from.id,
+      workflow: 'edit_product_search',
+      step: 'search_products'
+    });
+    if (!session || session.data.categoryId !== id) {
+      await sendTelegramMessage(chatId, 'انتهت جلسة عرض المنتجات. اختر القسم مرة أخرى.');
+      return;
+    }
+    session.data.searchQuery = '';
+    await saveSession(db, session);
+    await showCategoryProductsForEdit(db, chatId, id, '', callback.message?.message_id);
     return;
   }
   if (action === 'product-section') {
@@ -1454,12 +1448,18 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
 
   if (session.workflow === 'edit_product_search' && session.step === 'search_products') {
     if (!session.data.categoryId || !value) {
-      await sendTelegramMessage(chatId, 'اكتب كلمة البحث أو اضغط حرفًا من لوحة البحث.');
+      await sendTelegramMessage(chatId, 'اكتب اسم المنتج أو جزءًا من اسمه للبحث.');
       return;
     }
-    session.data.searchQuery = value.slice(0, 40);
+    session.data.searchQuery = value.slice(0, 80);
     await saveSession(db, session);
-    await showCategoryProductsForEdit(db, chatId, session.data.categoryId, session.data.searchQuery);
+    await showCategoryProductsForEdit(
+      db,
+      chatId,
+      session.data.categoryId,
+      session.data.searchQuery,
+      session.data.searchMessageId
+    );
     return;
   }
 
