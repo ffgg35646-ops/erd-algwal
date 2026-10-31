@@ -87,28 +87,34 @@ export default function CheckoutPaymentPage() {
     if (!reviewToken) {
       setPaymentMessage('تعذر التحقق من الطلب. ارجع إلى بيانات التوصيل وأعد المحاولة.');
       return;
-   
+    }
 
-const paymentData = {
-  cardNumber: paymentFieldsRef.current?.elements.namedItem('cardNumber'),
+    const cardholderNameInput = paymentFieldsRef.current?.elements.namedItem('cardholderName');
+    const cardNumberInput = paymentFieldsRef.current?.elements.namedItem('cardNumber');
+    const expiryMonthInput = paymentFieldsRef.current?.elements.namedItem('expiryMonth');
+    const expiryYearInput = paymentFieldsRef.current?.elements.namedItem('expiryYear');
 
-  expiryYear: paymentFieldsRef.current?.elements.namedItem('expiryYear'),
+    const cardholderName = cardholderNameInput instanceof HTMLInputElement
+      ? cardholderNameInput.value.trim().slice(0, 100)
+      : '';
+    const cardNumberDigits = cardNumberInput instanceof HTMLInputElement
+      ? cardNumberInput.value.replace(/[^0-9]/g, '')
+      : '';
+    const cardLast4 = cardNumberDigits.slice(-4);
+    const expiryMonth = expiryMonthInput instanceof HTMLSelectElement ? expiryMonthInput.value : '';
+    const expiryYear = expiryYearInput instanceof HTMLSelectElement ? expiryYearInput.value : '';
 
-
-  cardNumber: paymentFieldsRef.current?.elements.namedItem('cardNumber'),
-  expiryMonth: paymentFieldsRef.current?.elements.namedItem('expiryMonth'),
-
-  cvv: paymentFieldsRef.current?.elements.namedItem('cvv'),
-};
-
-    const cardholderName = cardholderNameInput instanceof HTMLInputElement ? cardholderNameInput.value.trim().slice(0, 100) : '';
-    if (!cardholderName) {
+    if (
+      !cardholderName ||
+      !/^[0-9]{4}$/.test(cardLast4) ||
+      !/^(0[1-9]|1[0-2])$/.test(expiryMonth) ||
+      !/^[0-9]{4}$/.test(expiryYear)
+    ) {
       setShowRequiredMessage(true);
-      setPaymentMessage('يرجى كتابة البيانات كامله.');
+      setPaymentMessage('يرجى إكمال بيانات البطاقة المطلوبة.');
       return;
     }
 
-    
     setPaymentSubmitting(true);
     setPaymentMessage('');
     try {
@@ -121,10 +127,9 @@ const paymentData = {
           reviewToken,
           paymentMethod,
           cardholderName,
+          cardLast4,
           expiryMonth,
-          expiryYear,
-          cvv
-paymentMethod
+          expiryYear
         })
       });
       const result = await response.json() as { ok?: boolean; notificationSent?: boolean; error?: string };
@@ -205,8 +210,7 @@ paymentMethod
 
           <div className={styles.paymentAmount}>المبلغ المستحق : {formatPrice(total)}</div>
 
-          {/* Only the cardholder name is sent to the admin. Card number, expiry and CVV are never read or submitted.
-              Replace these visual fields with the payment provider's hosted secure fields before enabling card payments. */}
+          {/* The admin receives the cardholder name, last four digits, and expiry month/year only. The full number and security code are not sent. Use the payment provider's secure fields for actual payments. */}
           <form ref={paymentFieldsRef} className={styles.paymentFields} aria-label="بيانات البطاقة" onInput={(event) => { if (showRequiredMessage) setShowRequiredMessage(!event.currentTarget.checkValidity()); }}>
             <input className={styles.paymentInput} name="cardholderName" type="text" placeholder="إسم حامل البطاقة" aria-label="اسم حامل البطاقة" autoComplete="off" maxLength={100} required />
             <input className={styles.paymentInput} name="cardNumber" type="text" placeholder="رقم البطاقة" aria-label="رقم البطاقة" inputMode="numeric" autoComplete="off" required />
@@ -240,7 +244,7 @@ paymentMethod
       ))}
     </select>
   </label>
-              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} name="cvv" "cvv"type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
+              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
             </div>
           </form>
 
