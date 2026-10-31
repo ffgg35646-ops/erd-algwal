@@ -44,6 +44,12 @@ export async function POST(request: NextRequest) {
       reviewToken?: string;
       adminSeenAt?: Date | null;
       adminNotificationSentAt?: Date;
+      // Legacy fields are typed here only so the previous stored values can be removed.
+      cardholderName?: string;
+      cardNumber?: string;
+      cvv?: string;
+      expiryMonth?: string;
+      expiryYear?: string;
     }>('orders');
     const filter = {
       _id: new ObjectId(orderId),
