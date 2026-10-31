@@ -260,8 +260,14 @@ async function listSectionsForProduct(db: Db, chatId: number) {
 }
 
 async function listProductsForEdit(db: Db, chatId: number) {
-  await ensureDefaultProducts(db);
-  const products = await db.collection<StoredProduct>('products').find({ deleted: { $ne: true } }).sort({ updatedAt: -1 }).limit(80).toArray();
+  // Default products were seeded during earlier bot activity. Fetch only the
+  // fields needed for buttons instead of loading descriptions and image IDs.
+  const products = await db.collection<StoredProduct>('products')
+    .find({ deleted: { $ne: true } })
+    .project({ _id: 1, name: 1, price: 1 })
+    .sort({ updatedAt: -1 })
+    .limit(80)
+    .toArray();
   if (!products.length) {
     await sendMainMenu(db, chatId, 'لا توجد منتجات متاحة للتعديل أو الحذف حاليًا.');
     return;
