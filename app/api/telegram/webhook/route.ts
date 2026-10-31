@@ -363,7 +363,7 @@ async function showCategoryProductsForEdit(
   const shown = matches.slice(0, 40);
   const heading = [
     '📂 القسم: ' + section.name,
-    '🔎 البحث: ' + (searchQuery || 'اضغط حروف البحث بالأسفل'),
+    '🔎 البحث: ' + (searchQuery || 'اضغط حروف البحث بالأسفل أو اكتب كلمة البحث وأرسلها'),
     '',
     normalizedQuery
       ? 'نتائج البحث داخل قسم «' + section.name + '»: ' + matches.length
@@ -443,7 +443,7 @@ async function refreshProductColorMessage(chatId: number, messageId: number | un
   await sendTelegramMessage(chatId, productColorPrompt(selectedColors), { reply_markup: productColorKeyboard(selectedColors) });
 }
 
-function editProductKeyboard(id: string) {
+function editProductKeyboard(id: string, categoryId: string) {
   return {
     inline_keyboard: [
       [{ text: 'القسم', callback_data: 'product-field:' + id + ':category' }, { text: 'اسم المنتج', callback_data: 'product-field:' + id + ':name' }],
@@ -451,6 +451,7 @@ function editProductKeyboard(id: string) {
       [{ text: 'السعر', callback_data: 'product-field:' + id + ':price' }, { text: 'تفاصيل المنتج', callback_data: 'product-field:' + id + ':details' }],
       [{ text: 'الصور (استبدال الصور)', callback_data: 'product-field:' + id + ':images' }],
       [{ text: '🗑 حذف المنتج', callback_data: 'delete-product:' + id }],
+      [{ text: '↩ رجوع لمنتجات القسم', callback_data: 'back-to-category-products:' + categoryId }],
       [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
     ]
   };
@@ -478,7 +479,7 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
     '',
     'اختر الخانة التي تريد تعديلها. زر الحذف موجود بالأسفل.'
   ].join('\n');
-  await sendTelegramMessage(chatId, message, { reply_markup: editProductKeyboard(id) });
+  await sendTelegramMessage(chatId, message, { reply_markup: editProductKeyboard(id, product.categoryId) });
 }
 
 async function showCustomerOrders(db: Db, chatId: number) {
@@ -1285,6 +1286,22 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'section-list') {
     await listSectionsForEdit(db, chatId);
+    return;
+  }
+  if (action === 'back-to-category-products') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'القسم المحدد غير صالح.');
+    const session = await db.collection<AdminSession>('telegram_sessions').findOne({
+      telegramUserId: callback.from.id,
+      workflow: 'edit_product_search',
+      'data.categoryId': id
+    });
+    await showCategoryProductsForEdit(
+      db,
+      chatId,
+      id,
+      session?.data.searchQuery || '',
+      callback.message?.message_id
+    );
     return;
   }
   if (action === 'edit-product') {
