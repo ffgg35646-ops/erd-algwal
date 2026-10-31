@@ -1,5 +1,5 @@
 import { ObjectId, type Db, type Document } from 'mongodb';
-import { ORDER_STATUS_LABELS, type OrderStatus, sendTelegramMessage, statusInlineKeyboard } from '@/lib/telegram';
+import { ORDER_STATUS_LABELS, type OrderStatus } from '@/lib/telegram';
 
 export type OrderItem = {
   name: string;
@@ -106,15 +106,6 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     ...(typeof order.notes === 'string' && order.notes.trim() ? [`ملاحظات العميل: ${order.notes.trim()}`] : []),
     `المصدر: ${order.source === 'telegram_manual' ? 'أضيف من البوت' : 'المتجر الإلكتروني'}`
   ].join('\n');
-}
-
-export async function sendNewOrderToAdmin(order: StoreOrder) {
-  const adminId = process.env.TELEGRAM_ADMIN_ID;
-  if (!adminId) throw new Error('TELEGRAM_ADMIN_ID is not configured');
-
-  await sendTelegramMessage(Number(adminId), `🛍️ طلب جديد في أرض الجوال\n\n${formatOrderForAdmin(order)}\n\nاختر الحالة لتعديل الطلب:`, {
-    reply_markup: statusInlineKeyboard(order._id.toHexString())
-  });
 }
 
 export async function getRecentOrders(db: Db, limit = 10) {
