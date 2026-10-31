@@ -247,7 +247,7 @@ async function listProductsForEdit(db: Db, chatId: number) {
   await ensureDefaultProducts(db);
   const products = await db.collection<StoredProduct>('products').find({ deleted: { $ne: true } }).sort({ updatedAt: -1 }).limit(80).toArray();
   if (!products.length) {
-    await sendMainMenu(db, chatId, 'لا توجد منتجات مضافة من البوت حتى الآن.');
+    await sendMainMenu(db, chatId, 'لا توجد منتجات متاحة للتعديل أو الحذف حاليًا.');
     return;
   }
   await sendTelegramMessage(chatId, 'اختر المنتج الذي تريد تعديله أو حذفه:', {
