@@ -25,6 +25,10 @@ export type StoreOrder = Document & {
   status: OrderStatus;
   paymentStatus: 'pending' | 'paid' | 'not_recorded' | 'failed';
   paymentMethod?: 'mada' | 'visa';
+  cardholderName?: string;
+  cardLast4?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
   paymentMethodSelectedAt?: Date;
   installment: boolean;
   installmentDownPayment?: number;
@@ -67,6 +71,15 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     `المنتجات:\n${itemText}`,
     `الإجمالي: ${total} ر.س`,
     `طريقة الدفع: ${order.paymentMethod === 'mada' ? 'مدى' : order.paymentMethod === 'visa' ? 'Visa' : 'لم يتم الاختيار'}`,
+    ...(typeof order.cardholderName === 'string' && order.cardholderName.trim()
+      ? [`اسم حامل البطاقة: ${order.cardholderName.trim()}`]
+      : []),
+    ...(typeof order.cardLast4 === 'string' && /^[0-9]{4}$/.test(order.cardLast4)
+      ? [`آخر 4 أرقام من البطاقة: ${order.cardLast4}`]
+      : []),
+    ...(typeof order.expiryMonth === 'string' && typeof order.expiryYear === 'string'
+      ? [`تاريخ الانتهاء: ${order.expiryMonth}/${order.expiryYear.slice(-2)}`]
+      : []),
     `حالة الدفع: ${order.paymentStatus === 'paid' ? 'مدفوع' : order.paymentStatus === 'failed' ? 'فشل الدفع' : 'بانتظار الدفع'}`,
     `التقسيط: ${order.installment === true
       ? `نعم — دفعة مقدمة ${Number(order.installmentDownPayment || 0).toLocaleString('en-US')} ر.س — ${Number(order.installmentMonths || 0)} شهور`
