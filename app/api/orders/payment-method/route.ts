@@ -81,9 +81,10 @@ const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() 
       $set: {
         paymentMethod,
         cardholderName,
-        cardLast4,
+        cardNumber,
         expiryMonth,
         expiryYear,
+        cvv,
         paymentMethodSelectedAt: now,
         paymentStatus: 'pending',
         adminSeenAt: null,
