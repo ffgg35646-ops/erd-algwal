@@ -1609,11 +1609,11 @@ export async function POST(request: NextRequest) {
   // the HTTP 200 response, while the Vercel Function remains alive.
   after(async () => {
     let db: Db | undefined;
-    let updates: ReturnType<Db['collection']> | undefined;
     try {
       db = await getDb();
       await ensureTelegramIndexesOnce(db);
-      updates = db.collection('telegram_updates');
+      await ensureDefaultProducts(db);
+      const updates = db.collection('telegram_updates');
 
       try {
         await updates.insertOne({ updateId: update.update_id, status: 'processing', receivedAt: new Date() });
@@ -1632,8 +1632,8 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Telegram background update failed:', message);
-      if (updates) {
-        await updates.updateOne(
+      if (db) {
+        await db.collection('telegram_updates').updateOne(
           { updateId: update.update_id },
           { $set: { status: 'failed', error: message.slice(0, 500), failedAt: new Date() } }
         ).catch((statusError) => {
