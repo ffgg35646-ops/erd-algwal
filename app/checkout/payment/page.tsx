@@ -244,7 +244,7 @@ export default function CheckoutPaymentPage() {
       ))}
     </select>
   </label>
-              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
+              <input className={`${styles.paymentInput} ${styles.paymentCvv}`} name="cvv" type="password" placeholder="رمز" aria-label="رمز البطاقة" inputMode="numeric" autoComplete="off" required />
             </div>
           </form>
 
