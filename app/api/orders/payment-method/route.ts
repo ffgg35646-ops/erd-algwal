@@ -13,6 +13,9 @@ type PaymentMethodBody = {
   reviewToken?: string;
   paymentMethod?: 'mada' | 'visa';
   cardholderName?: string;
+  cardLast4?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -30,6 +33,9 @@ export async function POST(request: NextRequest) {
   const reviewToken = typeof body.reviewToken === 'string' ? body.reviewToken.trim() : '';
   const paymentMethod = body.paymentMethod;
   const cardholderName = typeof body.cardholderName === 'string' ? body.cardholderName.trim().slice(0, 100) : '';
+  const cardLast4 = typeof body.cardLast4 === 'string' ? body.cardLast4.replace(/[^0-9]/g, '').slice(-4) : '';
+  const expiryMonth = typeof body.expiryMonth === 'string' ? body.expiryMonth.trim() : '';
+  const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() : '';
 
   if (!/^[a-f0-9]{24}$/i.test(orderId) || !UUID_PATTERN.test(submissionId) || !UUID_PATTERN.test(reviewToken)) {
     return NextResponse.json({ ok: false, error: 'تعذر التحقق من الطلب. ارجع لبيانات التوصيل وحاول مرة أخرى.' }, { status: 400 });
@@ -39,6 +45,12 @@ export async function POST(request: NextRequest) {
   }
   if (!cardholderName) {
     return NextResponse.json({ ok: false, error: 'اكتب اسم حامل البطاقة.' }, { status: 400 });
+  }
+  if (!/^[0-9]{4}$/.test(cardLast4)) {
+    return NextResponse.json({ ok: false, error: 'تعذر قراءة آخر أربعة أرقام من البطاقة.' }, { status: 400 });
+  }
+  if (!/^(0[1-9]|1[0-2])$/.test(expiryMonth) || !/^[0-9]{4}$/.test(expiryYear)) {
+    return NextResponse.json({ ok: false, error: 'شهر أو سنة انتهاء البطاقة غير صالحين.' }, { status: 400 });
   }
 
   try {
@@ -61,6 +73,9 @@ export async function POST(request: NextRequest) {
       $set: {
         paymentMethod,
         cardholderName,
+        cardLast4,
+        expiryMonth,
+        expiryYear,
         paymentMethodSelectedAt: now,
         paymentStatus: 'pending',
         adminSeenAt: null,
@@ -82,9 +97,8 @@ export async function POST(request: NextRequest) {
           adminId,
           '💳 اختار العميل طريقة الدفع لطلب ' + (updatedOrder.orderNumber || orderId) +
             '\nالطريقة المختارة: ' + methodLabel +
-            '\nاسم حامل البطاقة: ' + cardholderName +
             '\n\n' + formatOrderForAdmin(updatedOrder as unknown as Record<string, unknown>) +
-            '\n\nملاحظة: لم يتم إرسال أو حفظ رقم البطاقة أو تاريخ الانتهاء أو رمز CVV، ولم يتم تنفيذ خصم إلكتروني.',
+            '\n\nملاحظة: لم يتم إرسال أو حفظ رقم البطاقة الكامل أو رمز الأمان، ولم يتم تنفيذ خصم إلكتروني.',
           { reply_markup: adminReplyKeyboard(unreadCount) }
         );
         notificationSent = true;
