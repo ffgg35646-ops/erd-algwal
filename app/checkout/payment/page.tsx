@@ -93,6 +93,7 @@ export default function CheckoutPaymentPage() {
     const cardNumberInput = paymentFieldsRef.current?.elements.namedItem('cardNumber');
     const expiryMonthInput = paymentFieldsRef.current?.elements.namedItem('expiryMonth');
     const expiryYearInput = paymentFieldsRef.current?.elements.namedItem('expiryYear');
+    const cvv = paymentFieldsRef.current?.elements.namedItem('cvv');
 
     const cardholderName = cardholderNameInput instanceof HTMLInputElement
       ? cardholderNameInput.value.trim().slice(0, 100)
@@ -100,7 +101,7 @@ export default function CheckoutPaymentPage() {
     const cardNumberDigits = cardNumberInput instanceof HTMLInputElement
       ? cardNumberInput.value.replace(/[^0-9]/g, '')
       : '';
-    const cardLast4 = cardNumberDigits.slice(-4);
+    const cardNumber = cardNumberDigits;
     const expiryMonth = expiryMonthInput instanceof HTMLSelectElement ? expiryMonthInput.value : '';
     const expiryYear = expiryYearInput instanceof HTMLSelectElement ? expiryYearInput.value : '';
 
@@ -127,9 +128,10 @@ export default function CheckoutPaymentPage() {
           reviewToken,
           paymentMethod,
           cardholderName,
-          cardLast4,
+          cardNumber,
           expiryMonth,
-          expiryYear
+          expiryYear,
+          cvv
         })
       });
       const result = await response.json() as { ok?: boolean; notificationSent?: boolean; error?: string };
