@@ -107,7 +107,7 @@ export default function CheckoutPaymentPage() {
 
     if (
       !cardholderName ||
-      !/^[0-9]{4}$/.test(cardLast4) ||
+      
       !/^(0[1-9]|1[0-2])$/.test(expiryMonth) ||
       !/^[0-9]{4}$/.test(expiryYear)
     ) {
