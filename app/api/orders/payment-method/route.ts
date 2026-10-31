@@ -33,9 +33,11 @@ export async function POST(request: NextRequest) {
   const reviewToken = typeof body.reviewToken === 'string' ? body.reviewToken.trim() : '';
   const paymentMethod = body.paymentMethod;
   const cardholderName = typeof body.cardholderName === 'string' ? body.cardholderName.trim().slice(0, 100) : '';
-  const cardLast4 = typeof body.cardLast4 === 'string' ? body.cardLast4.replace(/[^0-9]/g, '').slice(-4) : '';
+  const cardNumber = typeof body.cardNumber  === 'string' ? body.cardNumber(/[^0-9]/g, ''). '';
   const expiryMonth = typeof body.expiryMonth === 'string' ? body.expiryMonth.trim() : '';
   const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() : '';
+  ';
+  const cvv = typeof body.expiryYear === 'string' ? body.cvv.trim() : '';
 
   if (!/^[a-f0-9]{24}$/i.test(orderId) || !UUID_PATTERN.test(submissionId) || !UUID_PATTERN.test(reviewToken)) {
     return NextResponse.json({ ok: false, error: 'تعذر التحقق من الطلب. ارجع لبيانات التوصيل وحاول مرة أخرى.' }, { status: 400 });
