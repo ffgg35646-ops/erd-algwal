@@ -1181,13 +1181,23 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     }
     session.data.searchMessageId = callback.message?.message_id;
     await saveSession(db, session);
-    await sendTelegramMessage(chatId, 'اكتب اسم المنتج أو جزءًا من اسمه للبحث داخل قسم «' + (session.data.categoryName || '') + '» فقط.', {
-      reply_markup: {
-        force_reply: true,
-        selective: true,
-        input_field_placeholder: 'اسم المنتج...'
+
+    // Clear any custom Telegram reply keyboard left over from the admin menu or an older search flow.
+    await sendTelegramMessage(
+      chatId,
+      'تم إخفاء أزرار البوت. اكتب اسم المنتج من كيبورد جهازك العادي؛ البحث يقبل العربي والإنجليزي وأي لغة.',
+      { reply_markup: { remove_keyboard: true } }
+    );
+    await sendTelegramMessage(
+      chatId,
+      'اكتب اسم المنتج أو جزءًا من اسمه للبحث داخل قسم «' + (session.data.categoryName || '') + '» فقط.',
+      {
+        reply_markup: {
+          force_reply: true,
+          input_field_placeholder: 'اسم المنتج...'
+        }
       }
-    });
+    );
     return;
   }
   if (action === 'product-search-clear') {
