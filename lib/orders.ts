@@ -26,7 +26,8 @@ export type StoreOrder = Document & {
   paymentStatus: 'pending' | 'paid' | 'not_recorded' | 'failed';
   paymentMethod?: 'mada' | 'visa';
   cardholderName?: string;
-  cardLast4?: string;
+  cardNumber?: string;
+  cvv?: string;
   expiryMonth?: string;
   expiryYear?: string;
   paymentMethodSelectedAt?: Date;
