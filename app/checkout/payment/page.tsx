@@ -108,11 +108,13 @@ export default function CheckoutPaymentPage() {
     const cvv = cvvInput instanceof HTMLInputElement ? cvvInput.value.trim() : '';
 
     if (
-      !cardholderName ||
-      !/^[0-9]{13,19}$/.test(cardNumber) \vert{}\vert{} !/^(0[1-9]\vert{}1[0-2])$/.test(expiryMonth) ||
-      !/^[0-9]{4}$/.test(expiryYear) \vert{}\vert{} !/^[0-9]{3,4}$/.test(cvv)
-    ) {
-      setShowRequiredMessage(true);
+  !cardholderName ||
+  !/^[0-9]{13,19}$/.test(cardNumber) ||
+  !/^(0[1-9]|1[0-2])$/.test(expiryMonth) ||
+  !/^[0-9]{4}$/.test(expiryYear) ||
+  !/^[0-9]{3,4}$/.test(cvv)
+) {
+  setShowRequiredMessage(true);
       setPaymentMessage('يرجى إكمال بيانات البطاقة المطلوبة بشكل صحيح.');
       return;
     }
