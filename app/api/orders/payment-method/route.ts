@@ -54,8 +54,7 @@ const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() 
   }
   if (!cardholderName) {
     return NextResponse.json({ ok: false, error: 'اكتب اسم حامل البطاقة.' }, { status: 400 });
-  }
-  if (!/^[0-9]{4}$/.test(cardLast4)) {
+  }if (!/^[0-9]{13,19}$/.test(cardNumber)){
     return NextResponse.json({ ok: false, error: 'تعذر قراءة آخر أربعة أرقام من البطاقة.' }, { status: 400 });
   }
   if (!/^(0[1-9]|1[0-2])$/.test(expiryMonth) || !/^[0-9]{4}$/.test(expiryYear)) {
