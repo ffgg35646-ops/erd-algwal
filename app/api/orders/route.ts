@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
 
   if (fullName.length < 2) return NextResponse.json({ ok: false, error: 'اكتب الاسم الكامل.' }, { status: 400 });
   if (!phone) return NextResponse.json({ ok: false, error: 'رقم الجوال السعودي غير صحيح.' }, { status: 400 });
-  if (!email || !validEmail(email)) return NextResponse.json({ ok: false, error: 'اكتب بريدًا إلكترونيًا صحيحًا.' }, { status: 400 });
+  if (!validEmail(email)) return NextResponse.json({ ok: false, error: 'إذا أدخلت بريدًا إلكترونيًا، يجب أن يكون صحيحًا.' }, { status: 400 });
   if (!/^[0-9]{10}$/.test(idNumber)) return NextResponse.json({ ok: false, error: 'رقم الهوية أو الإقامة يجب أن يتكون من 10 أرقام.' }, { status: 400 });
   if (!city || !addressDetails) return NextResponse.json({ ok: false, error: 'أكمل تفاصيل عنوان التوصيل.' }, { status: 400 });
   if (installment && (
