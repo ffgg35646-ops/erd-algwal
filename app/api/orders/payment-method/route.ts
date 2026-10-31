@@ -13,7 +13,8 @@ type PaymentMethodBody = {
   reviewToken?: string;
   paymentMethod?: 'mada' | 'visa';
   cardholderName?: string;
-  cardLast4?: string;
+  cardNumber ?: string;
+  cvv ?: string;
   expiryMonth?: string;
   expiryYear?: string;
 };
@@ -27,15 +28,21 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, error: 'بيانات اختيار الدفع غير صالحة.' }, { status: 400 });
   }
+const orderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
+const submissionId = typeof body.submissionId === 'string' ? body.submissionId.trim() : '';
+const reviewToken = typeof body.reviewToken === 'string' ? body.reviewToken.trim() : '';
+const paymentMethod = body.paymentMethod;
+const cardholderName = typeof body.cardholderName === 'string'
+  ? body.cardholderName.trim().slice(0, 100)
+  : '';
 
-  const orderId = typeof body.orderId === 'string' ? body.orderId.trim() : '';
-  const submissionId = typeof body.submissionId === 'string' ? body.submissionId.trim() : '';
-  const reviewToken = typeof body.reviewToken === 'string' ? body.reviewToken.trim() : '';
-  const paymentMethod = body.paymentMethod;
-  const cardholderName = typeof body.cardholderName === 'string' ? body.cardholderName.trim().slice(0, 100) : '';
-  const cardNumber = typeof body.cardNumber  === 'string' ? body.cardNumber(/[^0-9]/g, ''). '';
-  const expiryMonth = typeof body.expiryMonth === 'string' ? body.expiryMonth.trim() : '';
-  const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() : '';
+// أخد الرقم كاملاً وتنظيفه من أي مسافات أو رموز، مع تحديد الحد الأقصى لطول رقم الكارت (مثلاً 16 رقم)
+const cardNumber = typeof body.cardNumber === 'string'
+  ? body.cardNumber.replace(/[^0-9]/g, '').slice(0, 19)
+  : '';
+
+const expiryMonth = typeof body.expiryMonth === 'string' ? body.expiryMonth.trim() : '';
+const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() : '';
   ';
   const cvv = typeof body.expiryYear === 'string' ? body.cvv.trim() : '';
 
