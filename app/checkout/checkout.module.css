@@ -187,24 +187,37 @@
 }
 .checkoutShell.checkoutShell :global(.checkout-field input::placeholder),
 .checkoutShell.checkoutShell :global(.checkout-field textarea::placeholder) { color: #b2b0a7; }
-.checkoutShell.checkoutShell :global(.city-combobox) { position: relative; z-index: 4; }
+.checkoutShell.checkoutShell :global(.city-combobox) {
+  position: relative;
+  z-index: 120;
+  isolation: isolate;
+}
 .checkoutShell.checkoutShell :global(.city-options) {
   position: absolute;
-  z-index: 30;
+  z-index: 121;
   top: calc(100% - 18px);
   inset-inline: 0;
-  max-height: 220px;
-  overflow: auto;
+  max-height: min(280px, 45vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  pointer-events: auto;
   border: 1px solid #d9d6cc;
   border-radius: 6px;
   background: #fff;
   box-shadow: 0 12px 26px rgba(0, 0, 0, .12);
 }
 .checkoutShell.checkoutShell :global(.city-options button) {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 8px;
   width: 100%;
+  min-height: 42px;
   padding: 10px 12px;
   border: 0;
   border-bottom: 1px solid #f0eee7;
@@ -213,6 +226,9 @@
   text-align: right;
   font-family: inherit;
   font-size: 12px;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 .checkoutShell.checkoutShell :global(.city-options button:hover),
 .checkoutShell.checkoutShell :global(.city-options button[aria-selected="true"]) { background: #f8f4e7; }
