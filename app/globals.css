@@ -4884,10 +4884,39 @@ body {
   .customer-reviews-heading h2 { margin: 2px 0 5px; color: #171717; font-size: 20px; }
   .customer-reviews-heading p { color: #666; font-size: 12px; }
   .reviews-count { padding: 5px 8px; font-size: 11px; }
-  .reviews-track { display: block; overflow: visible; padding: 0; }
-  .reviews-marquee-track { display: block; width: 100%; transform: none !important; animation: none !important; }
-  .reviews-marquee-group { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; width: 100%; animation: none !important; }
-  .reviews-marquee-group[aria-hidden="true"] { display: none; }
+  /* Keep customer reviews moving horizontally on phones as on desktop. */
+  .reviews-track {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    direction: ltr;
+    padding: 0;
+  }
+  .reviews-marquee-track {
+    display: flex;
+    flex-direction: row;
+    width: max-content;
+    max-width: none;
+    gap: 0;
+    animation: customer-reviews-seamless 34s linear infinite !important;
+    animation-play-state: running !important;
+    will-change: transform;
+  }
+  .reviews-marquee-group {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 12px;
+    width: auto;
+    padding-right: 12px;
+    animation: none !important;
+  }
+  .reviews-marquee-group[aria-hidden="true"] { display: flex; }
+  .customer-reviews .reviews-marquee-group .review-card {
+    flex: 0 0 min(78vw, 320px);
+    width: min(78vw, 320px);
+  }
   .review-card {
     display: block;
     min-width: 0;
