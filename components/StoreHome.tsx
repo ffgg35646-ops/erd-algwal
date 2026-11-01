@@ -178,7 +178,9 @@ function AutoProductSlider({ categoryName, products }: { categoryName: string; p
     if (!slider) return;
 
     let intervalId: number | undefined;
+    let resumeTimeoutId: number | undefined;
     let resizeObserver: ResizeObserver | undefined;
+    let isPaused = false;
 
     const getCards = () => Array.from(slider.querySelectorAll<HTMLElement>('.strip-product-card'));
 
@@ -222,6 +224,7 @@ function AutoProductSlider({ categoryName, products }: { categoryName: string; p
 
     const startAutoplay = () => {
       stopAutoplay();
+      if (isPaused) return;
       const cards = getCards();
       const visibleCount = getVisibleCount(cards);
       if (cards.length <= visibleCount || slider.scrollWidth <= slider.clientWidth + 2) return;
@@ -251,7 +254,32 @@ function AutoProductSlider({ categoryName, products }: { categoryName: string; p
       }, 5000);
     };
 
+    const pauseAutoplay = () => {
+      isPaused = true;
+      stopAutoplay();
+      if (resumeTimeoutId !== undefined) window.clearTimeout(resumeTimeoutId);
+      resumeTimeoutId = undefined;
+    };
+    const resumeAutoplay = () => {
+      if (resumeTimeoutId !== undefined) window.clearTimeout(resumeTimeoutId);
+      resumeTimeoutId = window.setTimeout(() => {
+        isPaused = false;
+        startAutoplay();
+        resumeTimeoutId = undefined;
+      }, 5000);
+    };
+    const handleWheel = () => {
+      pauseAutoplay();
+      resumeAutoplay();
+    };
+
     slider.addEventListener('scroll', syncActiveStart, { passive: true });
+    slider.addEventListener('pointerdown', pauseAutoplay, { passive: true });
+    slider.addEventListener('wheel', handleWheel, { passive: true });
+    slider.addEventListener('focusin', pauseAutoplay);
+    slider.addEventListener('focusout', resumeAutoplay);
+    window.addEventListener('pointerup', resumeAutoplay, { passive: true });
+    window.addEventListener('pointercancel', resumeAutoplay, { passive: true });
     window.addEventListener('resize', startAutoplay, { passive: true });
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(startAutoplay);
@@ -261,8 +289,15 @@ function AutoProductSlider({ categoryName, products }: { categoryName: string; p
 
     return () => {
       stopAutoplay();
+      if (resumeTimeoutId !== undefined) window.clearTimeout(resumeTimeoutId);
       resizeObserver?.disconnect();
       slider.removeEventListener('scroll', syncActiveStart);
+      slider.removeEventListener('pointerdown', pauseAutoplay);
+      slider.removeEventListener('wheel', handleWheel);
+      slider.removeEventListener('focusin', pauseAutoplay);
+      slider.removeEventListener('focusout', resumeAutoplay);
+      window.removeEventListener('pointerup', resumeAutoplay);
+      window.removeEventListener('pointercancel', resumeAutoplay);
       window.removeEventListener('resize', startAutoplay);
     };
   }, [categoryName, products]);
@@ -289,7 +324,15 @@ function StripProductCard({ product }: { product: Product }) {
   return (
     <article className="strip-product-card">
       <Link href={'/products/' + product.id} className="strip-product-image" aria-label={'تفاصيل ' + product.name}>
-        <img src={product.image} alt={product.name} loading="lazy" />
+        <img
+          src={product.image}
+          alt={product.name}
+          loading="lazy"
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = '/product-image-placeholder.svg';
+          }}
+        />
         {product.badge ? <span className="strip-product-badge">{product.badge}</span> : null}
       </Link>
       <div className="strip-product-info">
