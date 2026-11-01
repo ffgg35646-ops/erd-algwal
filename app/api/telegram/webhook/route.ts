@@ -524,14 +524,20 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
   if (!isObjectId(id)) return sendTelegramMessage(chatId, 'معرّف الطلب غير صالح.');
   const order = await db.collection<StoreOrder>('orders').findOne({ _id: new ObjectId(id) });
   if (!order) return sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
-  await sendTelegramMessage(chatId, 'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) + '\n\nاختر حالة الطلب:', {
-    reply_markup: {
-      inline_keyboard: [
-        ...statusInlineKeyboard(id, order.status).inline_keyboard,
-        [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
-      ]
+  const closed = order.status === 'completed' || order.status === 'cancelled';
+  await sendTelegramMessage(
+    chatId,
+    'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
+      (closed ? '\n\nهذا الطلب مغلق.' : '\n\nاختر الإجراء التالي للطلب:'),
+    {
+      reply_markup: {
+        inline_keyboard: [
+          ...statusInlineKeyboard(id, order.status).inline_keyboard,
+          [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+        ]
+      }
     }
-  });
+  );
 }
 
 async function saveCategory(db: Db, name: string) {
@@ -719,7 +725,11 @@ async function updateOrderStatus(
   const updateDocument = nextStatus === 'cancelled' && reason
     ? { $set: updateFields }
     : { $set: updateFields, $unset: { cancellationReason: '' } };
-  await orders.updateOne({ _id: order._id }, updateDocument);
+  const updateResult = await orders.updateOne({ _id: order._id, status: order.status }, updateDocument);
+  if (updateResult.modifiedCount !== 1) {
+    await sendTelegramMessage(chatId, 'تم تحديث حالة هذا الطلب بالفعل. افتح الطلب مرة أخرى لمشاهدة حالته الحالية.');
+    return;
+  }
 
   if (
     statusChanged
