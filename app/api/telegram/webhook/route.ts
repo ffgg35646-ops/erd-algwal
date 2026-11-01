@@ -614,9 +614,12 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     updatedAt: now
   });
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+  const orderCounts = await getOrderSectionCounts(db);
   await sendTelegramMessage(chatId, result.insertedId
     ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).join('، ') || 'غير محدد') + '\nالسعر: ' + data.price.toLocaleString('en-US') + ' ر.س\nعدد الصور: ' + data.images.length + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
-    : 'تعذر حفظ المنتج.', { reply_markup: adminReplyKeyboard(await unreadOrderCount(db)) });
+    : 'تعذر حفظ المنتج.', {
+      reply_markup: adminReplyKeyboard(orderCounts.newCount, orderCounts.shippedCount)
+    });
   return Boolean(result.insertedId);
 }
 
