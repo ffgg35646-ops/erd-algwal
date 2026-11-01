@@ -4,6 +4,17 @@ import type { StoreOrder } from '@/lib/orders';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+type ContactSettings = {
+  _id: string;
+  whatsappNumber?: string;
+  whatsappNumberRemoved?: boolean;
+};
+type FooterSettings = {
+  _id: string;
+  vatNumber?: string;
+  vatNumberRemoved?: boolean;
+};
+
 function escapeHtml(value: unknown) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => {
     const entities: Record<string, string> = {
@@ -21,7 +32,39 @@ function money(value: number) {
   return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(Number.isFinite(value) ? value : 0) + ' ر.س';
+  }).format(Number.isFinite(value) ? value : 0);
+}
+
+function getDateParts(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Riyadh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const get = (type: string) => Number(parts.find((part) => part.type === type)?.value || 0);
+  return { year: get('year'), month: get('month'), day: get('day') };
+}
+
+function formatDate(date: Date) {
+  const parts = getDateParts(date);
+  return String(parts.day).padStart(2, '0') + '/' +
+    String(parts.month).padStart(2, '0') + '/' + parts.year;
+}
+
+function formatScheduleDate(date: Date) {
+  return String(date.getUTCDate()).padStart(2, '0') + '/' +
+    String(date.getUTCMonth() + 1).padStart(2, '0') + '/' + date.getUTCFullYear();
+}
+
+function getInstallmentDate(orderDate: Date, installmentIndex: number) {
+  const parts = getDateParts(orderDate);
+  const firstMonthIndex = parts.month % 12;
+  const absoluteMonth = firstMonthIndex + installmentIndex;
+  const year = parts.year + Math.floor(absoluteMonth / 12);
+  const monthIndex = absoluteMonth % 12;
+  // The invoice sample uses the 28th of each month as the installment due date.
+  return new Date(Date.UTC(year, monthIndex, 28));
 }
 
 export async function GET(
@@ -51,197 +94,169 @@ export async function GET(
       });
     }
 
+    const [contactSettings, footerSettings] = await Promise.all([
+      db.collection<ContactSettings>('store_settings').findOne({ _id: 'contact' }),
+      db.collection<FooterSettings>('store_settings').findOne({ _id: 'footer' })
+    ]);
+
+    const whatsappNumber = contactSettings?.whatsappNumberRemoved
+      ? ''
+      : (typeof contactSettings?.whatsappNumber === 'string'
+          ? contactSettings.whatsappNumber
+          : '201090466376');
+    const vatNumber = footerSettings?.vatNumberRemoved
+      ? ''
+      : (typeof footerSettings?.vatNumber === 'string'
+          ? footerSettings.vatNumber
+          : '4353454564');
+
     const orderNumber = order.orderNumber || '#' + order._id.toString().slice(-6);
     const total = Math.max(0, Number(order.total) || 0);
+    const totalCents = Math.round(total * 100);
     const downPayment = Math.min(total, Math.max(0, Number(order.installmentDownPayment) || 0));
-    const months = Math.max(1, Math.floor(Number(order.installmentMonths) || 1));
-    const monthlyPayment = (total - downPayment) / months;
+    const downPaymentCents = Math.round(downPayment * 100);
+    const remainingCents = Math.max(0, totalCents - downPaymentCents);
+    const remaining = remainingCents / 100;
+    const months = Math.min(24, Math.max(1, Math.floor(Number(order.installmentMonths) || 1)));
+    const baseInstallmentCents = Math.floor(remainingCents / months);
     const customer = order.customer || { name: '', phone: '', address: '' };
     const createdAt = new Date(order.createdAt);
-    const dateText = Number.isNaN(createdAt.getTime())
-      ? '—'
-      : createdAt.toLocaleString('en-GB', {
-          weekday: 'long',
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'Asia/Riyadh'
-        });
+    const orderDate = Number.isNaN(createdAt.getTime()) ? new Date() : createdAt;
+    const dateText = formatDate(orderDate);
     const shipmentNumber = (order as StoreOrder & { shipmentNumber?: string }).shipmentNumber || '—';
-    const rows = (order.items || []).map((item) => {
-      const quantity = Math.max(1, Number(item.quantity) || 1);
-      const unitPrice = Math.max(0, Number(item.unitPrice) || 0);
-      const itemTotal = unitPrice * quantity;
-      const details = [
-        item.color ? '<span class="tag">اللون: ' + escapeHtml(item.color) + '</span>' : ''
-      ].filter(Boolean).join('');
-      return `<tr>
-        <td><div class="image-placeholder">أرض الجوال</div></td>
-        <td class="product-cell">
-          <b class="product-name">${escapeHtml(item.name || 'منتج')}</b>
-          ${details}
-        </td>
-        <td>${quantity}</td>
-        <td dir="ltr">${money(unitPrice)}</td>
-        <td dir="ltr">${money(itemTotal)}</td>
-      </tr>`;
-    }).join('');
     const paymentStatus = order.paymentStatus === 'paid'
       ? 'مدفوع'
       : order.paymentStatus === 'failed'
         ? 'تعذر الدفع'
         : 'بانتظار تأكيد الدفع';
-    const paymentNowLabel = order.paymentStatus === 'paid' ? 'المدفوع الآن' : 'الدفعة الأولى';
 
-    const html = `<!doctype html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex,nofollow,noarchive">
-<title>فاتورة تقسيط ${escapeHtml(orderNumber)} — أرض الجوال</title>
-<style>
-  * { box-sizing: border-box; }
-  body { font-family: Tahoma, "Segoe UI", Arial, sans-serif; margin: 0; padding: 16px 10px 28px; background: #f3f4f6; color: #1f2937; font-size: 13px; }
-  .print-btn { position: fixed; top: 12px; right: 12px; z-index: 2; background: #3f4a5c; color: #fff; border: 0; border-radius: 8px; padding: 9px 18px; cursor: pointer; font: inherit; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
-  .invoice { width: min(718px, 100%); margin: 42px auto 0; border: 1px solid #d9dde3; border-radius: 14px; overflow: hidden; background: #fff; }
-  .head { background: #3f4a5c; color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px; }
-  .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-  .logo { width: 82px; height: 72px; flex: none; background: #fff; border-radius: 10px; color: #3f4a5c; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 17px; text-align: center; line-height: 1.4; }
-  .brand h1 { margin: 0 0 6px; font-size: 20px; }
-  .brand p { margin: 3px 0; font-size: 12px; }
-  .title { text-align: left; direction: ltr; flex: none; }
-  .title h2 { margin: 0 0 6px; font-size: 27px; direction: rtl; }
-  .title p { margin: 3px 0; font-size: 11px; }
-  .body { padding: 14px; }
-  .row { display: flex; gap: 12px; margin-bottom: 14px; }
-  .card { min-width: 0; flex: 1; border: 1px solid #d9dde3; border-radius: 12px; padding: 12px 14px; }
-  .card h3 { margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
-  .kv { display: flex; justify-content: space-between; gap: 10px; margin: 9px 0; font-size: 12px; }
-  .kv span { color: #6b7280; flex: none; }
-  .kv b { color: #111; text-align: left; overflow-wrap: anywhere; }
-  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-  th { background: #3f4a5c; color: #fff; padding: 9px 5px; font-size: 11px; text-align: center; border-left: 1px solid #5a6578; }
-  th:first-child { text-align: center; }
-  td { border: 1px solid #e5e7eb; padding: 8px 5px; text-align: center; font-size: 11px; vertical-align: middle; overflow-wrap: anywhere; }
-  .product-cell { text-align: right; min-width: 130px; }
-  .product-name { display: block; font-size: 12px; }
-  .image-placeholder { width: 36px; height: 44px; background: #e5e7eb; border-radius: 4px; margin: auto; display: flex; align-items: center; justify-content: center; color: #777; font-size: 7px; text-align: center; }
-  .tag { display: inline-block; background: #f1f3f6; border-radius: 10px; padding: 3px 8px; font-size: 10px; margin: 4px 0 0 5px; }
-  .inst { border: 1px dashed #c4c9d2; border-radius: 12px; padding: 10px; display: flex; gap: 10px; margin-bottom: 14px; }
-  .inst div { min-width: 0; flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafbfc; text-align: center; padding: 10px 4px; }
-  .inst small { display: block; color: #6b7280; font-size: 11px; margin-bottom: 6px; }
-  .inst b { font-size: 12px; }
-  .bottom { display: flex; gap: 12px; }
-  .notes { min-width: 0; flex: 1; border: 1px solid #d9dde3; border-radius: 12px; padding: 14px; min-height: 130px; }
-  .notes h3 { margin: 0 0 10px; font-size: 15px; }
-  .notes p { margin: 0; color: #6b7280; font-size: 11px; line-height: 1.9; }
-  .totals { min-width: 0; flex: 1; border: 1px solid #d9dde3; border-radius: 12px; overflow: hidden; }
-  .totals .line { display: flex; justify-content: space-between; gap: 10px; padding: 10px 11px; border-bottom: 1px solid #e5e7eb; font-size: 11px; }
-  .totals .line span { color: #6b7280; }
-  .totals .grand { background: #3f4a5c; color: #fff; font-weight: bold; border: 0; }
-  .totals .grand span { color: #fff; }
-  .foot { text-align: center; border-top: 1px solid #e5e7eb; margin-top: 16px; padding-top: 12px; font-size: 11px; color: #6b7280; }
-  .foot b { color: #111; }
-  @media (max-width: 540px) {
-    body { padding: 8px 5px 18px; font-size: 12px; }
-    .invoice { margin-top: 48px; }
-    .head { padding: 10px 8px; gap: 6px; }
-    .brand { gap: 7px; }
-    .logo { width: 54px; height: 54px; font-size: 12px; }
-    .brand h1 { font-size: 14px; }
-    .brand p { font-size: 9px; }
-    .title h2 { font-size: 20px; }
-    .title p { font-size: 9px; }
-    .body { padding: 8px; }
-    .row { gap: 7px; }
-    .card { padding: 8px 7px; }
-    .card h3 { font-size: 12px; }
-    .kv { font-size: 10px; gap: 4px; }
-    th { font-size: 9px; padding: 7px 2px; }
-    td { font-size: 9px; padding: 6px 2px; }
-    .product-name { font-size: 10px; }
-    .inst { gap: 5px; padding: 6px; }
-    .inst small { font-size: 9px; }
-    .inst b { font-size: 10px; }
-    .bottom { gap: 6px; }
-    .totals .line { padding: 8px 6px; font-size: 9px; }
-    .notes { padding: 9px; min-height: 115px; }
-    .notes h3 { font-size: 12px; }
-    .notes p { font-size: 9px; }
-  }
-  @page { size: A4; margin: 10mm; }
-  @media print {
-    body { padding: 0; background: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
-    .print-btn { display: none !important; }
-    .invoice { width: 100%; margin: 0; border-radius: 0; }
-  }
-</style>
-</head>
-<body>
-<button class="print-btn" type="button" onclick="window.print()">طباعة / حفظ PDF</button>
-<main class="invoice">
-  <header class="head">
-    <div class="brand">
-      <div class="logo">أرض<br>الجوال</div>
-      <div>
-        <h1>أرض الجوال</h1>
-        <p>متجر الجوالات والأجهزة الذكية</p>
-      </div>
-    </div>
-    <div class="title">
-      <h2>فاتورة تقسيط</h2>
-      <p>رقم الطلب: ${escapeHtml(orderNumber)}</p>
-      <p dir="ltr">${escapeHtml(dateText)}</p>
-    </div>
-  </header>
-  <div class="body">
-    <div class="row">
-      <section class="card">
-        <h3>بيانات العميل</h3>
-        <div class="kv"><span>الاسم</span><b>${escapeHtml(customer.name || '—')}</b></div>
-        <div class="kv"><span>الجوال</span><b dir="ltr">${escapeHtml(customer.phone || '—')}</b></div>
-        <div class="kv"><span>العنوان</span><b>${escapeHtml(customer.address || '—')}</b></div>
-      </section>
-      <section class="card">
-        <h3>بيانات الطلب</h3>
-        <div class="kv"><span>رقم الطلب</span><b>${escapeHtml(orderNumber)}</b></div>
-        <div class="kv"><span>رقم الشحنة</span><b>${escapeHtml(shipmentNumber)}</b></div>
-        <div class="kv"><span>طريقة الدفع</span><b>تقسيط</b></div>
-      </section>
-    </div>
-    <table>
-      <thead><tr><th>الصورة</th><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr></thead>
-      <tbody>${rows || '<tr><td colspan="5">لا توجد منتجات مسجلة</td></tr>'}</tbody>
-    </table>
-    <section class="inst">
-      <div><small>الدفعة الأولى</small><b>${money(downPayment)}</b></div>
-      <div><small>مدة التقسيط</small><b>${months} شهر</b></div>
-      <div><small>القسط الشهري</small><b>${money(monthlyPayment)}</b></div>
-    </section>
-    <div class="bottom">
-      <section class="totals">
-        <div class="line"><span>قيمة المنتجات</span><b>${money(total)}</b></div>
-        <div class="line"><span>الشحن</span><b>${money(0)}</b></div>
-        <div class="line"><span>${paymentNowLabel}</span><b>${money(downPayment)}</b></div>
-        <div class="line grand"><span>الإجمالي</span><b>${money(total)}</b></div>
-      </section>
-      <section class="notes">
-        <h3>ملاحظات</h3>
-        <p>تم إصدار هذه الفاتورة إلكترونيًا. يرجى الاحتفاظ بنسخة منها لاستخدامها عند الحاجة.</p>
-        <p style="margin-top:8px">حالة الدفع: ${escapeHtml(paymentStatus)}</p>
-      </section>
-    </div>
-    <footer class="foot">
-      <b>أرض الجوال — متجر الجوالات والأجهزة الذكية</b><br>
-      شكرًا لاختياركم أرض الجوال
-    </footer>
-  </div>
-</main>
-</body>
-</html>`;
+    const productRows = (order.items || []).map((item, index) => {
+      const quantity = Math.max(1, Number(item.quantity) || 1);
+      const unitPrice = Math.max(0, Number(item.unitPrice) || 0);
+      const itemTotal = unitPrice * quantity;
+      const details = [
+        item.color ? '<span class="tag">اللون: ' + escapeHtml(item.color) + '</span>' : ''
+      ].join('');
+      return '<tr>' +
+        '<td>' + (index + 1) + '</td>' +
+        '<td class="name"><b>' + escapeHtml(item.name || 'منتج') + '</b>' + details + '</td>' +
+        '<td>' + money(unitPrice) + '</td>' +
+        '<td>' + quantity + '</td>' +
+        '<td>' + money(itemTotal) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    const installments = Array.from({ length: months }, (_, index) => {
+      const amountCents = index === months - 1
+        ? remainingCents - (baseInstallmentCents * (months - 1))
+        : baseInstallmentCents;
+      return {
+        number: index + 1,
+        amount: amountCents / 100,
+        date: formatScheduleDate(getInstallmentDate(orderDate, index))
+      };
+    });
+    const splitAt = Math.ceil(installments.length / 2);
+
+    function installmentTable(rows: typeof installments) {
+      return '<table><thead><tr><th>#</th><th>الدفعة</th><th>تاريخ الاستحقاق</th></tr></thead><tbody>' +
+        rows.map((item) => '<tr><td>' + item.number + '</td><td>' +
+          money(item.amount) + '</td><td dir="ltr">' + item.date + '</td></tr>').join('') +
+        '</tbody></table>';
+    }
+
+    const firstSchedule = installmentTable(installments.slice(0, splitAt));
+    const secondSchedule = installments.length > splitAt
+      ? installmentTable(installments.slice(splitAt))
+      : '<div class="empty-schedule"></div>';
+
+    const html = [
+      '<!doctype html>',
+      '<html lang="ar" dir="rtl">',
+      '<head>',
+      '<meta charset="utf-8">',
+      '<meta name="viewport" content="width=device-width, initial-scale=1">',
+      '<meta name="robots" content="noindex,nofollow,noarchive">',
+      '<title>فاتورة الأقساط ' + escapeHtml(orderNumber) + ' — أرض الجوال</title>',
+      '<style>',
+      '* { box-sizing: border-box; }',
+      'body { font-family: Tahoma, "Segoe UI", Arial, sans-serif; margin: 0; padding: 8px 10px 24px; background: #fff; color: #111; font-size: 12px; }',
+      '.print-btn { position: fixed; top: 12px; right: 12px; z-index: 2; background: #3f4a5c; color: #fff; border: 0; border-radius: 8px; padding: 8px 18px; cursor: pointer; font-size: 13px; }',
+      '.page { width: min(576px, 100%); margin: 42px auto 0; padding: 18px 0; }',
+      '.header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid #888; }',
+      '.header .side { width: 36%; text-align: center; font-size: 10px; line-height: 1.6; }',
+      '.header .side b { font-size: 15px; display: block; }',
+      '.header .logo { width: 24%; min-height: 54px; display: flex; align-items: center; justify-content: center; text-align: center; color: #3f4a5c; border: 1px solid #9ca3af; padding: 8px 5px; font-size: 17px; font-weight: 800; line-height: 1.3; }',
+      '.dateno { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 14px 0 10px; }',
+      '.dateno .date { background: #777; color: #fff; font-weight: bold; padding: 3px 24px; font-size: 13px; }',
+      '.dateno .no { color: #c00; font-weight: bold; font-style: italic; font-size: 13px; direction: ltr; }',
+      '.welcome { display: flex; border: 1px solid #333; border-radius: 14px; overflow: hidden; margin-bottom: 8px; }',
+      '.welcome > div { flex: 1; min-width: 0; padding: 9px 11px; font-size: 10px; line-height: 2; font-weight: bold; }',
+      '.welcome .en { direction: ltr; text-align: left; border-right: 1px solid #333; }',
+      '.welcome .ar { text-align: right; }',
+      'table { width: 100%; border-collapse: collapse; }',
+      'th { background: #1a56c4; color: #fff; padding: 6px 4px; font-size: 10px; border: 1px solid #fff; }',
+      'td { border: 1px solid #aaa; padding: 6px 4px; text-align: center; font-size: 10px; color: #333; overflow-wrap: anywhere; }',
+      '.cust { margin-bottom: 14px; }',
+      'h3 { text-align: center; font-size: 14px; margin: 0 0 6px; }',
+      '.tag { display: inline-block; background: #f1f3f6; border-radius: 10px; padding: 1px 7px; font-size: 9px; color: #666; margin: 4px 3px 0 0; }',
+      'td.name { text-align: right; }',
+      '.tot td { text-align: right; font-weight: bold; border-top: 1px solid #aaa; }',
+      '.tot td.val { text-align: left; width: 25%; white-space: nowrap; }',
+      '.info { display: flex; border: 1px solid #333; border-radius: 14px; overflow: hidden; margin: 5px 0 8px; min-height: 112px; }',
+      '.info > div { padding: 9px; font-size: 9px; line-height: 2.1; font-weight: bold; }',
+      '.info .stamp { width: 23%; display: flex; align-items: center; justify-content: center; border-left: 1px solid #333; color: #999; font-weight: normal; text-align: center; }',
+      '.info .mid { width: 38%; border-left: 1px solid #333; display: flex; flex-direction: column; justify-content: center; }',
+      '.info .terms { flex: 1; }',
+      '.inst { display: flex; gap: 0; align-items: flex-start; }',
+      '.inst > table { width: 50%; }',
+      '.inst th { font-size: 9px; padding: 5px 2px; }',
+      '.inst td { padding: 4px 2px; font-size: 9px; }',
+      '.empty-schedule { width: 50%; }',
+      '.remain { display: flex; background: #1a56c4; color: #fff; font-size: 15px; font-weight: bold; padding: 8px 10px; border: 1px solid #fff; outline: 1px solid #1a56c4; margin-top: 4px; }',
+      '.remain span:first-child { width: 22%; text-align: center; border-left: 1px solid #fff; }',
+      '.remain span:last-child { padding-right: 12px; }',
+      '.status { margin-top: 7px; text-align: center; color: #555; font-size: 9px; }',
+      '@media (max-width: 420px) { body { padding: 5px; } .page { padding-top: 10px; } .header .side { font-size: 8px; } .header .side b { font-size: 12px; } .header .logo { font-size: 13px; min-height: 45px; } .welcome > div { padding: 7px 6px; font-size: 8px; } .dateno .date { padding-inline: 12px; font-size: 11px; } .info > div { padding: 6px; font-size: 8px; } td { font-size: 9px; padding: 5px 2px; } }',
+      '@page { size: A4; margin: 10mm; }',
+      '@media print { body { padding: 0; print-color-adjust: exact; -webkit-print-color-adjust: exact; } .print-btn { display: none !important; } .page { width: 100%; margin: 0 auto; padding: 0; } }',
+      '</style>',
+      '</head>',
+      '<body>',
+      '<button class="print-btn" type="button" onclick="window.print()">طباعة / حفظ PDF</button>',
+      '<main class="page">',
+      '<header class="header">',
+      '<div class="side"><b>أرض الجوال</b>متجر إلكتروني للجوالات والأجهزة الذكية</div>',
+      '<div class="logo">أرض<br>الجوال</div>',
+      '<div class="side"><b>ERD AL JAWAL</b>Mobile &amp; Smart Devices Store</div>',
+      '</header>',
+      '<div class="dateno"><div class="no">No. ' + escapeHtml(orderNumber) + '</div><div class="date">' + escapeHtml(dateText) + '</div></div>',
+      '<section class="welcome">',
+      '<div class="ar">عميلنا العزيز،<br>شكرًا لتسوقكم من أرض الجوال.<br>لقد تم إنشاء طلبكم بنجاح.<br>فيما يلي ملخص الطلب.</div>',
+      '<div class="en">Dear Customer,<br>Thank you for shopping with ERD AL JAWAL.<br>Your order has been placed.<br>Below is the summary of the order.</div>',
+      '</section>',
+      '<table class="cust"><thead><tr><th>اسم العميل</th><th>رقم الجوال</th><th>العنوان</th></tr></thead><tbody><tr><td>' +
+        escapeHtml(customer.name || '—') + '</td><td dir="ltr">' + escapeHtml(customer.phone || '—') + '</td><td>' +
+        escapeHtml(customer.address || '—') + '</td></tr></tbody></table>',
+      '<h3>تفاصيل الفاتورة</h3>',
+      '<table><thead><tr><th style="width:6%">#</th><th>اسم الجهاز</th><th style="width:18%">السعر</th><th style="width:10%">الكمية</th><th style="width:19%">الإجمالي</th></tr></thead><tbody>' +
+        (productRows || '<tr><td colspan="5">لا توجد منتجات مسجلة</td></tr>') +
+      '</tbody></table>',
+      '<table class="tot"><tbody><tr><td>الإجمالي</td><td class="val">' + money(total) + ' ر.س</td></tr>' +
+      '<tr><td>الدفعة المقدمة</td><td class="val">' + money(downPayment) + ' ر.س</td></tr></tbody></table>',
+      '<section class="info">',
+      '<div class="terms">يتم اعتماد الطلب وتجهيزه للشحن بعد تأكيد الدفعة المقدمة<br>التوصيل حسب سياسة المتجر ومنطقة العميل<br>يبدأ تجهيز الطلب بعد تأكيد الدفعة المقدمة</div>',
+      '<div class="mid"><span>العرض شامل الهدايا</span><span>الرقم الضريبي: ' + escapeHtml(vatNumber || '—') + '</span></div>',
+      '<div class="stamp">مكان الختم<br>/ الشعار</div>',
+      '</section>',
+      '<div class="inst">' + firstSchedule + secondSchedule + '</div>',
+      '<div class="remain"><span>المتبقي</span><span>' + money(remaining) + ' ر.س</span></div>',
+      '<div class="status">حالة الدفع: ' + escapeHtml(paymentStatus) +
+        (whatsappNumber ? ' | واتساب المتجر: ' + escapeHtml(whatsappNumber) : '') + '</div>',
+      '</main>',
+      '</body>',
+      '</html>'
+    ].join('\n');
 
     return new Response(html, {
       status: 200,
@@ -255,7 +270,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('Installment invoice render failed:', error instanceof Error ? error.message : 'Unknown error');
-    return new Response('تعذر عرض فاتورة التقسيط حاليًا.', {
+    return new Response('تعذر عرض فاتورة الأقساط حاليًا.', {
       status: 500,
       headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' }
     });
