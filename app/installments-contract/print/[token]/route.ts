@@ -41,11 +41,10 @@ function formatContractDate(date: Date) {
 }
 
 function getFirstInstallmentDate(orderDate: Date) {
-  const { year, month, day } = getDateParts(orderDate);
-  const targetYear = month === 12 ? year + 1 : year;
-  const targetMonthIndex = month === 12 ? 0 : month;
-  const daysInTargetMonth = new Date(Date.UTC(targetYear, targetMonthIndex + 1, 0)).getUTCDate();
-  return new Date(Date.UTC(targetYear, targetMonthIndex, Math.min(day, daysInTargetMonth)));
+  const { year, month } = getDateParts(orderDate);
+  const targetMonthIndex = month % 12;
+  const targetYear = year + Math.floor(month / 12);
+  return new Date(Date.UTC(targetYear, targetMonthIndex, 28));
 }
 
 function weekdayArabic(date: Date) {
