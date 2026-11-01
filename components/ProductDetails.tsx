@@ -82,6 +82,10 @@ export default function ProductDetails({ product }: { product: Product }) {
                 alt={product.name + ' - الصورة ' + (safeImageIndex + 1)}
                 className="detail-image"
                 fetchPriority="high"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = '/product-image-placeholder.svg';
+                }}
               />
             ) : <div className="detail-no-image">صورة المنتج غير متاحة</div>}
             {gallery.length > 1 ? (
@@ -103,7 +107,15 @@ export default function ProductDetails({ product }: { product: Product }) {
             ) : null}
           </div>
           {gallery.length > 1 ? <div className="detail-thumbnails" aria-label="صور المنتج">
-            {gallery.map((image, index) => <button type="button" className={index === safeImageIndex ? 'detail-thumbnail active' : 'detail-thumbnail'} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)} aria-pressed={index === safeImageIndex}><img src={image} alt="" loading="lazy" /></button>)}
+            {gallery.map((image, index) => <button type="button" className={index === safeImageIndex ? 'detail-thumbnail active' : 'detail-thumbnail'} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)} aria-pressed={index === safeImageIndex}><img
+              src={image}
+              alt=""
+              loading="lazy"
+              onError={(event) => {
+                event.currentTarget.onerror = null;
+                event.currentTarget.src = '/product-image-placeholder.svg';
+              }}
+            /></button>)}
           </div> : null}
         </div>
         <div className="detail-information detail-glass-panel">
