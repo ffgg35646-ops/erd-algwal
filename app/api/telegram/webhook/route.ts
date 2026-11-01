@@ -177,7 +177,7 @@ function normalizeWhatsAppNumber(value: string) {
 async function getOrderSectionCounts(db: Db) {
   const orders = db.collection('orders');
   const [newCount, shippedCount] = await Promise.all([
-    orders.countDocuments({ source: 'website', status: 'new' }),
+    orders.countDocuments({ source: 'website', status: { $in: ['new', 'confirmed', 'preparing'] } }),
     orders.countDocuments({ source: 'website', status: 'shipped' })
   ]);
   return { newCount, shippedCount };
@@ -473,8 +473,11 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
 
 async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'shipped') {
   const sectionLabel = section === 'new' ? 'الطلبات الجديدة' : 'الطلبات التي تم شحنها';
+  const sectionFilter = section === 'new'
+    ? { $in: ['new', 'confirmed', 'preparing'] }
+    : 'shipped';
   const orders = await db.collection<StoreOrder>('orders')
-    .find({ source: 'website', status: section })
+    .find({ source: 'website', status: sectionFilter })
     .sort({ createdAt: -1 })
     .limit(50)
     .toArray();
@@ -493,7 +496,9 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
       'الجوال: ' + (customer.phone || '—'),
       'الإجمالي: ' + total + ' ر.س',
       'طريقة الدفع: ' + (order.paymentMethod === 'mada' ? 'مدى' : order.paymentMethod === 'visa' ? 'Visa' : 'لم يتم الاختيار'),
-      'الحالة: ' + ORDER_STATUS_LABELS[section]
+      'الحالة: ' + (typeof order.status === 'string' && order.status in ORDER_STATUS_LABELS
+        ? ORDER_STATUS_LABELS[order.status as OrderStatus]
+        : ORDER_STATUS_LABELS.new)
     ].join('\n');
   }).join('\n\n──────────────\n\n');
 
