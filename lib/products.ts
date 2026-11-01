@@ -90,8 +90,7 @@ export const products: Product[] = [
     description: 'منتج إكسسوارات تجريبي. يتم استبدال الصورة والوصف والسعر بالبيانات الفعلية عبر بوت الإدارة مستقبلًا.',
     specifications: ['تصميم عملي', 'خفيف الوزن', 'يرجى التحقق من توافق الموديل']
   },
-  [
-    {
+  {
       "id": "iphone-18-pro-max-256",
       "name": "iPhone 18 Pro Max — 256GB",
       "category": "آيفون",
@@ -390,7 +389,6 @@ export const products: Product[] = [
         "128GB"
       ]
     }
-  ]
 ];
 
 export function formatPrice(value: number) {
