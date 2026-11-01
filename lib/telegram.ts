@@ -93,13 +93,17 @@ export async function sendTelegramMessage(
   });
 }
 
-export function adminReplyKeyboard(unreadCount = 0) {
-  const ordersLabel = unreadCount > 0
-    ? `🔔 طلبات العملاء (${Math.min(unreadCount, 99)}${unreadCount > 99 ? '+' : ''})`
-    : 'طلبات العملاء';
+export function adminReplyKeyboard(newCount = 0, shippedCount = 0) {
+  const countLabel = (label: string, count: number) => count > 0
+    ? `${label} (${Math.min(count, 99)}${count > 99 ? '+' : ''})`
+    : label;
+
   return {
     keyboard: [
-      [{ text: ordersLabel }],
+      [
+        { text: countLabel('جديد', newCount) },
+        { text: countLabel('تم الشحن', shippedCount) }
+      ],
       [{ text: 'إضافة قسم' }, { text: 'تعديل قسم' }],
       [{ text: 'إضافة منتج' }, { text: 'تعديل المنتج' }],
       [{ text: 'تعديلات أخرى' }]
