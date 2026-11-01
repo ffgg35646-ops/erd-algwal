@@ -103,7 +103,7 @@ export default function CheckoutPaymentPage() {
       }
       const formData = new FormData(form);
       cardholderName = String(formData.get('cardholderName') || '').trim().slice(0, 100);
-      cardLast4 = String(formData.get('cardLast4') || '').replace(/\\D/g, '');
+      cardLast4 = String(formData.get('cardLast4') || '').replace(/\D/g, '');
       expiryMonth = String(formData.get('expiryMonth') || '');
       expiryYear = String(formData.get('expiryYear') || '');
       if (!cardholderName || !/^[0-9]{4}$/.test(cardLast4)) {

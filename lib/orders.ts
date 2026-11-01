@@ -68,8 +68,8 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     return [
       `${index + 1}) ${name}`,
       `   العدد: ${quantity}${item.color ? ' | اللون: ' + String(item.color) : ''}${lineTotal ? ' | الإجمالي: ' + lineTotal : ''}`
-    ].join('\\n');
-  }).join('\\n') || 'لا توجد منتجات مسجلة';
+    ].join('\n');
+  }).join('\n') || 'لا توجد منتجات مسجلة';
   const total = Number(order.total || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
   const paymentMethod = order.paymentMethod === 'mada' ? 'مدى' : order.paymentMethod === 'visa' ? 'Visa' : 'لم يتم الاختيار';
   const paymentStatus = order.paymentStatus === 'paid'
@@ -124,7 +124,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     ...(typeof order.cancellationReason === 'string' && order.cancellationReason.trim()
       ? [`سبب الإلغاء: ${order.cancellationReason.trim()}`]
       : [])
-  ].join('\\n');
+  ].join('\n');
 }
 
 export async function getRecentOrders(db: Db, limit = 10) {

@@ -195,7 +195,7 @@ async function sendMainMenu(db: Db, chatId: number, message = 'أهلًا بك �
 
 async function showCustomerOrdersMenu(db: Db, chatId: number) {
   const counts = await getOrderSectionCounts(db);
-  await sendTelegramMessage(chatId, 'طلبات العملاء\\n\\nاختر القسم الذي تريد عرضه:', {
+  await sendTelegramMessage(chatId, 'طلبات العملاء\n\nاختر القسم الذي تريد عرضه:', {
     reply_markup: customerOrdersSectionsKeyboard(counts.newCount, counts.shippedCount)
   });
 }

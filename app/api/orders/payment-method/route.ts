@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   const reviewToken = typeof body.reviewToken === 'string' ? body.reviewToken.trim() : '';
   const paymentMethod = body.paymentMethod;
   const cardholderName = typeof body.cardholderName === 'string' ? body.cardholderName.trim().slice(0, 100) : '';
-  const cardLast4 = typeof body.cardLast4 === 'string' ? body.cardLast4.replace(/\\D/g, '') : '';
+  const cardLast4 = typeof body.cardLast4 === 'string' ? body.cardLast4.replace(/\D/g, '') : '';
   const expiryMonth = typeof body.expiryMonth === 'string' ? body.expiryMonth.trim() : '';
   const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() : '';
 
