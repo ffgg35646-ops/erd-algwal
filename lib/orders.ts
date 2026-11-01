@@ -12,6 +12,7 @@ export type OrderItem = {
 export type StoreOrder = Document & {
   _id: ObjectId;
   orderNumber: string;
+  receiptToken?: string;
   source: 'website' | 'telegram_manual';
   customer: {
     name: string;
