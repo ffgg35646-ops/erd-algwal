@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
         paymentMethodSelectedAt: now,
         paymentStatus: 'pending',
         ...(!order.installment ? { receiptToken: order.receiptToken || randomBytes(24).toString('hex') } : {}),
+        ...(order.installment ? { installmentInvoiceToken: order.installmentInvoiceToken || randomBytes(24).toString('hex') } : {}),
         adminSeenAt: null,
         updatedAt: now
       },
@@ -134,9 +135,13 @@ export async function POST(request: NextRequest) {
       const receiptUrl = !updatedOrder.installment && updatedOrder.receiptToken
         ? new URL(`/receipt/print/${updatedOrder.receiptToken}`, request.nextUrl.origin).toString()
         : '';
+      const installmentInvoiceUrl = updatedOrder.installment && updatedOrder.installmentInvoiceToken
+        ? new URL(`/installments-invoice/print/${updatedOrder.installmentInvoiceToken}`, request.nextUrl.origin).toString()
+        : '';
       const orderKeyboard = statusInlineKeyboard(orderId);
       const inlineRows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [...orderKeyboard.inline_keyboard];
       if (receiptUrl) inlineRows.push([{ text: '🧾 فتح سند القبض', url: receiptUrl }]);
+      if (installmentInvoiceUrl) inlineRows.push([{ text: '📄 فتح فاتورة التقسيط', url: installmentInvoiceUrl }]);
 
       await sendTelegramMessage(
         adminId,
