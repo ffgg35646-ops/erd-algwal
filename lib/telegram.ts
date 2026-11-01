@@ -93,7 +93,25 @@ export async function sendTelegramMessage(
   });
 }
 
-export function adminReplyKeyboard(newCount = 0, shippedCount = 0) {
+export function adminReplyKeyboard(openOrdersCount = 0) {
+  const ordersLabel = openOrdersCount > 0
+    ? `طلبات العملاء (${Math.min(openOrdersCount, 99)}${openOrdersCount > 99 ? '+' : ''})`
+    : 'طلبات العملاء';
+
+  return {
+    keyboard: [
+      [{ text: ordersLabel }],
+      [{ text: 'إضافة قسم' }, { text: 'تعديل قسم' }],
+      [{ text: 'إضافة منتج' }, { text: 'تعديل المنتج' }],
+      [{ text: 'تعديلات أخرى' }]
+    ],
+    resize_keyboard: true,
+    is_persistent: true,
+    one_time_keyboard: false
+  };
+}
+
+export function customerOrdersSectionsKeyboard(newCount = 0, shippedCount = 0) {
   const countLabel = (label: string, count: number) => count > 0
     ? `${label} (${Math.min(count, 99)}${count > 99 ? '+' : ''})`
     : label;
@@ -104,9 +122,7 @@ export function adminReplyKeyboard(newCount = 0, shippedCount = 0) {
         { text: countLabel('جديد', newCount) },
         { text: countLabel('تم الشحن', shippedCount) }
       ],
-      [{ text: 'إضافة قسم' }, { text: 'تعديل قسم' }],
-      [{ text: 'إضافة منتج' }, { text: 'تعديل المنتج' }],
-      [{ text: 'تعديلات أخرى' }]
+      [{ text: 'رجوع إلى القائمة الرئيسية' }]
     ],
     resize_keyboard: true,
     is_persistent: true,

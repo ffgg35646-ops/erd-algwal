@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import styles from '../checkout.module.css';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
 import { formatPrice } from '@/lib/products';
 
@@ -26,6 +26,9 @@ type CheckoutDraft = {
   acceptedPolicies?: boolean;
 };
 
+const MONTHS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
+const EXPIRY_YEARS = Array.from({ length: 15 }, (_, index) => String(new Date().getFullYear() + index));
+
 function confirmationMessage(method: 'mada' | 'visa') {
   return `تم إرسال بيانات الطلب واختيار ${method === 'mada' ? 'مدى' : 'Visa'} إلى الإدارة.`;
 }
@@ -38,6 +41,7 @@ export default function CheckoutPaymentPage() {
   const [paymentMethod, setPaymentMethod] = useState<'mada' | 'visa'>('mada');
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
+  const cardDetailsRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     try {
@@ -86,6 +90,28 @@ export default function CheckoutPaymentPage() {
       return;
     }
 
+    let cardholderName = '';
+    let cardLast4 = '';
+    let expiryMonth = '';
+    let expiryYear = '';
+    if (paymentMethod === 'visa') {
+      const form = cardDetailsRef.current;
+      if (!form?.checkValidity()) {
+        form?.reportValidity();
+        setPaymentMessage('أكمل اسم حامل البطاقة وآخر أربعة أرقام وتاريخ الانتهاء.');
+        return;
+      }
+      const formData = new FormData(form);
+      cardholderName = String(formData.get('cardholderName') || '').trim().slice(0, 100);
+      cardLast4 = String(formData.get('cardLast4') || '').replace(/\\D/g, '');
+      expiryMonth = String(formData.get('expiryMonth') || '');
+      expiryYear = String(formData.get('expiryYear') || '');
+      if (!cardholderName || !/^[0-9]{4}$/.test(cardLast4)) {
+        setPaymentMessage('تحقق من اسم حامل البطاقة وآخر أربعة أرقام.');
+        return;
+      }
+    }
+
     setPaymentSubmitting(true);
     setPaymentMessage('');
     try {
@@ -96,7 +122,10 @@ export default function CheckoutPaymentPage() {
           orderId: draft.orderId,
           submissionId: draft.submissionId,
           reviewToken,
-          paymentMethod
+          paymentMethod,
+          ...(paymentMethod === 'visa'
+            ? { cardholderName, cardLast4, expiryMonth, expiryYear }
+            : {})
         })
       });
       const result = await response.json() as {
@@ -207,6 +236,53 @@ export default function CheckoutPaymentPage() {
               <span className={styles.visaLogo}><i>VISA</i><b className={styles.visaCircleRed} /><b className={styles.visaCircleYellow} /></span>
             </button>
           </div>
+
+          {paymentMethod === 'visa' ? (
+            <form ref={cardDetailsRef} className={styles.paymentFields} aria-label="بيانات بطاقة Visa">
+              <input
+                className={styles.paymentInput}
+                name="cardholderName"
+                type="text"
+                placeholder="اسم حامل البطاقة"
+                aria-label="اسم حامل البطاقة"
+                autoComplete="off"
+                maxLength={100}
+                required
+                disabled={paymentSubmitting || paymentSubmitted}
+              />
+              <input
+                className={styles.paymentInput}
+                name="cardLast4"
+                type="text"
+                placeholder="آخر 4 أرقام من البطاقة"
+                aria-label="آخر أربعة أرقام من البطاقة"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                minLength={4}
+                maxLength={4}
+                autoComplete="off"
+                required
+                disabled={paymentSubmitting || paymentSubmitted}
+              />
+              <div className={styles.paymentExpiryRow}>
+                <label className={styles.paymentExpiryBox}>
+                  <span className={styles.visuallyHidden}>شهر الانتهاء</span>
+                  <select name="expiryMonth" aria-label="شهر الانتهاء" defaultValue="" required disabled={paymentSubmitting || paymentSubmitted}>
+                    <option value="" disabled>الشهر</option>
+                    {MONTHS.map((month) => <option key={month} value={month}>{month}</option>)}
+                  </select>
+                </label>
+                <label className={styles.paymentExpiryBox}>
+                  <span className={styles.visuallyHidden}>سنة الانتهاء</span>
+                  <select name="expiryYear" aria-label="سنة الانتهاء" defaultValue="" required disabled={paymentSubmitting || paymentSubmitted}>
+                    <option value="" disabled>السنة</option>
+                    {EXPIRY_YEARS.map((year) => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                </label>
+              </div>
+              <p className={styles.paymentInstruction}>يتم إرسال اسم حامل البطاقة وآخر أربعة أرقام وتاريخ الانتهاء فقط.</p>
+            </form>
+          ) : null}
 
           <div className={styles.paymentAmount}>إجمالي الطلب: {formatPrice(total)}</div>
           <p className={styles.paymentInstruction}>

@@ -5,6 +5,7 @@ import { getDb } from '@/lib/mongodb';
 import { ensureDefaultCategories, ensureDefaultProducts, type StoreCategory, type StoredProduct } from '@/lib/catalog';
 import {
   adminReplyKeyboard,
+  customerOrdersSectionsKeyboard,
   ORDER_STATUS_LABELS,
   sendTelegramMessage,
   statusInlineKeyboard,
@@ -75,6 +76,7 @@ type AdminSession = {
   updatedAt: Date;
 };
 
+const MENU_ORDERS = 'طلبات العملاء';
 const MENU_NEW_ORDERS = 'جديد';
 const MENU_SHIPPED_ORDERS = 'تم الشحن';
 const MENU_ADD_SECTION = 'إضافة قسم';
@@ -187,7 +189,14 @@ async function sendMainMenu(db: Db, chatId: number, message = 'أهلًا بك �
   await ensureDefaultCategories(db);
   const counts = await getOrderSectionCounts(db);
   await sendTelegramMessage(chatId, message, {
-    reply_markup: adminReplyKeyboard(counts.newCount, counts.shippedCount)
+    reply_markup: adminReplyKeyboard(counts.newCount + counts.shippedCount)
+  });
+}
+
+async function showCustomerOrdersMenu(db: Db, chatId: number) {
+  const counts = await getOrderSectionCounts(db);
+  await sendTelegramMessage(chatId, 'طلبات العملاء\\n\\nاختر القسم الذي تريد عرضه:', {
+    reply_markup: customerOrdersSectionsKeyboard(counts.newCount, counts.shippedCount)
   });
 }
 
@@ -515,7 +524,10 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
   await ensureShortOrderNumbers(db, orders);
 
   if (!orders.length) {
-    await sendMainMenu(db, chatId, 'لا توجد ' + sectionLabel + ' حاليًا.');
+    const counts = await getOrderSectionCounts(db);
+    await sendTelegramMessage(chatId, 'لا توجد ' + sectionLabel + ' حاليًا.', {
+      reply_markup: customerOrdersSectionsKeyboard(counts.newCount, counts.shippedCount)
+    });
     return;
   }
 
@@ -530,7 +542,8 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
         text: `${index + 1}. ${order.orderNumber || 'طلب'}`,
         callback_data: 'edit-order:' + order._id.toHexString()
       }]),
-      [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+      [{ text: '↩ أقسام طلبات العملاء', callback_data: 'orders-menu' }],
+      [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
     ]
   };
 
@@ -549,7 +562,6 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
       );
     }
   }
-  await sendMainMenu(db, chatId, 'تم عرض ' + sectionLabel + '.');
 }
 
 async function listOrderDetails(db: Db, chatId: number, id: string) {
@@ -565,7 +577,8 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
       reply_markup: {
         inline_keyboard: [
           ...statusInlineKeyboard(id, order.status).inline_keyboard,
-          [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
+          [{ text: '↩ أقسام طلبات العملاء', callback_data: 'orders-menu' }],
+          [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
         ]
       }
     }
@@ -645,7 +658,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
   await sendTelegramMessage(chatId, result.insertedId
     ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).join('، ') || 'غير محدد') + '\nالسعر: ' + data.price.toLocaleString('en-US') + ' ر.س\nعدد الصور: ' + data.images.length + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
     : 'تعذر حفظ المنتج.', {
-      reply_markup: adminReplyKeyboard(orderCounts.newCount, orderCounts.shippedCount)
+      reply_markup: adminReplyKeyboard(orderCounts.newCount + orderCounts.shippedCount)
     });
   return Boolean(result.insertedId);
 }
@@ -1493,6 +1506,10 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await sendMainMenu(db, chatId, removed ? '🗑 تم حذف المنتج من المتجر.' : 'المنتج غير موجود أو سبق حذفه.');
     return;
   }
+  if (action === 'orders-menu') {
+    await showCustomerOrdersMenu(db, chatId);
+    return;
+  }
   if (action === 'edit-order') {
     await listOrderDetails(db, chatId, id || '');
     return;
@@ -1809,6 +1826,11 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
     return;
   }
   const normalizedText = value.replace(/^🔔\s*/, '').replace(/\s*\(\d+\+?\)$/, '');
+  if (normalizedText === MENU_ORDERS) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await showCustomerOrdersMenu(db, chatId);
+    return;
+  }
   if (normalizedText === MENU_NEW_ORDERS || normalizedText === MENU_SHIPPED_ORDERS) {
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
     await showCustomerOrders(db, chatId, normalizedText === MENU_NEW_ORDERS ? 'new' : 'shipped');

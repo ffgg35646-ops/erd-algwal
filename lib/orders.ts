@@ -26,6 +26,10 @@ export type StoreOrder = Document & {
   status: OrderStatus;
   paymentStatus: 'pending' | 'paid' | 'not_recorded' | 'failed';
   paymentMethod?: 'mada' | 'visa';
+  cardholderName?: string;
+  cardLast4?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
   paymentMethodSelectedAt?: Date;
   adminNotificationSentAt?: Date;
   installment: boolean;
@@ -62,10 +66,10 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
       ? (unitPrice * quantity).toLocaleString('en-US', { maximumFractionDigits: 2 }) + ' ر.س'
       : '';
     return [
-      `${index + 1}. ${name}`,
-      `   الكمية: ${quantity}${item.color ? ' | اللون: ' + String(item.color) : ''}${lineTotal ? ' | الإجمالي: ' + lineTotal : ''}`
-    ].join('\n');
-  }).join('\n') || 'لا توجد تفاصيل منتجات متاحة';
+      `${index + 1}) ${name}`,
+      `   العدد: ${quantity}${item.color ? ' | اللون: ' + String(item.color) : ''}${lineTotal ? ' | الإجمالي: ' + lineTotal : ''}`
+    ].join('\\n');
+  }).join('\\n') || 'لا توجد منتجات مسجلة';
   const total = Number(order.total || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
   const paymentMethod = order.paymentMethod === 'mada' ? 'مدى' : order.paymentMethod === 'visa' ? 'Visa' : 'لم يتم الاختيار';
   const paymentStatus = order.paymentStatus === 'paid'
@@ -76,36 +80,51 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
   const installmentText = order.installment === true
     ? `نعم — دفعة مقدمة ${Number(order.installmentDownPayment || 0).toLocaleString('en-US')} ر.س — ${Number(order.installmentMonths || 0)} شهر`
     : 'لا';
+  const visaDetails = order.paymentMethod === 'visa'
+    ? [
+        ...(typeof order.cardholderName === 'string' && order.cardholderName.trim()
+          ? [`اسم حامل البطاقة: ${order.cardholderName.trim()}`]
+          : []),
+        ...(typeof order.cardLast4 === 'string' && /^[0-9]{4}$/.test(order.cardLast4)
+          ? [`آخر 4 أرقام: •••• ${order.cardLast4}`]
+          : []),
+        ...(typeof order.expiryMonth === 'string' && typeof order.expiryYear === 'string'
+          ? [`تاريخ الانتهاء: ${order.expiryMonth}/${order.expiryYear.slice(-2)}`]
+          : [])
+      ]
+    : [];
 
   return [
-    '🛍️ طلب جديد من المتجر',
-    `🧾 رقم الطلب: ${String(order.orderNumber || order._id || '—')}`,
-    '━━━━━━━━━━━━━━',
+    '🧾 تفاصيل الطلب',
+    `🔢 رقم الطلب: ${String(order.orderNumber || order._id || '—')}`,
+    '━━━━━━━━━━━━━━━━',
     '👤 بيانات العميل',
     `الاسم: ${String(customer.name || '—')}`,
-    `الجوال: ${String(customer.phone || '—')}`,
-    ...(typeof customer.email === 'string' && customer.email.trim() ? [`البريد: ${customer.email.trim()}`] : []),
-    ...(typeof customer.idNumber === 'string' && customer.idNumber.trim() ? [`رقم الهوية: ${customer.idNumber.trim()}`] : []),
-    '━━━━━━━━━━━━━━',
+    `📞 الجوال: ${String(customer.phone || '—')}`,
+    ...(typeof customer.email === 'string' && customer.email.trim() ? [`✉️ البريد: ${customer.email.trim()}`] : []),
+    ...(typeof customer.idNumber === 'string' && customer.idNumber.trim() ? [`🪪 الهوية: ${customer.idNumber.trim()}`] : []),
+    '━━━━━━━━━━━━━━━━',
     '📍 عنوان التوصيل',
     String(customer.address || '—'),
-    '━━━━━━━━━━━━━━',
+    '━━━━━━━━━━━━━━━━',
     `🛒 المنتجات (${items.length})`,
     itemText,
-    '━━━━━━━━━━━━━━',
-    '💰 ملخص الطلب',
+    '━━━━━━━━━━━━━━━━',
+    '💰 ملخص الحساب',
     `الإجمالي: ${total} ر.س`,
     `التقسيط: ${installmentText}`,
-    '━━━━━━━━━━━━━━',
-    '💳 الدفع',
-    `طريقة الدفع المختارة: ${paymentMethod}`,
+    '━━━━━━━━━━━━━━━━',
+    '💳 بيانات الدفع',
+    `طريقة الدفع: ${paymentMethod}`,
+    ...visaDetails,
     `حالة الدفع: ${paymentStatus}`,
-    '━━━━━━━━━━━━━━',
-    '📦 متابعة الطلب',
-    `حالة الطلب: ${status}`,
-    ...(typeof order.notes === 'string' && order.notes.trim() ? [`ملاحظات العميل: ${order.notes.trim()}`] : []),
-    `المصدر: ${order.source === 'telegram_manual' ? 'أضيف من البوت' : 'المتجر الإلكتروني'}`
-  ].join('\n');
+    '━━━━━━━━━━━━━━━━',
+    `📦 حالة الطلب: ${status}`,
+    ...(typeof order.notes === 'string' && order.notes.trim() ? [`📝 ملاحظات: ${order.notes.trim()}`] : []),
+    ...(typeof order.cancellationReason === 'string' && order.cancellationReason.trim()
+      ? [`سبب الإلغاء: ${order.cancellationReason.trim()}`]
+      : [])
+  ].join('\\n');
 }
 
 export async function getRecentOrders(db: Db, limit = 10) {

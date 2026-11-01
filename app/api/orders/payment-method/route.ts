@@ -12,6 +12,10 @@ type PaymentMethodBody = {
   submissionId?: string;
   reviewToken?: string;
   paymentMethod?: 'mada' | 'visa';
+  cardholderName?: string;
+  cardLast4?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -28,12 +32,24 @@ export async function POST(request: NextRequest) {
   const submissionId = typeof body.submissionId === 'string' ? body.submissionId.trim() : '';
   const reviewToken = typeof body.reviewToken === 'string' ? body.reviewToken.trim() : '';
   const paymentMethod = body.paymentMethod;
+  const cardholderName = typeof body.cardholderName === 'string' ? body.cardholderName.trim().slice(0, 100) : '';
+  const cardLast4 = typeof body.cardLast4 === 'string' ? body.cardLast4.replace(/\\D/g, '') : '';
+  const expiryMonth = typeof body.expiryMonth === 'string' ? body.expiryMonth.trim() : '';
+  const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() : '';
 
   if (!/^[a-f0-9]{24}$/i.test(orderId) || !UUID_PATTERN.test(submissionId) || !UUID_PATTERN.test(reviewToken)) {
     return NextResponse.json({ ok: false, error: 'تعذر التحقق من الطلب. ارجع لبيانات التوصيل وحاول مرة أخرى.' }, { status: 400 });
   }
   if (paymentMethod !== 'mada' && paymentMethod !== 'visa') {
     return NextResponse.json({ ok: false, error: 'اختر بطاقة Visa أو مدى.' }, { status: 400 });
+  }
+  if (paymentMethod === 'visa' && (
+    !cardholderName ||
+    !/^[0-9]{4}$/.test(cardLast4) ||
+    !/^(0[1-9]|1[0-2])$/.test(expiryMonth) ||
+    !/^[0-9]{4}$/.test(expiryYear)
+  )) {
+    return NextResponse.json({ ok: false, error: 'أدخل اسم حامل البطاقة وآخر أربعة أرقام وتاريخ الانتهاء بشكل صحيح.' }, { status: 400 });
   }
 
   try {
@@ -78,6 +94,9 @@ export async function POST(request: NextRequest) {
     await orders.updateOne(filter, {
       $set: {
         paymentMethod,
+        ...(paymentMethod === 'visa'
+          ? { cardholderName, cardLast4, expiryMonth, expiryYear }
+          : {}),
         paymentMethodSelectedAt: now,
         paymentStatus: 'pending',
         adminSeenAt: null,
@@ -85,11 +104,11 @@ export async function POST(request: NextRequest) {
       },
       // Remove any sensitive card fields saved by the previous version of this endpoint.
       $unset: {
-        cardholderName: '',
         cardNumber: '',
         cvv: '',
-        expiryMonth: '',
-        expiryYear: ''
+        ...(paymentMethod === 'mada'
+          ? { cardholderName: '', cardLast4: '', expiryMonth: '', expiryYear: '' }
+          : {})
       }
     });
 
