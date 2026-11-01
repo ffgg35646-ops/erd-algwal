@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         ? new URL(`/receipt/print/${updatedOrder.receiptToken}`, request.nextUrl.origin).toString()
         : '';
       const orderKeyboard = statusInlineKeyboard(orderId);
-      const inlineRows = [...orderKeyboard.inline_keyboard];
+      const inlineRows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [...orderKeyboard.inline_keyboard];
       if (receiptUrl) inlineRows.push([{ text: '🧾 فتح سند القبض', url: receiptUrl }]);
 
       await sendTelegramMessage(
