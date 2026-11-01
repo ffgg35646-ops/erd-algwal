@@ -229,7 +229,7 @@ export async function GET(
           <tr><td class="label">استلمت من السيد:</td><td colspan="2">${customerName}</td></tr>
           <tr><td class="label">رقم الجوال:</td><td colspan="2" dir="ltr">${customerPhone}</td></tr>
           <tr><td class="label">العنوان:</td><td colspan="2">${customerAddress}</td></tr>
-          <tr><td class="label">وذلك عن:</td><td colspan="2" class="description">${escapeHtml(receiptDescription)}</td></tr>
+          <tr><td class="label">وذلك عن:</td><td colspan="2" class="description">${receiptDescription}</td></tr>
           <tr><td class="label">المبلغ بالحروف:</td><td colspan="2">${amountWords}</td></tr>
         </tbody>
       </table>
