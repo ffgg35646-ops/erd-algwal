@@ -110,13 +110,20 @@ export function adminReplyKeyboard(unreadCount = 0) {
   };
 }
 
-export function statusInlineKeyboard(orderId: string) {
-  const statuses: OrderStatus[] = ['confirmed', 'shipped', 'completed', 'cancelled'];
+export function statusInlineKeyboard(orderId: string, currentStatus: OrderStatus = 'new') {
+  const statuses: OrderStatus[] = currentStatus === 'shipped'
+    ? ['completed', 'cancelled']
+    : ['new', 'confirmed', 'preparing'].includes(currentStatus)
+      ? ['shipped', 'cancelled']
+      : [];
+
   return {
-    inline_keyboard: statuses.map((status) => [{
-      text: ORDER_STATUS_LABELS[status],
-      callback_data: `status:${orderId}:${status}`
-    }])
+    inline_keyboard: statuses.length
+      ? [statuses.map((status) => ({
+          text: ORDER_STATUS_LABELS[status],
+          callback_data: `status:${orderId}:${status}`
+        }))]
+      : []
   };
 }
 
