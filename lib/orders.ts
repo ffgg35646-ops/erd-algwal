@@ -14,6 +14,7 @@ export type StoreOrder = Document & {
   orderNumber: string;
   receiptToken?: string;
   installmentInvoiceToken?: string;
+  installmentContractToken?: string;
   source: 'website' | 'telegram_manual';
   customer: {
     name: string;
