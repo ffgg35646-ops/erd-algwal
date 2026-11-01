@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
@@ -254,6 +255,7 @@ export async function POST(request: NextRequest) {
       status: 'new',
       paymentStatus: 'pending',
       installment,
+      ...(!installment ? { receiptToken: randomBytes(24).toString('hex') } : {}),
       ...(installment ? { installmentDownPayment, installmentMonths } : {}),
       createdAt: now,
       updatedAt: now,
