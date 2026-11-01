@@ -75,7 +75,8 @@ type AdminSession = {
   updatedAt: Date;
 };
 
-const MENU_ORDERS = 'طلبات العملاء';
+const MENU_NEW_ORDERS = 'جديد';
+const MENU_SHIPPED_ORDERS = 'تم الشحن';
 const MENU_ADD_SECTION = 'إضافة قسم';
 const MENU_EDIT_SECTION = 'تعديل قسم';
 const MENU_ADD_PRODUCT = 'إضافة منتج';
@@ -173,18 +174,21 @@ function normalizeWhatsAppNumber(value: string) {
   return phone;
 }
 
-async function unreadOrderCount(db: Db) {
-  return db.collection('orders').countDocuments({
-    source: 'website',
-    adminSeenAt: null,
-    status: { $nin: ['completed', 'cancelled'] }
-  });
+async function getOrderSectionCounts(db: Db) {
+  const orders = db.collection('orders');
+  const [newCount, shippedCount] = await Promise.all([
+    orders.countDocuments({ source: 'website', status: 'new' }),
+    orders.countDocuments({ source: 'website', status: 'shipped' })
+  ]);
+  return { newCount, shippedCount };
 }
 
 async function sendMainMenu(db: Db, chatId: number, message = 'أهلًا بك في لوحة إدارة أرض الجوال. اختر القسم المطلوب:') {
   await ensureDefaultCategories(db);
-  const count = await unreadOrderCount(db);
-  await sendTelegramMessage(chatId, message, { reply_markup: adminReplyKeyboard(count) });
+  const counts = await getOrderSectionCounts(db);
+  await sendTelegramMessage(chatId, message, {
+    reply_markup: adminReplyKeyboard(counts.newCount, counts.shippedCount)
+  });
 }
 
 async function saveSession(db: Db, session: AdminSession) {
@@ -467,17 +471,16 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
   await sendTelegramMessage(chatId, message, { reply_markup: editProductKeyboard(id, product.categoryId) });
 }
 
-async function showCustomerOrders(db: Db, chatId: number) {
-  // Keep only active website orders here. Completed and cancelled orders are closed
-  // and should no longer appear in the admin's customer-orders list.
+async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'shipped') {
+  const sectionLabel = section === 'new' ? 'الطلبات الجديدة' : 'الطلبات التي تم شحنها';
   const orders = await db.collection<StoreOrder>('orders')
-    .find({ source: 'website', status: { $nin: ['completed', 'cancelled'] } })
+    .find({ source: 'website', status: section })
     .sort({ createdAt: -1 })
-    .limit(10)
+    .limit(50)
     .toArray();
 
   if (!orders.length) {
-    await sendTelegramMessage(chatId, '🔔 لا توجد طلبات مفتوحة حاليًا.', { reply_markup: adminReplyKeyboard(0) });
+    await sendMainMenu(db, chatId, 'لا توجد ' + sectionLabel + ' حاليًا.');
     return;
   }
 
@@ -490,14 +493,14 @@ async function showCustomerOrders(db: Db, chatId: number) {
       'الجوال: ' + (customer.phone || '—'),
       'الإجمالي: ' + total + ' ر.س',
       'طريقة الدفع: ' + (order.paymentMethod === 'mada' ? 'مدى' : order.paymentMethod === 'visa' ? 'Visa' : 'لم يتم الاختيار'),
-      'الحالة: ' + (typeof order.status === 'string' && order.status in ORDER_STATUS_LABELS ? ORDER_STATUS_LABELS[order.status as OrderStatus] : 'غير محدد')
+      'الحالة: ' + ORDER_STATUS_LABELS[section]
     ].join('\n');
   }).join('\n\n──────────────\n\n');
 
   const keyboard = {
     inline_keyboard: [
       ...orders.map((order) => [{
-        text: ((order.orderNumber || 'طلب') + ' · ' + (ORDER_STATUS_LABELS[order.status as OrderStatus] || 'جديد')).slice(0, 60),
+        text: (order.orderNumber || 'طلب').slice(0, 60),
         callback_data: 'edit-order:' + order._id.toHexString()
       }]),
       [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
@@ -506,18 +509,20 @@ async function showCustomerOrders(db: Db, chatId: number) {
 
   await sendTelegramMessage(
     chatId,
-    '🧾 الطلبات المفتوحة (' + orders.length + ')\n\n' + summary + '\n\nاضغط على الطلب لعرضه وتحديث حالته.',
+    '🧾 ' + sectionLabel + ' (' + orders.length + ')\n\n' + summary + '\n\nاضغط على الطلب لعرض تفاصيله والإجراء المتاح له.',
     { reply_markup: keyboard }
   );
 
-  const ids = orders.filter((order) => order.adminSeenAt == null).map((order) => order._id);
-  if (ids.length) {
-    await db.collection('orders').updateMany(
-      { _id: { $in: ids }, source: 'website', adminSeenAt: null },
-      { $set: { adminSeenAt: new Date() } }
-    );
+  if (section === 'new') {
+    const ids = orders.filter((order) => order.adminSeenAt == null).map((order) => order._id);
+    if (ids.length) {
+      await db.collection('orders').updateMany(
+        { _id: { $in: ids }, source: 'website', adminSeenAt: null },
+        { $set: { adminSeenAt: new Date() } }
+      );
+    }
   }
-  await sendMainMenu(db, chatId, 'تم عرض الطلبات المفتوحة.');
+  await sendMainMenu(db, chatId, 'تم عرض ' + sectionLabel + '.');
 }
 
 async function listOrderDetails(db: Db, chatId: number, id: string) {
@@ -1770,9 +1775,9 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
     return;
   }
   const normalizedText = value.replace(/^🔔\s*/, '').replace(/\s*\(\d+\+?\)$/, '');
-  if (normalizedText === MENU_ORDERS) {
+  if (normalizedText === MENU_NEW_ORDERS || normalizedText === MENU_SHIPPED_ORDERS) {
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
-    await showCustomerOrders(db, chatId);
+    await showCustomerOrders(db, chatId, normalizedText === MENU_NEW_ORDERS ? 'new' : 'shipped');
     return;
   }
   if (value === MENU_ADD_SECTION) {
