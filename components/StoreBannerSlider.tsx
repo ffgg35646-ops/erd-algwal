@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type StoreBanner = {
   id: string;
@@ -52,6 +52,7 @@ export default function StoreBannerSlider() {
   const [trackIndex, setTrackIndex] = useState(1);
   const [trackTransitionEnabled, setTrackTransitionEnabled] = useState(true);
   const [fallbackAttempts, setFallbackAttempts] = useState<Record<string, number>>({});
+  const touchStartXRef = useRef<number | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -140,7 +141,24 @@ export default function StoreBannerSlider() {
 
   return (
     <section className="store-promo-slider container" aria-label="العروض والإعلانات">
-      <div className="store-promo-frame">
+      <div
+        className="store-promo-frame"
+        onTouchStart={(event) => {
+          touchStartXRef.current = event.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(event) => {
+          const startX = touchStartXRef.current;
+          const endX = event.changedTouches[0]?.clientX;
+          touchStartXRef.current = null;
+          if (startX === null || endX === undefined || banners.length < 2) return;
+          const distance = endX - startX;
+          if (Math.abs(distance) < 45) return;
+          show(activeIndex + (distance < 0 ? 1 : -1));
+        }}
+        onTouchCancel={() => {
+          touchStartXRef.current = null;
+        }}
+      >
         <div
           className="store-promo-track"
           style={{
