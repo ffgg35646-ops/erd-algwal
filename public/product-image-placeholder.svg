@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" role="img" aria-label="صورة منتج غير متاحة">
+  <rect width="600" height="600" rx="44" fill="#f2f3f5"/>
+  <rect x="205" y="105" width="190" height="390" rx="30" fill="#dfe2e7" stroke="#a9afb9" stroke-width="14"/>
+  <rect x="224" y="145" width="152" height="300" rx="10" fill="#f9fafb"/>
+  <circle cx="300" cy="465" r="10" fill="#a9afb9"/>
+  <path d="M248 285h104M248 320h104" stroke="#c2c7cf" stroke-width="12" stroke-linecap="round"/>
+</svg>
