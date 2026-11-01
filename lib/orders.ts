@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { ObjectId, type Db, type Document } from 'mongodb';
 import { ORDER_STATUS_LABELS, type OrderStatus } from '@/lib/telegram';
 
@@ -41,9 +42,8 @@ export type StoreOrder = Document & {
   cancellationReason?: string;
 };
 
-export function makeOrderNumber(id: ObjectId, date = new Date()) {
-  const day = date.toISOString().slice(2, 10).replace(/-/g, '');
-  return `AG-${day}-${id.toHexString().slice(-6).toUpperCase()}`;
+export function makeOrderNumber() {
+  return `#${randomInt(10, 1000)}`;
 }
 
 export function formatOrderForAdmin(order: Record<string, unknown>) {

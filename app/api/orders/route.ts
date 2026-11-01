@@ -212,6 +212,19 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     const _id = new ObjectId();
+    let orderNumber = '';
+    for (let attempt = 0; attempt < 500; attempt += 1) {
+      const candidate = makeOrderNumber();
+      const existingNumber = await orders.findOne({ orderNumber: candidate });
+      if (!existingNumber) {
+        orderNumber = candidate;
+        break;
+      }
+    }
+    if (!orderNumber) {
+      throw new Error('تعذر إنشاء رقم طلب قصير وفريد حاليًا.');
+    }
+
     const order: StoreOrder & {
       checkoutRequestId: string;
       acceptedPoliciesAt: Date;
@@ -223,7 +236,7 @@ export async function POST(request: NextRequest) {
       reviewToken?: string;
     } = {
       _id,
-      orderNumber: makeOrderNumber(_id, now),
+      orderNumber,
       checkoutRequestId: submissionId,
       ...(reviewToken ? { reviewToken } : {}),
       customerNotificationKey,

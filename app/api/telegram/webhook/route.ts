@@ -12,7 +12,7 @@ import {
   type OrderStatus,
   ensureTelegramIndexes
 } from '@/lib/telegram';
-import { formatOrderForAdmin, getRecentOrders, type StoreOrder } from '@/lib/orders';
+import { formatOrderForAdmin, getRecentOrders, makeOrderNumber, type StoreOrder } from '@/lib/orders';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -471,6 +471,36 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
   await sendTelegramMessage(chatId, message, { reply_markup: editProductKeyboard(id, product.categoryId) });
 }
 
+async function ensureShortOrderNumbers(db: Db, orders: StoreOrder[]) {
+  const collection = db.collection<StoreOrder>('orders');
+
+  for (const order of orders) {
+    if (/^#[0-9]{2,3}$/.test(order.orderNumber || '')) continue;
+
+    let shortNumber = '';
+    for (let attempt = 0; attempt < 500; attempt += 1) {
+      const candidate = makeOrderNumber();
+      const existing = await collection.findOne({ orderNumber: candidate });
+      if (!existing) {
+        shortNumber = candidate;
+        break;
+      }
+    }
+    if (!shortNumber) continue;
+
+    const result = await collection.updateOne(
+      { _id: order._id, orderNumber: order.orderNumber },
+      { $set: { orderNumber: shortNumber } }
+    );
+    if (result.modifiedCount === 1) {
+      order.orderNumber = shortNumber;
+    } else {
+      const latest = await collection.findOne({ _id: order._id });
+      if (latest?.orderNumber) order.orderNumber = latest.orderNumber;
+    }
+  }
+}
+
 async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'shipped') {
   const sectionLabel = section === 'new' ? 'الطلبات الجديدة' : 'الطلبات التي تم شحنها';
   const sectionFilter = section === 'new'
@@ -482,30 +512,22 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
     .limit(50)
     .toArray();
 
+  await ensureShortOrderNumbers(db, orders);
+
   if (!orders.length) {
     await sendMainMenu(db, chatId, 'لا توجد ' + sectionLabel + ' حاليًا.');
     return;
   }
 
-  const summary = orders.map((order) => {
-    const customer = order.customer || { name: 'بدون اسم', phone: '—', address: '—' };
-    const total = Number(order.total || 0).toLocaleString('ar-SA', { maximumFractionDigits: 2 });
-    return [
-      'طلب ' + (order.orderNumber || order._id.toHexString()),
-      'الاسم: ' + (customer.name || '—'),
-      'الجوال: ' + (customer.phone || '—'),
-      'الإجمالي: ' + total + ' ر.س',
-      'طريقة الدفع: ' + (order.paymentMethod === 'mada' ? 'مدى' : order.paymentMethod === 'visa' ? 'Visa' : 'لم يتم الاختيار'),
-      'الحالة: ' + (typeof order.status === 'string' && order.status in ORDER_STATUS_LABELS
-        ? ORDER_STATUS_LABELS[order.status as OrderStatus]
-        : ORDER_STATUS_LABELS.new)
-    ].join('\n');
-  }).join('\n\n──────────────\n\n');
+  const summary = orders.map((order, index) => {
+    const customerName = order.customer?.name || 'بدون اسم';
+    return `${index + 1}. ${order.orderNumber || 'طلب'} — ${customerName}`;
+  }).join('\n');
 
   const keyboard = {
     inline_keyboard: [
-      ...orders.map((order) => [{
-        text: (order.orderNumber || 'طلب').slice(0, 60),
+      ...orders.map((order, index) => [{
+        text: `${index + 1}. ${order.orderNumber || 'طلب'}`,
         callback_data: 'edit-order:' + order._id.toHexString()
       }]),
       [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
@@ -514,7 +536,7 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
 
   await sendTelegramMessage(
     chatId,
-    '🧾 ' + sectionLabel + ' (' + orders.length + ')\n\n' + summary + '\n\nاضغط على الطلب لعرض تفاصيله والإجراء المتاح له.',
+    '🧾 ' + sectionLabel + ' (' + orders.length + ')\n\n' + summary + '\n\nاضغط على رقم الطلب لفتح التفاصيل والإجراءات.',
     { reply_markup: keyboard }
   );
 
@@ -754,7 +776,11 @@ async function updateOrderStatus(
       orderId: order._id.toHexString(),
       orderNumber: order.orderNumber || order._id.toHexString(),
       status: nextStatus,
-      statusLabel: ORDER_STATUS_LABELS[nextStatus],
+      statusLabel: nextStatus === 'shipped'
+        ? 'تم الشحن'
+        : nextStatus === 'completed'
+          ? 'تم اكتمال الطلب'
+          : 'تم إلغاء الطلب',
       ...(nextStatus === 'cancelled' && reason ? { cancellationReason: reason } : {}),
       createdAt: now,
       readAt: null
