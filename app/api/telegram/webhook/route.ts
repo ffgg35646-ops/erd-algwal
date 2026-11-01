@@ -512,7 +512,7 @@ async function ensureShortOrderNumbers(db: Db, orders: StoreOrder[]) {
 
 async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'shipped') {
   const sectionLabel = section === 'new' ? 'الطلبات الجديدة' : 'الطلبات التي تم شحنها';
-  const sectionFilter = section === 'new'
+  const sectionFilter: OrderStatus | { $in: OrderStatus[] } = section === 'new'
     ? { $in: ['new', 'confirmed', 'preparing'] }
     : 'shipped';
   const orders = await db.collection<StoreOrder>('orders')
