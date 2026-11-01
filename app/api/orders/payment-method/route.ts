@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
           : {}),
         paymentMethodSelectedAt: now,
         paymentStatus: 'pending',
+        ...(!order.installment ? { receiptToken: order.receiptToken || randomBytes(24).toString('hex') } : {}),
         adminSeenAt: null,
         updatedAt: now
       },
@@ -129,12 +131,19 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      const receiptUrl = !updatedOrder.installment && updatedOrder.receiptToken
+        ? new URL(`/receipt/print/${updatedOrder.receiptToken}`, request.nextUrl.origin).toString()
+        : '';
+      const orderKeyboard = statusInlineKeyboard(orderId);
+      const inlineRows = [...orderKeyboard.inline_keyboard];
+      if (receiptUrl) inlineRows.push([{ text: '🧾 فتح سند القبض', url: receiptUrl }]);
+
       await sendTelegramMessage(
         adminId,
         '🛍️ تم إكمال طلب جديد — أرض الجوال\n\n' +
           formatOrderForAdmin(updatedOrder as unknown as Record<string, unknown>) +
           '\n\nاستخدم الأزرار لتحديث حالة الطلب.',
-        { reply_markup: statusInlineKeyboard(orderId) }
+        { reply_markup: { inline_keyboard: inlineRows } }
       );
       const notifiedAt = new Date();
       await orders.updateOne(filter, {
