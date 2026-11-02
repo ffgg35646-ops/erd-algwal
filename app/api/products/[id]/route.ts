@@ -26,7 +26,7 @@ export async function GET(_request: Request, { params }: ProductRouteContext) {
     const stored = await findStoredProduct(db, id);
     if (stored) {
       return NextResponse.json(
-        { product: serializeStoredProduct(stored) },
+        { product: serializeStoredProduct(stored, { includeColorMask: true }) },
         { headers: { 'cache-control': 'no-store' } }
       );
     }
