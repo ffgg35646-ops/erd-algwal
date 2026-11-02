@@ -10,6 +10,7 @@ type SavedOrderItem = {
   quantity: number;
   unitPrice?: number;
   color?: string;
+  storage?: string;
 };
 
 type CustomerOrder = {
@@ -300,6 +301,7 @@ export default function AccountPage() {
                       <span>
                         {item.name || 'منتج'}
                         {item.color ? ' · اللون: ' + item.color : ''}
+                        {item.storage ? ' · التخزين: ' + item.storage : ''}
                         {' × '}{item.quantity || 1}
                         {typeof item.unitPrice === 'number' ? ' — ' + formatPrice(item.unitPrice) + ' للقطعة' : ''}
                       </span>
