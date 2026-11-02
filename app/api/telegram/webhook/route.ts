@@ -630,6 +630,52 @@ async function getOrderDocumentRows(db: Db, order: StoreOrder) {
   }]];
 }
 
+async function getCustomerInvoiceDocuments(db: Db, order: StoreOrder) {
+  if (order.source !== 'website') return [] as Array<{ title: string; href: string }>;
+
+  await getOrderDocumentRows(db, order);
+
+  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
+  if (!configuredOrigin) return [] as Array<{ title: string; href: string }>;
+
+  let origin = '';
+  try {
+    const normalizedOrigin = configuredOrigin.startsWith('https://') || configuredOrigin.startsWith('http://')
+      ? configuredOrigin
+      : 'https://' + configuredOrigin;
+    origin = new URL(normalizedOrigin).origin;
+  } catch {
+    return [] as Array<{ title: string; href: string }>;
+  }
+
+  if (order.installment) {
+    if (!order.installmentInvoiceToken || !order.installmentContractToken) return [];
+    return [
+      {
+        title: 'فاتورة الأقساط',
+        href: new URL('/installments-invoice/print/' + encodeURIComponent(order.installmentInvoiceToken), origin).toString()
+      },
+      {
+        title: 'عقد البيع بالتقسيط',
+        href: new URL('/installments-contract/print/' + encodeURIComponent(order.installmentContractToken), origin).toString()
+      }
+    ];
+  }
+
+  if (!order.saleInvoiceToken || !order.receiptToken) return [];
+  return [
+    {
+      title: 'فاتورة البيع',
+      href: new URL('/sales-invoice/print/' + encodeURIComponent(order.saleInvoiceToken), origin).toString()
+    },
+    {
+      title: 'سند القبض',
+      href: new URL('/receipt/print/' + encodeURIComponent(order.receiptToken), origin).toString()
+    }
+  ];
+}
+
 async function listOrderDetails(db: Db, chatId: number, id: string) {
   if (!isObjectId(id)) return sendTelegramMessage(chatId, 'معرّف الطلب غير صالح.');
   const order = await db.collection<StoreOrder & {
@@ -642,7 +688,9 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
   if (!order) return sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
   const closed = order.status === 'completed' || order.status === 'cancelled';
   const documentRows = await getOrderDocumentRows(db, order);
+  const orderWithInvoiceState = order as typeof order & { customerInvoiceSentAt?: Date };
   const reviewRows = [
+    [{ text: orderWithInvoiceState.customerInvoiceSentAt ? '✅ تم إرسال الفاتورة للعميل' : '1️⃣ إظهار الفاتورة للعميل', callback_data: 'send-order-documents:' + id }],
     [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + id + ':otp' }],
     [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + id + ':balance' }],
     [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + id + ':card' }],
@@ -1690,6 +1738,64 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await sendMainMenu(db, chatId, removed ? '🗑 تم حذف المنتج من المتجر.' : 'المنتج غير موجود أو سبق حذفه.');
     return;
   }
+  if (action === 'send-order-documents' && id && isObjectId(id)) {
+    const orderCollection = db.collection<StoreOrder & {
+      customerInvoiceSentAt?: Date;
+      customerInvoiceNotificationId?: string;
+    }>('orders');
+    const order = await orderCollection.findOne({ _id: new ObjectId(id), source: 'website' });
+    if (!order) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
+      return;
+    }
+    if (!order.customerNotificationKey) {
+      await sendTelegramMessage(chatId, 'لا يوجد مفتاح إشعارات مرتبط بهذا الطلب.');
+      return;
+    }
+    if (order.customerInvoiceSentAt) {
+      await sendTelegramMessage(chatId, 'تم إرسال مستندات هذا الطلب للعميل بالفعل.');
+      await listOrderDetails(db, chatId, id);
+      return;
+    }
+
+    const documents = await getCustomerInvoiceDocuments(db, order);
+    if (documents.length !== 2) {
+      await sendTelegramMessage(chatId, 'تعذر تجهيز رابطَي مستندات الطلب. تأكد من إعداد رابط الموقع ووجود رموز المستندات.');
+      return;
+    }
+
+    const notification = await db.collection('customer_notifications').insertOne({
+      customerNotificationKey: order.customerNotificationKey,
+      orderId: order._id.toHexString(),
+      orderNumber: order.orderNumber || '#' + order._id.toString().slice(-6),
+      status: 'invoice_documents',
+      statusLabel: order.installment ? 'تم اعتماد طلب التقسيط وإرسال مستنداته' : 'تم اعتماد الطلب وإرسال مستنداته',
+      documents,
+      createdAt: new Date(),
+      readAt: null
+    });
+
+    await orderCollection.updateOne(
+      { _id: order._id, customerInvoiceSentAt: { $exists: false } },
+      {
+        $set: {
+          customerInvoiceSentAt: new Date(),
+          customerInvoiceNotificationId: notification.insertedId.toHexString(),
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    await sendTelegramMessage(
+      chatId,
+      '✅ تم إرسال مستندَي الطلب إلى جرس إشعارات العميل (' +
+        (order.installment ? 'فاتورة الأقساط وعقد التقسيط' : 'فاتورة البيع وسند القبض') +
+        '). أصبح الطلب معتمدًا من الإدارة.'
+    );
+    await listOrderDetails(db, chatId, id);
+    return;
+  }
+
   if (action === 'create-order-otp' && id && isObjectId(id)) {
     const orderCollection = db.collection<StoreOrder & {
       orderConfirmationOtpHash?: string;
