@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { categories as seedCategories, products as seedProducts, type Product } from '@/lib/products';
+import { categories as seedCategories, defaultStoreProducts, type Product } from '@/lib/products';
 
 type CartMap = Record<string, number>;
 export type StoreCategory = { id: string; name: string; description: string; icon?: string };
@@ -19,6 +19,7 @@ type CartContextValue = {
 };
 
 const STORAGE_KEY = 'erd-algwal-cart-v1';
+const CATALOG_STORAGE_KEY = 'erd-algwal-catalog-v1';
 
 function decodeCartVariant(value: string) {
   try {
@@ -61,7 +62,7 @@ const FALLBACK_CATEGORIES: StoreCategory[] = seedCategories.map((category) => ({
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartMap>({});
   const [hydrated, setHydrated] = useState(false);
-  const [catalogProducts, setCatalogProducts] = useState<Product[]>(seedProducts);
+  const [catalogProducts, setCatalogProducts] = useState<Product[]>(defaultStoreProducts);
   const [catalogCategories, setCatalogCategories] = useState<StoreCategory[]>(FALLBACK_CATEGORIES);
 
   const refreshCatalog = useCallback(async () => {
@@ -71,6 +72,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const data = await response.json() as { products?: Product[]; categories?: StoreCategory[] };
       if (Array.isArray(data.products)) setCatalogProducts(data.products);
       if (Array.isArray(data.categories)) setCatalogCategories(data.categories);
+      try {
+        window.localStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify({
+          products: Array.isArray(data.products) ? data.products : undefined,
+          categories: Array.isArray(data.categories) ? data.categories : undefined,
+          savedAt: Date.now()
+        }));
+      } catch {
+        // A full or unavailable browser cache must not block the storefront.
+      }
     } catch {
       // Keep the built-in catalog available if MongoDB is not configured yet.
     }
@@ -93,6 +103,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
     } catch {
       // Ignore malformed or unavailable browser storage and start with an empty cart.
+    }
+
+    try {
+      const cachedCatalog = window.localStorage.getItem(CATALOG_STORAGE_KEY);
+      if (cachedCatalog) {
+        const parsed = JSON.parse(cachedCatalog) as { products?: Product[]; categories?: StoreCategory[] };
+        // Keep built-in products on screen when an older cache contains an empty result.
+        if (Array.isArray(parsed.products) && parsed.products.length) setCatalogProducts(parsed.products);
+        if (Array.isArray(parsed.categories) && parsed.categories.length) setCatalogCategories(parsed.categories);
+      }
+    } catch {
+      // Ignore a damaged cache and let the background request refresh the catalogue.
     } finally {
       setHydrated(true);
     }
