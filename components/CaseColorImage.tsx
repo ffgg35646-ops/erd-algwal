@@ -215,7 +215,7 @@ export default function CaseColorImage({
     if (!image || !canvas || !selectedColor) return;
 
     const render = () => {
-      if (cancelled || !image.naturalWidth) return;
+      if (cancelled || !image.naturalWidth || image.dataset.fallback === 'true') return;
       try {
         const didRender = recolorMaskedCase(image, canvas, mask, selectedColor);
         if (!cancelled) setRecolored(didRender);
@@ -251,12 +251,14 @@ export default function CaseColorImage({
         loading="eager"
         onError={(event) => {
           event.currentTarget.onerror = null;
+          event.currentTarget.dataset.fallback = 'true';
           event.currentTarget.src = '/product-image-placeholder.svg';
         }}
       />
       <canvas
         ref={canvasRef}
-        aria-hidden="true"
+        role="img"
+        aria-label={alt}
         className={className}
         style={{ ...style, display: recolored ? 'block' : 'none' }}
       />
