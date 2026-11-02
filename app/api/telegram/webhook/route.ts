@@ -48,6 +48,7 @@ type FlowData = {
   productId?: string;
   colors?: string[];
   storageOptions?: string[];
+  storagePrices?: Record<string, number>;
   price?: number;
   details?: string;
   images?: string[];
@@ -157,6 +158,26 @@ function normalizeAmount(value: string) {
 
 function parseList(value: string) {
   return [...new Set(value.split(/[،,\n]/).map((item) => item.trim()).filter(Boolean))].slice(0, 30);
+}
+
+function parseStorageOptions(value: string): { options: string[]; prices: Record<string, number> } | null {
+  const options: string[] = [];
+  const prices: Record<string, number> = {};
+  const seen = new Set<string>();
+  for (const entry of value.split(/[،,\n]/).map((item) => item.trim()).filter(Boolean)) {
+    const match = entry.match(/^(.+?)\s*(?:=|:)\s*(.+)$/);
+    const name = (match ? match[1] : entry).trim();
+    if (!name || name.length > 80) return null;
+    if (seen.has(name)) return null;
+    seen.add(name);
+    options.push(name);
+    if (match) {
+      const price = normalizeAmount(match[2]);
+      if (!Number.isFinite(price) || price <= 0 || price > 100000000) return null;
+      prices[name] = price;
+    }
+  }
+  return { options, prices };
 }
 
 function digits(value: string) {
@@ -471,7 +492,7 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
     'الاسم: ' + product.name,
     'القسم: ' + product.category,
     'الألوان: ' + ((product.colors || []).join('، ') || 'غير محدد'),
-    'مساحات التخزين: ' + ((product.storageOptions || []).join('، ') || 'غير محدد'),
+    'مساحات التخزين: ' + ((product.storageOptions || []).map((storage) => storage + (product.storagePrices?.[storage] ? ' — ' + product.storagePrices[storage].toLocaleString('en-US') + ' ر.س' : '')).join('، ') || 'غير محدد'),
     'السعر: ' + product.price.toLocaleString('en-US') + ' ر.س',
     'عدد الصور: ' + (product.images || []).length,
     '',
@@ -687,6 +708,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     name: data.name,
     colors: data.colors || [],
     storageOptions: data.storageOptions || [],
+    ...(Object.keys(data.storagePrices || {}).length ? { storagePrices: data.storagePrices } : {}),
     price: data.price,
     details: data.details,
     images: data.images.slice(0, 10),
@@ -739,7 +761,12 @@ async function saveEditedField(db: Db, session: AdminSession, value: string, cha
   } else if (session.step === 'edit_product_colors') {
     update = { colors: value === 'تخطي' ? [] : parseList(value) };
   } else if (session.step === 'edit_product_storage') {
-    update = { storageOptions: value === 'تخطي' ? [] : parseList(value) };
+    const parsed = value === 'تخطي' ? { options: [], prices: {} } : parseStorageOptions(value);
+    if (!parsed) return void await sendTelegramMessage(chatId, 'صيغة مساحات التخزين أو أحد الأسعار غير صحيحة. استخدم مثالًا مثل: 256GB=5799، 512GB=6799، 1TB=7799.');
+    update = {
+      storageOptions: parsed.options,
+      ...(Object.keys(parsed.prices).length ? { storagePrices: parsed.prices } : {})
+    };
   } else if (session.step === 'edit_product_price') {
     const price = normalizeAmount(value);
     if (!Number.isFinite(price) || price <= 0 || price > 100000000) return void await sendTelegramMessage(chatId, 'السعر غير صحيح. أرسل رقمًا أكبر من صفر.');
@@ -752,9 +779,13 @@ async function saveEditedField(db: Db, session: AdminSession, value: string, cha
     return;
   }
 
+  const updateDocument: Record<string, unknown> = { $set: { ...update, updatedAt: new Date() } };
+  if (session.step === 'edit_product_storage' && !('storagePrices' in update)) {
+    updateDocument.$unset = { storagePrices: '' };
+  }
   const result = await db.collection<StoredProduct>('products').updateOne(
     { _id: new ObjectId(id) },
-    { $set: { ...update, updatedAt: new Date() } }
+    updateDocument
   );
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
   if (!result.matchedCount) {
@@ -1079,7 +1110,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       if (session.workflow === 'add_product' && session.step === 'product_colors') {
         session.step = 'product_storage';
         await saveSession(db, session);
-        await sendTelegramMessage(chatId, 'اكتب مساحات التخزين، مثال: 128GB، 256GB، 512GB. أو «تخطي».');
+        await sendTelegramMessage(chatId, 'اكتب مساحات التخزين، ويمكنك إضافة أي عدد. إذا كان لكل مساحة سعر مختلف، اكتب الاسم ثم = ثم السعر، مثال: 256GB=5799، 512GB=6799، 1TB=7799، 2TB=9299. وإذا كتبت الاسم فقط فسيُستخدم سعر المنتج الأساسي. اكتب «تخطي» لعدم إضافة سعات.');
         return;
       }
       if (session.workflow === 'edit_product' && session.step === 'edit_product_colors' && session.data.productId && isObjectId(session.data.productId)) {
@@ -1491,7 +1522,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     const prompts: Record<string, string> = {
       name: 'الاسم الحالي: ' + product.name + '\n\nأرسل الاسم الجديد.',
       colors: 'الألوان الحالية: ' + (product.colors || []).join('، ') + '\n\nأرسل الألوان الجديدة مفصولة بفاصلة، أو «تخطي» لمسحها.',
-      storage: 'مساحات التخزين الحالية: ' + (product.storageOptions || []).join('، ') + '\n\nأرسل المساحات الجديدة مفصولة بفاصلة، أو «تخطي» لمسحها.',
+      storage: 'مساحات التخزين الحالية: ' + (product.storageOptions || []).map((storage) => storage + (product.storagePrices?.[storage] ? '=' + product.storagePrices[storage] : '')).join('، ') + '\n\nأرسل المساحات الجديدة، ويمكنك إضافة أي عدد. لتحديد سعر لكل مساحة اكتب مثل: 256GB=5799، 512GB=6799، 1TB=7799. وإذا كتبت الاسم فقط فسيُستخدم السعر الأساسي. اكتب «تخطي» لمسح الخيارات.',
       price: 'السعر الحالي: ' + product.price + ' ر.س\n\nأرسل السعر الجديد بالريال.',
       details: 'التفاصيل الحالية:\n' + product.details + '\n\nأرسل التفاصيل الجديدة.'
     };
@@ -1817,12 +1848,17 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     }
     if (session.step === 'product_colors') {
       session.data.colors = value === 'تخطي' ? [] : parseList(value); session.step = 'product_storage'; await saveSession(db, session);
-      await sendTelegramMessage(chatId, 'اكتب مساحات التخزين، مثال: 128GB، 256GB، 512GB. أو «تخطي».');
+      await sendTelegramMessage(chatId, 'اكتب مساحات التخزين، ويمكنك إضافة أي عدد. إذا كان لكل مساحة سعر مختلف، اكتب الاسم ثم = ثم السعر، مثال: 256GB=5799، 512GB=6799، 1TB=7799، 2TB=9299. وإذا كتبت الاسم فقط فسيُستخدم سعر المنتج الأساسي. اكتب «تخطي» لعدم إضافة سعات.');
       return;
     }
     if (session.step === 'product_storage') {
-      session.data.storageOptions = value === 'تخطي' ? [] : parseList(value); session.step = 'product_price'; await saveSession(db, session);
-      await sendTelegramMessage(chatId, 'اكتب سعر المنتج بالريال السعودي، مثال: 6099.');
+      const parsed = value === 'تخطي' ? { options: [], prices: {} } : parseStorageOptions(value);
+      if (!parsed) return void await sendTelegramMessage(chatId, 'صيغة مساحات التخزين أو أحد الأسعار غير صحيحة. استخدم مثالًا مثل: 256GB=5799، 512GB=6799، 1TB=7799.');
+      session.data.storageOptions = parsed.options;
+      session.data.storagePrices = parsed.prices;
+      session.step = 'product_price';
+      await saveSession(db, session);
+      await sendTelegramMessage(chatId, 'اكتب السعر الأساسي للمنتج بالريال السعودي، مثال: 5799. ويُستخدم هذا السعر لأي مساحة لم تحدد لها سعرًا خاصًا.');
       return;
     }
     if (session.step === 'product_price') {
