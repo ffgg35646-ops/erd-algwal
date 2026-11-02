@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import styles from './cart.module.css';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
-import { formatPrice } from '@/lib/products';
+import { formatPrice, getProductPrice } from '@/lib/products';
 
 function CartIcon() {
   return (
@@ -21,13 +21,13 @@ export default function CartPage() {
 
   const lines = useMemo(
     () => Object.entries(cart).map(([cartKey, quantity]) => {
-      const { productId, color } = parseCartItemKey(cartKey);
-      return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
+      const { productId, color, storage } = parseCartItemKey(cartKey);
+      return { cartKey, color, storage, product: products.find((item) => item.id === productId), quantity };
     }).filter((line) => Boolean(line.product)),
     [cart, products]
   );
 
-  const total = lines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
+  const total = lines.reduce((sum, line) => sum + (line.product ? getProductPrice(line.product, line.storage) : 0) * line.quantity, 0);
 
   return (
     <main className={styles.page}>
@@ -52,7 +52,7 @@ export default function CartPage() {
           </div>
 
           <div className={styles.items}>
-            {lines.map(({ cartKey, color, product, quantity }) => product ? (
+            {lines.map(({ cartKey, color, storage, product, quantity }) => product ? (
               <article className={styles.item} key={cartKey}>
                 <Link href={'/products/' + product.id} className={styles.thumb} aria-label={'تفاصيل ' + product.name}>
                   <img src={product.image} alt={product.name} loading="lazy" />
@@ -61,7 +61,8 @@ export default function CartPage() {
                   <span className={styles.category}>{product.category}</span>
                   <Link href={'/products/' + product.id} className={styles.name}>{product.name}</Link>
                   {color ? <p className={styles.variant}>اللون: {color}</p> : null}
-                  <div className={styles.price}>{formatPrice(product.price)}</div>
+                  {storage ? <p className={styles.variant}>مساحة التخزين: {storage}</p> : null}
+                  <div className={styles.price}>{formatPrice(getProductPrice(product, storage))}</div>
                   <div className={styles.itemActions}>
                     <div className={styles.quantity} aria-label="الكمية">
                       <button type="button" onClick={() => setQuantity(cartKey, quantity + 1)} aria-label={'زيادة كمية ' + product.name}>+</button>
