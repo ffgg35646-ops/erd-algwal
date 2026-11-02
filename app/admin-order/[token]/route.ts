@@ -44,7 +44,8 @@ export async function GET(
   const headers = {
     'content-type': 'text/html; charset=utf-8',
     'cache-control': 'private, no-store, max-age=0',
-    'x-robots-tag': 'noindex, nofollow, noarchive'
+    'x-robots-tag': 'noindex, nofollow, noarchive',
+    'referrer-policy': 'no-referrer'
   };
 
   if (!/^[a-f0-9]{48}$/i.test(token)) {
