@@ -245,7 +245,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
 export async function listCatalogProducts(db: Db): Promise<Product[]> {
   await ensureDefaultProducts(db);
   const saved = await db.collection<StoredProduct>('products').find({ deleted: { $ne: true } }).sort({ createdAt: -1 }).toArray();
-  return saved.map(serializeStoredProduct);
+  return saved.map((product) => serializeStoredProduct(product));
 }
 
 export async function findStoredProduct(db: Db, id: string) {
