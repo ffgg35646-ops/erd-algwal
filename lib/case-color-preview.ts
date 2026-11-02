@@ -50,10 +50,16 @@ export async function generatePhoneCaseColorMask(
     throw new Error(`Could not download the Telegram product image: ${imageResponse.status}`);
   }
 
-  const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-  if (!contentType.startsWith('image/')) {
-    throw new Error('The first product file is not an image');
-  }
+  const declaredContentType = imageResponse.headers.get('content-type') || '';
+  const filePath = telegramFile.file_path.toLowerCase();
+  const inferredContentType = filePath.endsWith('.png')
+    ? 'image/png'
+    : filePath.endsWith('.webp')
+      ? 'image/webp'
+      : 'image/jpeg';
+  const contentType = declaredContentType.startsWith('image/')
+    ? declaredContentType
+    : inferredContentType;
 
   const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
   if (!imageBytes.length || imageBytes.length > 12 * 1024 * 1024) {
