@@ -5914,3 +5914,38 @@ button.strip-go-cart-button:focus-visible { outline: 2px solid #92702f; outline-
   .reviews-title-glass { padding: 7px 15px; }
   .reviews-title-glass h2 { font-size: 14px !important; }
 }
+
+
+/* Invoice documents sent from admin to the customer's notification bell. */
+.notification-document-links,
+.notification-toast-documents {
+  display: grid;
+  gap: 7px;
+  margin-top: 9px;
+}
+.notification-document-link,
+.notification-toast-documents a {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #e7dfcf;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #795b25;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.notification-document-link:hover,
+.notification-toast-documents a:hover {
+  border-color: #b99a60;
+  background: #faf5e9;
+}
+.notification-toast-documents {
+  grid-column: 1;
+  margin-top: 2px;
+}
