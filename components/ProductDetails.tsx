@@ -75,12 +75,14 @@ export default function ProductDetails({ product }: { product: Product }) {
   }, [product.id, colorsSignature, storageSignature, imageSourceColor]);
 
   useEffect(() => {
-    if (gallery.length < 2) return;
+    // A generated case mask belongs to the main photo only; do not rotate
+    // automatically to an unmasked gallery image after the customer picks a color.
+    if (product.colorMask || gallery.length < 2) return;
     const timer = window.setTimeout(() => {
       setActiveImageIndex((current) => (current + 1) % gallery.length);
     }, 10_000);
     return () => window.clearTimeout(timer);
-  }, [gallery.length, activeImageIndex]);
+  }, [gallery.length, activeImageIndex, product.colorMask]);
 
   function handleAdd() {
     addToCart(product.id, quantity, selectedColor || undefined, selectedStorage || undefined);
