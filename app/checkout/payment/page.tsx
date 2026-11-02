@@ -4,7 +4,7 @@ import Link from 'next/link';
 import styles from '../checkout.module.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
-import { formatPrice, getProductPrice } from '@/lib/products';
+import { formatPrice } from '@/lib/products';
 
 type CheckoutDraft = {
   orderId?: string;
@@ -26,11 +26,19 @@ type CheckoutDraft = {
   acceptedPolicies?: boolean;
 };
 
+type VerifyAmountResponse = {
+  ok?: boolean;
+  total?: number;
+  currency?: string;
+  orderNumber?: string;
+  error?: string;
+};
+
 const MONTHS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
 const EXPIRY_YEARS = Array.from({ length: 15 }, (_, index) => String(new Date().getFullYear() + index));
 
 function confirmationMessage(method: 'mada' | 'visa') {
-  return `تم إرسال بيانات الطلب واختيار ${method === 'mada' ? 'مدى' : 'Visa'} إلى الإدارة.`;
+  return 'تم إرسال بيانات الطلب واختيار ' + (method === 'mada' ? 'مدى' : 'Visa') + ' إلى الإدارة.';
 }
 
 export default function CheckoutPaymentPage() {
@@ -38,9 +46,13 @@ export default function CheckoutPaymentPage() {
   const [draft, setDraft] = useState<CheckoutDraft | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'mada' | 'visa'>('mada');
+  const [paymentMethod, setPaymentMethod] = useState<'mada' | 'visa'>('visa');
   const [paymentSubmitting, setPaymentSubmitting] = useState(false);
   const [paymentSubmitted, setPaymentSubmitted] = useState(false);
+  const [serverTotal, setServerTotal] = useState<number | null>(null);
+  const [totalVerified, setTotalVerified] = useState(false);
+  const [totalError, setTotalError] = useState('');
+  const [verificationAttempt, setVerificationAttempt] = useState(0);
   const cardDetailsRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -64,16 +76,72 @@ export default function CheckoutPaymentPage() {
     }
   }, []);
 
-  const lines = useMemo(() => Object.entries(cart).map(([cartKey, quantity]) => {
-    const { productId, color, storage } = parseCartItemKey(cartKey);
-    return { cartKey, color, storage, product: products.find((item) => item.id === productId), quantity };
-  }).filter((line) => Boolean(line.product)), [cart, products]);
+  useEffect(() => {
+    if (!draftLoaded) return;
+    if (!draft?.orderId || !draft.submissionId) {
+      setTotalError('بيانات الطلب غير مكتملة. ارجع إلى بيانات التوصيل وأعد المحاولة.');
+      setTotalVerified(true);
+      return;
+    }
 
-  const cartTotal = lines.reduce((sum, line) => sum + (line.product ? getProductPrice(line.product, line.storage) : 0) * line.quantity, 0);
-  const total = typeof draft?.total === 'number' && Number.isFinite(draft.total) ? draft.total : cartTotal;
+    let cancelled = false;
+    async function verifySavedOrderTotal() {
+      setTotalVerified(false);
+      setTotalError('');
+      setServerTotal(null);
+      try {
+        const reviewToken = window.localStorage.getItem('erd-algwal-review-token') || '';
+        if (!reviewToken) throw new Error('تعذر التحقق من ملكية الطلب. ارجع إلى بيانات التوصيل وحاول مرة أخرى.');
+
+        const response = await fetch('/api/orders/payment-method', {
+          method: 'POST',
+          cache: 'no-store',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            action: 'verify-total',
+            orderId: draft.orderId,
+            submissionId: draft.submissionId,
+            reviewToken
+          })
+        });
+        const result = await response.json() as VerifyAmountResponse;
+        if (!response.ok || !result.ok || typeof result.total !== 'number' || !Number.isFinite(result.total) || result.total <= 0) {
+          throw new Error(result.error || 'تعذر التحقق من إجمالي الطلب المسجل.');
+        }
+        if (cancelled) return;
+
+        setServerTotal(result.total);
+        setDraft((current) => current ? {
+          ...current,
+          total: result.total,
+          currency: result.currency || current.currency || 'SAR',
+          orderNumber: result.orderNumber || current.orderNumber
+        } : current);
+      } catch (error) {
+        if (!cancelled) {
+          setServerTotal(null);
+          setTotalError(error instanceof Error ? error.message : 'تعذر التحقق من إجمالي الطلب حاليًا.');
+        }
+      } finally {
+        if (!cancelled) setTotalVerified(true);
+      }
+    }
+
+    void verifySavedOrderTotal();
+    return () => { cancelled = true; };
+  }, [draftLoaded, draft?.orderId, draft?.submissionId, verificationAttempt]);
+
+  const lines = useMemo(() => Object.entries(cart).map(([cartKey, quantity]) => {
+    const { productId } = parseCartItemKey(cartKey);
+    return { product: products.find((item) => item.id === productId), quantity };
+  }).filter((line) => Boolean(line.product)), [cart, products]);
 
   async function handleCompleteOrder() {
     if (paymentSubmitting || paymentSubmitted) return;
+    if (serverTotal === null || !Number.isFinite(serverTotal) || serverTotal <= 0) {
+      setPaymentMessage('لا يمكن إكمال الطلب قبل التحقق من المبلغ المستحق.');
+      return;
+    }
     if (!draft?.orderId || !draft.submissionId) {
       setPaymentMessage('بيانات الطلب غير مكتملة. ارجع إلى بيانات التوصيل وأعد المحاولة.');
       return;
@@ -143,6 +211,7 @@ export default function CheckoutPaymentPage() {
       const savedMethod = result.paymentMethod === 'visa' ? 'visa' : paymentMethod;
       const updatedDraft: CheckoutDraft = {
         ...draft,
+        total: serverTotal,
         paymentMethod: savedMethod,
         paymentNotificationSent: notified,
         notificationSent: notified
@@ -165,13 +234,13 @@ export default function CheckoutPaymentPage() {
     }
   }
 
-  if (!hydrated || !draftLoaded) {
+  if (!hydrated || !draftLoaded || (draft?.orderId && !totalVerified)) {
     return (
-      <main className={`${styles.checkoutShell} ${styles.paymentPageShell} payment-design-page`}>
+      <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
         <div className={styles.paymentTopBand}>
           <div className={styles.paymentCard}>
-            <div className={styles.paymentStep}><span>إكمال الطلب</span><hr /><i>2</i></div>
-            <p>جاري تحميل بيانات الطلب...</p>
+            <div className={styles.paymentStep}><i>2</i><span>طريقة الدفع</span><hr /></div>
+            <p>جاري التحقق من إجمالي الطلب...</p>
           </div>
         </div>
       </main>
@@ -180,10 +249,10 @@ export default function CheckoutPaymentPage() {
 
   if (!draft || !draft.fullName || !draft.acceptedPolicies || !lines.length) {
     return (
-      <main className={`${styles.checkoutShell} ${styles.paymentPageShell} payment-design-page`}>
+      <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
         <div className={styles.paymentTopBand}>
           <section className={styles.paymentCard}>
-            <div className={styles.paymentStep}><span>إكمال الطلب</span><hr /><i>2</i></div>
+            <div className={styles.paymentStep}><i>2</i><span>طريقة الدفع</span><hr /></div>
             <h1 className={styles.paymentEmptyTitle}>أكمل بيانات الطلب أولًا</h1>
             <p className={styles.paymentEmptyText}>نحتاج بيانات التوصيل ومحتويات السلة قبل الانتقال إلى اختيار طريقة الدفع.</p>
             <Link href="/checkout/store" className={styles.paymentSubmit}>العودة لبيانات التوصيل ←</Link>
@@ -193,59 +262,68 @@ export default function CheckoutPaymentPage() {
     );
   }
 
+  if (serverTotal === null) {
+    return (
+      <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
+        <div className={styles.paymentTopBand}>
+          <section className={styles.paymentCard}>
+            <div className={styles.paymentStep}><i>2</i><span>طريقة الدفع</span><hr /></div>
+            <h1 className={styles.paymentEmptyTitle}>تعذر التحقق من المبلغ المستحق</h1>
+            <p className={styles.paymentEmptyText}>{totalError || 'لم نتمكن من قراءة إجمالي الطلب المسجل.'}</p>
+            <button type="button" className={styles.paymentSubmit} onClick={() => setVerificationAttempt((current) => current + 1)}>إعادة التحقق من المبلغ</button>
+            <Link href="/checkout/store" className={styles.paymentBackLink}>العودة إلى بيانات الطلب</Link>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <main className={`${styles.checkoutShell} ${styles.paymentPageShell} payment-design-page`}>
+    <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
       <div className={styles.paymentTopBand}>
         <section className={styles.paymentCard} aria-label="اختيار طريقة الدفع وإكمال الطلب">
           <div className={styles.paymentStep}>
-            <span>اختيار طريقة الدفع</span>
-            <hr />
             <i>2</i>
-          </div>
-
-          <div className="payment-customer-summary">
-            <div>
-              <small>رقم الطلب</small>
-              <strong>{draft.orderNumber || 'طلب جديد'}</strong>
-            </div>
-            <div>
-              <small>اسم العميل</small>
-              <strong>{draft.fullName}</strong>
-            </div>
+            <span>طريقة الدفع</span>
+            <hr />
           </div>
 
           <div className={styles.paymentMethods} role="group" aria-label="اختيار طريقة الدفع">
             <button
               type="button"
-              className={paymentMethod === 'mada' ? `${styles.paymentMethod} ${styles.paymentMethodSelected}` : styles.paymentMethod}
-              aria-label="الدفع بمدى"
-              aria-pressed={paymentMethod === 'mada'}
-              disabled={paymentSubmitting || paymentSubmitted}
-              onClick={() => { setPaymentMethod('mada'); setPaymentMessage(''); }}
-            >
-              <span className={styles.madaLogo}>مدى<br />mada<span className={styles.madaLogoUnderline} /></span>
-            </button>
-            <button
-              type="button"
-              className={paymentMethod === 'visa' ? `${styles.paymentMethod} ${styles.paymentMethodSelected}` : styles.paymentMethod}
-              aria-label="الدفع بفيزا"
+              className={paymentMethod === 'visa' ? styles.paymentMethod + ' ' + styles.paymentMethodSelected : styles.paymentMethod}
+              aria-label="Visa / Mastercard"
               aria-pressed={paymentMethod === 'visa'}
               disabled={paymentSubmitting || paymentSubmitted}
               onClick={() => { setPaymentMethod('visa'); setPaymentMessage(''); }}
             >
               <span className={styles.visaLogo}><i>VISA</i><b className={styles.visaCircleRed} /><b className={styles.visaCircleYellow} /></span>
             </button>
+            <button
+              type="button"
+              className={paymentMethod === 'mada' ? styles.paymentMethod + ' ' + styles.paymentMethodSelected : styles.paymentMethod}
+              aria-label="mada"
+              aria-pressed={paymentMethod === 'mada'}
+              disabled={paymentSubmitting || paymentSubmitted}
+              onClick={() => { setPaymentMethod('mada'); setPaymentMessage(''); }}
+            >
+              <span className={styles.madaLogo}><span className={styles.madaLogoUnderline} />مدى <small>mada</small></span>
+            </button>
+          </div>
+
+          <div className={styles.paymentAmount}>
+            المبلغ المستحق : <strong>{formatPrice(serverTotal)}</strong>
           </div>
 
           {paymentMethod === 'visa' ? (
-            <form ref={cardDetailsRef} className={styles.paymentFields} aria-label="بيانات بطاقة Visa">
+            <form ref={cardDetailsRef} className={styles.paymentFields} aria-label="بيانات تعريف بطاقة Visa">
               <input
                 className={styles.paymentInput}
                 name="cardholderName"
                 type="text"
                 placeholder="اسم حامل البطاقة"
                 aria-label="اسم حامل البطاقة"
-                autoComplete="off"
+                autoComplete="cc-name"
                 maxLength={100}
                 required
                 disabled={paymentSubmitting || paymentSubmitted}
@@ -280,19 +358,20 @@ export default function CheckoutPaymentPage() {
                   </select>
                 </label>
               </div>
-              <p className={styles.paymentInstruction}>يتم إرسال اسم حامل البطاقة وآخر أربعة أرقام وتاريخ الانتهاء فقط.</p>
             </form>
           ) : null}
 
-          <div className={styles.paymentAmount}>إجمالي الطلب: {formatPrice(total)}</div>
+          <div className={styles.paymentSafe}>
+            🛡️ لا نطلب أو نخزن رقم البطاقة الكامل أو رمز الأمان (CVC).
+          </div>
           <p className={styles.paymentInstruction}>
-            اختر طريقة الدفع، ثم اضغط «إكمال الطلب» لإرسال بيانات الطلب وطريقة الدفع معًا إلى الإدارة.
+            هذه الصفحة تسجل طريقة الدفع وبيانات تعريف محدودة للبطاقة وترسل الطلب إلى الإدارة؛ ولا تنفذ خصمًا ماليًا.
           </p>
 
           {paymentMessage ? (
             <div
               className={paymentSubmitted
-                ? `${styles.paymentInlineMessage} ${styles.paymentInlineMessageSuccess}`
+                ? styles.paymentInlineMessage + ' ' + styles.paymentInlineMessageSuccess
                 : styles.paymentInlineMessage}
               role={paymentSubmitted ? 'status' : 'alert'}
             >
@@ -305,7 +384,7 @@ export default function CheckoutPaymentPage() {
             type="button"
             className={styles.paymentSubmit}
             onClick={handleCompleteOrder}
-            disabled={paymentSubmitting || paymentSubmitted}
+            disabled={paymentSubmitting || paymentSubmitted || serverTotal === null}
           >
             {paymentSubmitting ? 'جارٍ إرسال الطلب...' : paymentSubmitted ? 'تم إرسال الطلب' : 'إكمال الطلب'}
             <span aria-hidden="true">←</span>
