@@ -804,7 +804,7 @@ async function handleImageStep(db: Db, session: AdminSession, message: TelegramM
     await saveProduct(db, session, chatId);
     return;
   }
-  await sendTelegramMessage(chatId, 'أرسل صورة المنتج. يمكنك إرسال عدة صور، ثم اضغط «حفظ المنتج».');
+  await sendTelegramMessage(chatId, 'أرسل صورة المنتج. للجرابات، أرسل صورة الجراب الأساسية أولًا؛ هي التي سيجهّز النظام منها معاينة تغيير الألوان. يمكنك إرسال صور أخرى بعدها، ثم اضغط «حفظ المنتج».');
 }
 
 async function saveEditedField(db: Db, session: AdminSession, value: string, chatId: number) {
@@ -1613,7 +1613,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     }
     if (step === 'edit_product_images') {
       await startFlow(db, callback.from.id, chatId, 'edit_product', step, { productId: id, images: [] },
-        'أرسل الصور الجديدة للمنتج. سيؤدي الحفظ إلى استبدال الصور القديمة. أرسل صورة أو أكثر ثم اضغط «حفظ المنتج».',
+        'أرسل الصور الجديدة للمنتج. سيؤدي الحفظ إلى استبدال الصور القديمة. للجرابات، اجعل الصورة الأولى هي صورة الجراب الأساسية التي تريد تغيير لونها؛ أرسل صورة أو أكثر ثم اضغط «حفظ المنتج».',
         { keyboard: [[{ text: SAVE_PRODUCT_TEXT }], [{ text: MAIN_MENU_TEXT }]], resize_keyboard: true, one_time_keyboard: false });
       return;
     }
