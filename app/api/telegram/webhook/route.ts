@@ -704,7 +704,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     if (canPreviewColors && process.env.MODEL_API_KEY) {
       await sendTelegramMessage(chatId, '✅ تم استلام الصور الجديدة. جاري عزل الجراب في الصورة الأولى وتجهيز تغيير الألوان...');
       try {
-        colorMask = await generatePhoneCaseColorMask(data.images[0], product.colorMask?.sourceColor || product.colors[0]);
+        colorMask = await generatePhoneCaseColorMask(data.images[0], product.colors[0]);
         colorMaskNote = '\n✅ تم تجهيز معاينة تغيير الألوان للصورة الأولى.';
       } catch (error) {
         console.error('Phone-case mask generation failed after image replacement:', error instanceof Error ? error.message : 'Unknown error');
