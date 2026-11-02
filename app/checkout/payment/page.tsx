@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import styles from '../checkout.module.css';
 import { useEffect, useMemo, useState } from 'react';
-import { parseCartItemKey, useCart } from '@/components/CartProvider';
+import { makeCartItemKey, parseCartItemKey, useCart } from '@/components/CartProvider';
 
 type CheckoutDraft = {
   orderId?: string;
@@ -23,6 +23,14 @@ type CheckoutDraft = {
   installmentDownPayment?: number;
   installmentMonths?: number;
   acceptedPolicies?: boolean;
+  items?: Array<{
+    productId: string;
+    quantity: number;
+    color?: string;
+    storage?: string;
+    name?: string;
+    unitPrice?: number;
+  }>;
 };
 
 type VerifyAmountResponse = {
@@ -61,7 +69,7 @@ function passesLuhn(value: string) {
 }
 
 export default function CheckoutPaymentPage() {
-  const { cart, hydrated, catalogProducts: products } = useCart();
+  const { cart, hydrated, catalogProducts: products, clearCart } = useCart();
   const [draft, setDraft] = useState<CheckoutDraft | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState('');
@@ -102,6 +110,24 @@ export default function CheckoutPaymentPage() {
       setDraftLoaded(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || !draftLoaded || draft?.paymentNotificationSent !== true || !Array.isArray(draft.items) || !draft.items.length) return;
+
+    const expectedCart: Record<string, number> = {};
+    for (const item of draft.items) {
+      if (!item || typeof item.productId !== 'string' || typeof item.quantity !== 'number' || !Number.isFinite(item.quantity) || item.quantity <= 0) return;
+      const itemKey = makeCartItemKey(item.productId, item.color, item.storage);
+      expectedCart[itemKey] = (expectedCart[itemKey] || 0) + Math.floor(item.quantity);
+    }
+
+    const currentItems = Object.entries(cart).filter(([, quantity]) => quantity > 0);
+    const expectedItems = Object.entries(expectedCart);
+    const cartMatchesCompletedOrder = currentItems.length === expectedItems.length && expectedItems.every(
+      ([itemKey, quantity]) => cart[itemKey] === quantity
+    );
+    if (cartMatchesCompletedOrder) clearCart();
+  }, [hydrated, draftLoaded, draft?.paymentNotificationSent, draft?.items, cart, clearCart]);
 
   useEffect(() => {
     if (!draftLoaded) return;
@@ -277,6 +303,7 @@ export default function CheckoutPaymentPage() {
       if (notified) {
         setCardNumber('');
         setCvc('');
+        clearCart();
       }
       setFieldErrors({});
       setPaymentSubmitted(notified);
@@ -300,7 +327,7 @@ export default function CheckoutPaymentPage() {
       : null
   );
 
-  if (!draft || !draft.fullName || !draft.acceptedPolicies || !lines.length) {
+  if (!draft || !draft.fullName || !draft.acceptedPolicies || (!lines.length && !paymentSubmitted)) {
     return (
       <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
         <div className={styles.paymentTopBand}>
