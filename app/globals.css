@@ -5431,3 +5431,48 @@ body {
   }
   .notification-toast { top: 88px; left: 12px; right: 12px; width: auto; max-width: 496px; margin-inline: auto; }
 }
+
+
+/* Keep the customer bell visibly grouped with the cart in every navbar layout. */
+.header-order-actions {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+  visibility: visible !important;
+}
+.header-order-actions > .customer-notifications {
+  display: flex !important;
+  align-items: center;
+  position: relative;
+  visibility: visible !important;
+}
+.header-order-actions > .customer-notifications > .notification-bell {
+  display: grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+}
+.header-order-actions > .header-cart {
+  flex: 0 0 auto;
+}
+@media (max-width: 600px) {
+  .header-order-actions { gap: 5px; }
+  .header-order-actions > .customer-notifications > .notification-bell {
+    display: grid !important;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: #20252c;
+  }
+  .header-order-actions > .customer-notifications > .notification-bell svg {
+    display: block;
+    width: 23px;
+    height: 23px;
+  }
+}

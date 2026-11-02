@@ -113,16 +113,18 @@ export default function SiteHeader() {
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
               )}
             </button>
-            <CustomerNotifications />
-            <Link href="/cart" className="header-cart" aria-label={'سلة المشتريات، ' + itemCount + ' قطعة'}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" />
-                <circle cx="10" cy="20" r="1.2" />
-                <circle cx="18" cy="20" r="1.2" />
-              </svg>
-              <span>السلة</span>
-              <b className="cart-count">{itemCount}</b>
-            </Link>
+            <div className="header-order-actions">
+              <CustomerNotifications />
+              <Link href="/cart" className="header-cart" aria-label={'سلة المشتريات، ' + itemCount + ' قطعة'}>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" />
+                  <circle cx="10" cy="20" r="1.2" />
+                  <circle cx="18" cy="20" r="1.2" />
+                </svg>
+                <span>السلة</span>
+                <b className="cart-count">{itemCount}</b>
+              </Link>
+            </div>
           </div>
         </div>
       </header>

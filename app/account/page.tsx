@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import styles from './account.module.css';
 import { CUSTOMER_EMAIL_STORAGE_KEY, getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
@@ -20,6 +20,7 @@ type CustomerOrder = {
   paymentStatus: string;
   installment: boolean;
   notes: string;
+  cancellationReason?: string;
   customerName: string;
   customerPhone: string;
   customerAddress: string;
@@ -83,6 +84,7 @@ function Icon({ name }: { name: 'user' | 'bag' | 'search' | 'support' | 'shield'
 
 export default function AccountPage() {
   const [email, setEmail] = useState('');
+  const activeEmailRef = useRef('');
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersLoaded, setOrdersLoaded] = useState(false);
@@ -91,7 +93,16 @@ export default function AccountPage() {
   const [barcodeImageUrl, setBarcodeImageUrl] = useState('');
   const [barcodeRemoved, setBarcodeRemoved] = useState(false);
 
-  async function loadOrders() {
+  async function loadOrders(emailAddress: string = email, showLoading = true) {
+    const normalizedEmail = emailAddress.trim().toLowerCase();
+    activeEmailRef.current = normalizedEmail;
+    if (!normalizedEmail) {
+      setOrders([]);
+      setLookupMessage('اكتب بريدك الإلكتروني أولًا.');
+      setOrdersLoaded(true);
+      return;
+    }
+
     const key = getCustomerNotificationKey();
     if (!key) {
       setLookupMessage('تعذر قراءة بيانات هذا المتصفح. حدّث الصفحة وحاول مرة أخرى.');
@@ -99,36 +110,50 @@ export default function AccountPage() {
       return;
     }
 
-    setOrdersLoading(true);
+    if (showLoading) setOrdersLoading(true);
     setLookupMessage('');
     try {
-      const response = await fetch('/api/orders?key=' + encodeURIComponent(key), { cache: 'no-store' });
+      const params = new URLSearchParams({ key, email: normalizedEmail });
+      const response = await fetch('/api/orders?' + params.toString(), { cache: 'no-store' });
       const data = await response.json() as { ok?: boolean; orders?: CustomerOrder[]; error?: string };
       if (!response.ok || !data.ok || !Array.isArray(data.orders)) {
         throw new Error(data.error || 'تعذر تحميل تاريخ الطلبات.');
       }
       setOrders(data.orders);
       setOrdersLoaded(true);
-      if (!data.orders.length) setLookupMessage('لا توجد طلبات مسجلة من هذا المتصفح حتى الآن.');
+      if (!data.orders.length) {
+        setLookupMessage('عند إتمام عملية شراء بهذا البريد الإلكتروني، ستظهر طلباتك هنا.');
+      }
     } catch (error) {
       setLookupMessage(error instanceof Error ? error.message : 'تعذر تحميل تاريخ الطلبات.');
       setOrdersLoaded(true);
     } finally {
-      setOrdersLoading(false);
+      if (showLoading) setOrdersLoading(false);
     }
   }
-
   useEffect(() => {
     let alive = true;
     let savedEmail = '';
     try {
       savedEmail = window.localStorage.getItem(CUSTOMER_EMAIL_STORAGE_KEY) || '';
       if (alive) setEmail(savedEmail);
+      activeEmailRef.current = savedEmail.trim();
     } catch {
       // The email field remains usable if browser storage is unavailable.
     }
 
-    if (savedEmail.trim()) void loadOrders();
+    if (savedEmail.trim()) void loadOrders(savedEmail);
+    const refreshTimer = savedEmail.trim()
+      ? window.setInterval(() => {
+          const activeEmail = activeEmailRef.current;
+          if (document.visibilityState === 'visible' && activeEmail) void loadOrders(activeEmail, false);
+        }, 15_000)
+      : null;
+    const handleFocus = () => {
+      const activeEmail = activeEmailRef.current;
+      if (activeEmail) void loadOrders(activeEmail);
+    };
+    window.addEventListener('focus', handleFocus);
 
     fetch('/api/store-settings', { cache: 'no-store' })
       .then(async (response) => {
@@ -143,11 +168,18 @@ export default function AccountPage() {
         // Keep the account page usable if store settings are unavailable.
       });
 
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+      if (refreshTimer !== null) window.clearInterval(refreshTimer);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   function handleEmailChange(value: string) {
     setEmail(value);
+    activeEmailRef.current = '';
+    setOrders([]);
+    setOrdersLoaded(false);
     setLookupMessage('');
     try {
       window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, value);
@@ -168,7 +200,7 @@ export default function AccountPage() {
     } catch {
       // Continue with the current browser session if storage is unavailable.
     }
-    await loadOrders();
+    await loadOrders(normalizedEmail);
   }
 
   const latestOrder = orders[0];
@@ -285,6 +317,11 @@ export default function AccountPage() {
                   <span>طريقة الطلب: {order.installment ? 'تقسيط مطلوب' : 'شراء عادي'}</span>
                 </div>
                 {order.customerAddress ? <p className={styles.orderExtra}>عنوان التوصيل: {order.customerAddress}</p> : null}
+                {order.status === 'cancelled' ? (
+                  <p className={styles.orderExtra}>
+                    سبب الإلغاء: {order.cancellationReason || 'لم يتم توضيح سبب الإلغاء من الإدارة.'}
+                  </p>
+                ) : null}
                 {order.notes ? <p className={styles.orderExtra}>ملاحظات الطلب: {order.notes}</p> : null}
               </article>
             ))}

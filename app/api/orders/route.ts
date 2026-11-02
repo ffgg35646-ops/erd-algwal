@@ -50,15 +50,23 @@ const CUSTOMER_BROWSER_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89a
 
 export async function GET(request: NextRequest) {
   const key = request.nextUrl.searchParams.get('key');
+  const email = request.nextUrl.searchParams.get('email')?.trim() || '';
   const noStore = { 'cache-control': 'no-store, max-age=0' };
   if (!key || !CUSTOMER_BROWSER_KEY_PATTERN.test(key)) {
     return NextResponse.json({ ok: false, error: 'مفتاح المتصفح غير صالح.' }, { status: 400, headers: noStore });
+  }
+  if (!email || !validEmail(email)) {
+    return NextResponse.json({ ok: false, error: 'اكتب بريدًا إلكترونيًا صحيحًا للبحث عن طلباتك.' }, { status: 400, headers: noStore });
   }
 
   try {
     const db = await getDb();
     const savedOrders = await db.collection<StoreOrder>('orders')
-      .find({ source: 'website', customerNotificationKey: key })
+      .find({
+        source: 'website',
+        customerNotificationKey: key,
+        $expr: { $eq: [{ $toLower: { $ifNull: ['$customer.email', ''] } }, email.toLowerCase()] }
+      })
       .sort({ createdAt: -1 })
       .toArray();
 
@@ -74,6 +82,7 @@ export async function GET(request: NextRequest) {
         installmentDownPayment: order.installmentDownPayment ?? null,
         installmentMonths: order.installmentMonths ?? null,
         notes: order.notes || '',
+        cancellationReason: order.cancellationReason || '',
         customerName: order.customer?.name || '',
         customerPhone: order.customer?.phone || '',
         customerAddress: order.customer?.address || '',
@@ -92,7 +101,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'تعذر تحميل تاريخ الطلبات حاليًا.' }, { status: 500, headers: noStore });
   }
 }
-
 export async function POST(request: NextRequest) {
   let body: CheckoutBody;
   try {
