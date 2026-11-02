@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import styles from './verify-phone.module.css';
 
@@ -22,7 +21,6 @@ function maskPhone(value: string) {
 }
 
 export default function VerifyPhonePage() {
-  const router = useRouter();
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [phone, setPhone] = useState('');
   const [draftReady, setDraftReady] = useState(false);
@@ -66,10 +64,10 @@ export default function VerifyPhonePage() {
   function handleKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === 'Backspace' && !digits[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
-    } else if (event.key === 'ArrowLeft' && index < 3) {
-      inputRefs.current[index + 1]?.focus();
-    } else if (event.key === 'ArrowRight' && index > 0) {
+    } else if (event.key === 'ArrowLeft' && index > 0) {
       inputRefs.current[index - 1]?.focus();
+    } else if (event.key === 'ArrowRight' && index < 3) {
+      inputRefs.current[index + 1]?.focus();
     }
   }
 
