@@ -18,7 +18,7 @@ type TelegramFile = { file_path?: string };
  */
 export function isPhoneCaseProduct(name: string, category: string, details = '') {
   const searchable = `${name} ${category} ${details}`.toLocaleLowerCase('ar');
-  return /جراب|جرابات|كفر|كفرات|phone\\s*case|case\\s*cover|phone\\s*cover|\\bcase\\b|\\bcover\\b/.test(searchable);
+  return /جراب|جرابات|كفر|كفرات|phone\s*case|case\s*cover|phone\s*cover|\bcase\b|\bcover\b/.test(searchable);
 }
 
 // Meta's Responses stream currently emits content_part.done without the
