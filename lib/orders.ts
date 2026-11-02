@@ -13,6 +13,8 @@ export type StoreOrder = Document & {
   _id: ObjectId;
   orderNumber: string;
   receiptToken?: string;
+  saleInvoiceToken?: string;
+  adminOrderToken?: string;
   installmentInvoiceToken?: string;
   installmentContractToken?: string;
   source: 'website' | 'telegram_manual';
@@ -92,7 +94,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
           ? [`آخر 4 أرقام: •••• ${order.cardLast4}`]
           : []),
         ...(typeof order.expiryMonth === 'string' && typeof order.expiryYear === 'string'
-          ? [`تاريخ الانتهاء: ${order.expiryMonth}/${order.expiryYear.slice(-2)}`]
+          ? [`تاريخ الانتهاء: ${order.expiryMonth}/${order.expiryYear}`]
           : [])
       ]
     : [];

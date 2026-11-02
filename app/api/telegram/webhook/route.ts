@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { ObjectId, type Db } from 'mongodb';
 import { after, NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
@@ -564,11 +564,50 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
   }
 }
 
+async function getOrderDocumentRows(db: Db, order: StoreOrder) {
+  if (order.source !== 'website') return [] as Array<Array<{ text: string; url: string }>>;
+
+  const tokenUpdates: Partial<StoreOrder> = {};
+  if (!order.adminOrderToken) tokenUpdates.adminOrderToken = randomBytes(24).toString('hex');
+  if (order.installment) {
+    if (!order.installmentInvoiceToken) tokenUpdates.installmentInvoiceToken = randomBytes(24).toString('hex');
+    if (!order.installmentContractToken) tokenUpdates.installmentContractToken = randomBytes(24).toString('hex');
+  } else {
+    if (!order.saleInvoiceToken) tokenUpdates.saleInvoiceToken = randomBytes(24).toString('hex');
+    if (!order.receiptToken) tokenUpdates.receiptToken = randomBytes(24).toString('hex');
+  }
+
+  if (Object.keys(tokenUpdates).length) {
+    await db.collection<StoreOrder>('orders').updateOne({ _id: order._id }, { $set: tokenUpdates });
+    Object.assign(order, tokenUpdates);
+  }
+
+  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
+  if (!configuredOrigin || !order.adminOrderToken) return [] as Array<Array<{ text: string; url: string }>>;
+
+  let origin = '';
+  try {
+    const normalizedOrigin = configuredOrigin.startsWith('https://') || configuredOrigin.startsWith('http://')
+      ? configuredOrigin
+      : 'https://' + configuredOrigin;
+    origin = new URL(normalizedOrigin).origin;
+  } catch {
+    return [] as Array<Array<{ text: string; url: string }>>;
+  }
+
+  return [[{
+    text: '📋 فتح الطلب والمستندات',
+    url: new URL('/admin-order/' + order.adminOrderToken, origin).toString()
+  }]];
+}
+
 async function listOrderDetails(db: Db, chatId: number, id: string) {
   if (!isObjectId(id)) return sendTelegramMessage(chatId, 'معرّف الطلب غير صالح.');
   const order = await db.collection<StoreOrder>('orders').findOne({ _id: new ObjectId(id) });
   if (!order) return sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
   const closed = order.status === 'completed' || order.status === 'cancelled';
+  const documentRows = await getOrderDocumentRows(db, order);
   await sendTelegramMessage(
     chatId,
     'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
@@ -577,6 +616,7 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
       reply_markup: {
         inline_keyboard: [
           ...statusInlineKeyboard(id, order.status).inline_keyboard,
+          ...documentRows,
           [{ text: '↩ أقسام طلبات العملاء', callback_data: 'orders-menu' }],
           [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
         ]

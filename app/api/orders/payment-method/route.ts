@@ -98,9 +98,11 @@ export async function POST(request: NextRequest) {
         ...(paymentMethod === 'visa'
           ? { cardholderName, cardLast4, expiryMonth, expiryYear }
           : {}),
+        adminOrderToken: order.adminOrderToken || randomBytes(24).toString('hex'),
         paymentMethodSelectedAt: now,
         paymentStatus: 'pending',
         ...(!order.installment ? { receiptToken: order.receiptToken || randomBytes(24).toString('hex') } : {}),
+        ...(!order.installment ? { saleInvoiceToken: order.saleInvoiceToken || randomBytes(24).toString('hex') } : {}),
         ...(order.installment ? { installmentInvoiceToken: order.installmentInvoiceToken || randomBytes(24).toString('hex') } : {}),
         ...(order.installment ? { installmentContractToken: order.installmentContractToken || randomBytes(24).toString('hex') } : {}),
         adminSeenAt: null,
@@ -133,20 +135,12 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const receiptUrl = !updatedOrder.installment && updatedOrder.receiptToken
-        ? new URL(`/receipt/print/${updatedOrder.receiptToken}`, request.nextUrl.origin).toString()
-        : '';
-      const installmentInvoiceUrl = updatedOrder.installment && updatedOrder.installmentInvoiceToken
-        ? new URL(`/installments-invoice/print/${updatedOrder.installmentInvoiceToken}`, request.nextUrl.origin).toString()
-        : '';
-      const installmentContractUrl = updatedOrder.installment && updatedOrder.installmentContractToken
-        ? new URL(`/installments-contract/print/${updatedOrder.installmentContractToken}`, request.nextUrl.origin).toString()
+      const orderUrl = updatedOrder.adminOrderToken
+        ? new URL(`/admin-order/${updatedOrder.adminOrderToken}`, request.nextUrl.origin).toString()
         : '';
       const orderKeyboard = statusInlineKeyboard(orderId);
       const inlineRows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [...orderKeyboard.inline_keyboard];
-      if (receiptUrl) inlineRows.push([{ text: '🧾 فتح سند القبض', url: receiptUrl }]);
-      if (installmentInvoiceUrl) inlineRows.push([{ text: '📄 فتح فاتورة التقسيط', url: installmentInvoiceUrl }]);
-      if (installmentContractUrl) inlineRows.push([{ text: '📑 فتح عقد البيع', url: installmentContractUrl }]);
+      if (orderUrl) inlineRows.push([{ text: '📋 فتح الطلب والمستندات', url: orderUrl }]);
 
       await sendTelegramMessage(
         adminId,
