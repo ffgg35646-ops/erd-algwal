@@ -89,7 +89,7 @@ async function initializeDefaultProducts(db: Db) {
 
   const collection = db.collection<StoredProduct>('products');
   const categoryCollection = db.collection<StoreCategory>('categories');
-  const settings = db.collection('store_settings');
+  const settings = db.collection<{ _id: string; completedAt?: Date; productIds?: string[] }>('store_settings');
   await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
 
   const migration = await settings.findOne({ _id: DEFAULT_PRODUCTS_MIGRATION_ID });
