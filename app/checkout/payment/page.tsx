@@ -460,8 +460,6 @@ export default function CheckoutPaymentPage() {
             </div>
           </div>
 
-          <div className={styles.paymentSafe}>الدفع الإلكتروني قيد التفعيل؛ لا يتم خصم أي مبلغ من هذه الصفحة حاليًا.</div>
-
           {paymentMessage ? (
             <div className={paymentMessageSuccess ? styles.paymentInlineMessage + ' ' + styles.paymentInlineMessageSuccess : styles.paymentInlineMessage} role={paymentMessageSuccess ? 'status' : 'alert'}>
               {paymentMessage}
