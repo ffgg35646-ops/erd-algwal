@@ -565,6 +565,7 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
 }
 
 async function getOrderDocumentRows(db: Db, order: StoreOrder) {
+  if (order.source !== 'website') return [] as Array<Array<{ text: string; url: string }>>;
   const tokenUpdates: Partial<StoreOrder> = {};
   if (order.installment) {
     if (!order.installmentInvoiceToken) tokenUpdates.installmentInvoiceToken = randomBytes(24).toString('hex');
