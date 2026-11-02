@@ -1111,7 +1111,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       if (session.workflow === 'add_product' && session.step === 'product_colors') {
         session.step = 'product_storage';
         await saveSession(db, session);
-        await sendTelegramMessage(chatId, 'اكتب مساحات التخزين، ويمكنك إضافة أي عدد. إذا كان لكل مساحة سعر مختلف، اكتب الاسم ثم = ثم السعر، مثال: 256GB=5799، 512GB=6799، 1TB=7799، 2TB=9299. وإذا كتبت الاسم فقط فسيُستخدم سعر المنتج الأساسي. اكتب «تخطي» لعدم إضافة سعات.');
+        await sendTelegramMessage(chatId, 'اكتب مساحات التخزين بالأسماء التي تريدها، ويمكنك إضافة أي عدد. أمثلة: 500GB، 1 تيرا، 2 تيرا. لتحديد سعر خاص لكل مساحة اكتب الاسم ثم = ثم السعر، مثل: 500GB=5799، 1 تيرا=6799، 2 تيرا=9299. وإذا كتبت الاسم فقط فسيُستخدم السعر الأساسي للمنتج. اكتب «تخطي» لعدم إضافة سعات.');
         return;
       }
       if (session.workflow === 'edit_product' && session.step === 'edit_product_colors' && session.data.productId && isObjectId(session.data.productId)) {
@@ -1523,7 +1523,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     const prompts: Record<string, string> = {
       name: 'الاسم الحالي: ' + product.name + '\n\nأرسل الاسم الجديد.',
       colors: 'الألوان الحالية: ' + (product.colors || []).join('، ') + '\n\nأرسل الألوان الجديدة مفصولة بفاصلة، أو «تخطي» لمسحها.',
-      storage: 'مساحات التخزين الحالية: ' + (product.storageOptions || []).map((storage) => storage + (product.storagePrices?.[storage] ? '=' + product.storagePrices[storage] : '')).join('، ') + '\n\nأرسل المساحات الجديدة، ويمكنك إضافة أي عدد. لتحديد سعر لكل مساحة اكتب مثل: 256GB=5799، 512GB=6799، 1TB=7799. وإذا كتبت الاسم فقط فسيُستخدم السعر الأساسي. اكتب «تخطي» لمسح الخيارات.',
+      storage: 'مساحات التخزين الحالية: ' + (product.storageOptions || []).map((storage) => storage + (product.storagePrices?.[storage] ? '=' + product.storagePrices[storage] : '')).join('، ') + '\n\nأرسل المساحات الجديدة بالأسماء التي تريدها، ويمكنك إضافة أي عدد مثل: 500GB، 1 تيرا، 2 تيرا. لتحديد سعر خاص لكل مساحة اكتب الاسم ثم = ثم السعر، مثل: 500GB=5799، 1 تيرا=6799، 2 تيرا=9299. الاسم بدون سعر يستخدم السعر الأساسي. اكتب «تخطي» لمسح الخيارات.',
       price: 'السعر الحالي: ' + product.price + ' ر.س\n\nأرسل السعر الجديد بالريال.',
       details: 'التفاصيل الحالية:\n' + product.details + '\n\nأرسل التفاصيل الجديدة.'
     };
