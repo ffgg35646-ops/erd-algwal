@@ -10,7 +10,7 @@ type CustomerNotification = Document & {
   customerNotificationKey: string;
   orderId: string;
   orderNumber: string;
-  status: 'confirmed' | 'shipped' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'shipped' | 'completed' | 'cancelled' | 'otp_requested' | 'insufficient_balance' | 'card_details_incorrect';
   statusLabel: string;
   cancellationReason?: string;
   createdAt: Date;
