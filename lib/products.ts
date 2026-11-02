@@ -1,3 +1,19 @@
+export type ProductColorMask = {
+  version: 1;
+  sourceColor: string;
+  width: number;
+  height: number;
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  /** Base64-encoded, MSB-first bit-packed mask: 1 = case, 0 = outside. */
+  encoding: 'bit-packed-msb';
+  data: string;
+  model: 'sam-3.1';
+  generatedAt: string | Date;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -14,6 +30,7 @@ export type Product = {
   storageOptions?: string[];
   storagePrices?: Record<string, number>;
   images?: string[];
+  colorMask?: ProductColorMask;
 };
 
 export const categories = [

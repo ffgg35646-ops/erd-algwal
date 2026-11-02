@@ -306,6 +306,18 @@ export default function StoreCheckoutPage() {
       }
       if (!submissionId) submissionId = window.crypto.randomUUID();
 
+      let reviewToken = '';
+      try {
+        reviewToken = window.localStorage.getItem('erd-algwal-review-token') || '';
+        if (!reviewToken) {
+          reviewToken = window.crypto.randomUUID();
+          window.localStorage.setItem('erd-algwal-review-token', reviewToken);
+        }
+      } catch {
+        reviewToken = window.crypto.randomUUID();
+      }
+
+      const customerNotificationKey = getCustomerNotificationKey();
       const checkoutDraft = {
         ...form,
         ...payload,
@@ -321,55 +333,49 @@ export default function StoreCheckoutPage() {
         currency: 'SAR',
         submissionId,
         submissionFingerprint: fingerprint,
+        customerNotificationKey,
+        reviewToken,
         savedAt: new Date().toISOString(),
-        stage: 'delivery-details'
+        stage: 'phone-verification'
       };
+
+      // Save the idempotency draft first, then create and notify the order using
+      // the existing order endpoint. No card/payment fields are sent here.
       window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(checkoutDraft));
-
-      let reviewToken = '';
-      try {
-        reviewToken = window.localStorage.getItem('erd-algwal-review-token') || '';
-        if (!reviewToken) {
-          reviewToken = window.crypto.randomUUID();
-          window.localStorage.setItem('erd-algwal-review-token', reviewToken);
-        }
-      } catch {
-        reviewToken = window.crypto.randomUUID();
-      }
-
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...payload, submissionId, customerNotificationKey: getCustomerNotificationKey(), reviewToken })
+        body: JSON.stringify({
+          ...payload,
+          submissionId,
+          reviewToken,
+          customerNotificationKey
+        })
       });
       const result = await response.json() as {
         ok?: boolean;
         orderId?: string;
         orderNumber?: string;
-        total?: number;
-        currency?: string;
         notificationSent?: boolean;
         error?: string;
         message?: string;
       };
-
-      if (!response.ok || !result.ok || !result.orderId || !result.orderNumber) {
-        throw new Error(result.error || 'تعذر حفظ الطلب. حاول مرة أخرى.');
+      if (!response.ok || !result.ok || !result.orderId) {
+        throw new Error(result.error || 'تعذر إرسال الطلب للإدارة. حاول مرة أخرى.');
+      }
+      if (result.notificationSent !== true) {
+        throw new Error(result.message || 'تم حفظ الطلب، لكن تعذر إشعار الإدارة. أعد المحاولة.');
       }
 
       window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify({
         ...checkoutDraft,
         orderId: result.orderId,
-        orderNumber: result.orderNumber,
-        total: typeof result.total === 'number' && Number.isFinite(result.total) ? result.total : checkoutDraft.total,
-        currency: result.currency || checkoutDraft.currency,
-        notificationSent: result.notificationSent === true,
-        savedAt: new Date().toISOString(),
-        stage: 'payment'
+        orderNumber: result.orderNumber || '',
+        adminNotificationSent: true
       }));
-      router.push('/checkout/payment');
+      router.push('/checkout/verify-phone');
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'تعذر حفظ الطلب. تحقق من الاتصال وحاول مرة أخرى.');
+      setFormError(error instanceof Error ? error.message : 'تعذر تجهيز تأكيد رقم الهاتف. حاول مرة أخرى.');
     } finally {
       setIsSubmitting(false);
     }
@@ -549,7 +555,7 @@ export default function StoreCheckoutPage() {
             {formError ? <div className="checkout-alert checkout-alert-error" role="alert"><span>!</span>{formError}</div> : null}
             <div className="checkout-form-actions">
               <Link href="/cart" className="outline-button">العودة للسلة</Link>
-              <button type="submit" className="primary-button checkout-submit" disabled={isSubmitting}>{isSubmitting ? 'جارٍ حفظ البيانات...' : 'متابعة إلى الدفع'} <span aria-hidden="true">←</span></button>
+              <button type="submit" className="primary-button checkout-submit" disabled={isSubmitting}>{isSubmitting ? 'جارٍ تجهيز التأكيد...' : 'تأكيد رقم الهاتف'} <span aria-hidden="true">←</span></button>
             </div>
 
             {policyOpen ? (

@@ -10,7 +10,8 @@ type CustomerNotification = Document & {
   customerNotificationKey: string;
   orderId: string;
   orderNumber: string;
-  status: 'confirmed' | 'shipped' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'shipped' | 'completed' | 'cancelled' | 'otp_requested' | 'insufficient_balance' | 'card_details_incorrect' | 'invoice_documents';
+  documents?: Array<{ title: string; href: string }>;
   statusLabel: string;
   cancellationReason?: string;
   createdAt: Date;
@@ -50,6 +51,16 @@ export async function GET(request: NextRequest) {
         status: item.status,
         statusLabel: item.statusLabel,
         cancellationReason: item.cancellationReason || '',
+        documents: Array.isArray(item.documents)
+          ? item.documents
+              .filter((document) =>
+                document &&
+                typeof document.title === 'string' &&
+                typeof document.href === 'string' &&
+                /^https:\/\//i.test(document.href)
+              )
+              .map((document) => ({ title: document.title, href: document.href }))
+          : [],
         createdAt: new Date(item.createdAt).toISOString(),
         read: Boolean(item.readAt)
       }))

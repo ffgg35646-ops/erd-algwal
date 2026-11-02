@@ -6,7 +6,8 @@ import { getCustomerNotificationKey } from '@/lib/customer-notifications-client'
 type CustomerNotification = {
   id: string;
   orderNumber: string;
-  status: 'confirmed' | 'shipped' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'shipped' | 'completed' | 'cancelled' | 'otp_requested' | 'insufficient_balance' | 'card_details_incorrect' | 'invoice_documents';
+  documents?: Array<{ title: string; href: string }>;
   statusLabel: string;
   cancellationReason: string;
   createdAt: string;
@@ -179,6 +180,21 @@ export default function CustomerNotifications() {
                         سبب الإلغاء: {item.cancellationReason || 'لم يتم توضيح سبب الإلغاء من الإدارة.'}
                       </p>
                     )}
+                    {item.documents?.length ? (
+                      <div className="notification-document-links" aria-label="مستندات الطلب">
+                        {item.documents.map((document, index) => (
+                          <a
+                            key={document.href + '-' + index}
+                            href={document.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="notification-document-link"
+                          >
+                            ↗ {document.title}
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
                     <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
                   </div>
                 </article>
@@ -192,6 +208,15 @@ export default function CustomerNotifications() {
         <div className="notification-toast" role="status" aria-live="polite">
           <strong>إشعار جديد</strong>
           <span>{notificationMessage(toast)}</span>
+          {toast.documents?.length ? (
+            <div className="notification-toast-documents">
+              {toast.documents.map((document, index) => (
+                <a key={document.href + '-' + index} href={document.href} target="_blank" rel="noopener noreferrer">
+                  ↗ {document.title}
+                </a>
+              ))}
+            </div>
+          ) : null}
           <button type="button" aria-label="إغلاق التنبيه" onClick={() => setToast(null)}>×</button>
         </div>
       )}

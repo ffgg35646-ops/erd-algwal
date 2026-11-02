@@ -33,6 +33,7 @@
 - `TELEGRAM_ADMIN_ID=5569918211`
 - `TELEGRAM_WEBHOOK_SECRET`
 - `TELEGRAM_WEBHOOK_URL` — رابط HTTPS المنشور وينتهي بـ `/api/telegram/webhook`.
+- `MODEL_API_KEY` — مفتاح Meta Model API لتوليد قناع عزل الجراب عند إضافة منتج جراب أو تجهيز صورته من البوت. يُستخدم على الخادم فقط ولا يوضع في متغير يبدأ بـ `NEXT_PUBLIC_`.
 
 بعد نشر المسار على الاستضافة، يمكن تسجيل Webhook من بيئة آمنة باستخدام:
 ```bash
