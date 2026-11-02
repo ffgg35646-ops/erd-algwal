@@ -28,7 +28,7 @@ type CheckoutBody = {
   acceptedPolicies?: boolean;
   warrantyPolicyUpdatedAt?: string;
   customerNotificationKey?: string;
-  items?: Array<{ productId?: string; quantity?: number; color?: string }>;
+  items?: Array<{ productId?: string; quantity?: number; color?: string; storage?: string }>;
 };
 
 function text(value: unknown, maxLength = 500) {
@@ -90,7 +90,8 @@ export async function GET(request: NextRequest) {
           name: item.name,
           quantity: item.quantity,
           ...(typeof item.unitPrice === 'number' ? { unitPrice: item.unitPrice } : {}),
-          ...(item.color ? { color: item.color } : {})
+          ...(item.color ? { color: item.color } : {}),
+          ...(item.storage ? { storage: item.storage } : {})
         })),
         total: Number(order.total || 0),
         currency: order.currency || 'SAR'
@@ -196,22 +197,38 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ ok: false, error: 'أحد المنتجات أو الكميات غير صالح.' }, { status: 400 });
       }
 
-      let product: { name: string; price: number; colors?: string[] } | null = null;
       const selectedColor = text(line?.color, 60);
+      const selectedStorage = text(line?.storage, 60);
       const stored = await findStoredProduct(db, productId);
-      if (stored) product = { name: stored.name, price: stored.price, colors: stored.colors || [] };
-
-      if (selectedColor && !product?.colors?.includes(selectedColor)) {
+      if (selectedColor && !stored?.colors?.includes(selectedColor)) {
         return NextResponse.json({ ok: false, error: 'اللون المختار غير متاح لهذا المنتج. حدّث السلة واختر لونًا متاحًا.' }, { status: 400 });
       }
+      if (selectedStorage && !stored?.storageOptions?.includes(selectedStorage)) {
+        return NextResponse.json({ ok: false, error: 'مساحة التخزين المختارة غير متاحة لهذا المنتج. حدّث السلة واختر مساحة متاحة.' }, { status: 400 });
+      }
 
-      if (!product || !Number.isFinite(product.price) || product.price <= 0) {
+      const storagePrice = selectedStorage ? stored?.storagePrices?.[selectedStorage] : undefined;
+      const unitPrice = typeof storagePrice === 'number' && Number.isFinite(storagePrice) && storagePrice > 0
+        ? storagePrice
+        : stored?.price;
+      if (!stored || !Number.isFinite(unitPrice) || Number(unitPrice) <= 0) {
         return NextResponse.json({ ok: false, error: 'أحد المنتجات لم يعد متاحًا. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
       }
 
-      const existing = orderItems.find((item) => item.name === product!.name && item.unitPrice === product!.price && (item.color || '') === selectedColor);
+      const existing = orderItems.find((item) =>
+        item.name === stored.name &&
+        item.unitPrice === unitPrice &&
+        (item.color || '') === selectedColor &&
+        (item.storage || '') === selectedStorage
+      );
       if (existing) existing.quantity += quantity;
-      else orderItems.push({ name: product.name, quantity, unitPrice: product.price, ...(selectedColor ? { color: selectedColor } : {}) });
+      else orderItems.push({
+        name: stored.name,
+        quantity,
+        unitPrice: Number(unitPrice),
+        ...(selectedColor ? { color: selectedColor } : {}),
+        ...(selectedStorage ? { storage: selectedStorage } : {})
+      });
     }
 
     const total = orderItems.reduce((sum, item) => sum + Number(item.unitPrice || 0) * item.quantity, 0);
