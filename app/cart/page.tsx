@@ -80,7 +80,7 @@ export default function CartPage() {
             <div className={styles.summaryRow}><span>المجموع الفرعي</span><strong>{formatPrice(total)}</strong></div>
             <div className={styles.summaryRow}><span>الشحن</span><strong className={styles.shipping}>يحسب عند الدفع</strong></div>
             <div className={styles.summaryTotal}><span>الإجمالي</span><strong>{formatPrice(total)}</strong></div>
-            <Link href="/checkout" className={styles.checkoutButton}>إتمام الطلب</Link>
+            <Link href="/checkout" className={styles.checkoutButton}>إكمال الطلب</Link>
             <Link href="/#categories" className={styles.continueButton}>العودة للتسوق</Link>
           </aside>
         </section>
