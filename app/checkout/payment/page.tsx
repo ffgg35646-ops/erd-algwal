@@ -194,7 +194,7 @@ export default function CheckoutPaymentPage() {
 
   async function handleCompleteOrder() {
     if (paymentSubmitting || paymentSubmitted) return;
-    if (serverTotal === null || !Number.isFinite(serverTotal) || serverTotal <= 0) {
+    if (!totalVerified || serverTotal === null || !Number.isFinite(serverTotal) || serverTotal <= 0) {
       setPaymentMessage('لا يمكن إكمال الطلب قبل التحقق من المبلغ المستحق.');
       setPaymentMessageSuccess(false);
       return;
@@ -292,18 +292,13 @@ export default function CheckoutPaymentPage() {
     }
   }
 
-  if (!hydrated || !draftLoaded || (draft?.orderId && !totalVerified)) {
-    return (
-      <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
-        <div className={styles.paymentTopBand}>
-          <section className={styles.paymentCard}>
-            <div className={styles.paymentStep}><i>2</i><span>طريقة الدفع</span><hr /></div>
-            <p className={styles.paymentLoading}>جاري التحقق من إجمالي الطلب...</p>
-          </section>
-        </div>
-      </main>
-    );
-  }
+  if (!hydrated || !draftLoaded) return null;
+
+  const displayTotal = serverTotal ?? (
+    typeof draft?.total === 'number' && Number.isFinite(draft.total) && draft.total > 0
+      ? draft.total
+      : null
+  );
 
   if (!draft || !draft.fullName || !draft.acceptedPolicies || !lines.length) {
     return (
@@ -320,7 +315,7 @@ export default function CheckoutPaymentPage() {
     );
   }
 
-  if (serverTotal === null) {
+  if (totalVerified && serverTotal === null) {
     return (
       <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
         <div className={styles.paymentTopBand}>
@@ -370,7 +365,7 @@ export default function CheckoutPaymentPage() {
           </div>
 
           <div className={styles.paymentAmount}>
-            المبلغ المستحق : <strong>{serverTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س</strong>
+            المبلغ المستحق : <strong>{displayTotal === null ? '—' : displayTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س</strong>
           </div>
 
           <div className={styles.paymentFields}>
@@ -477,7 +472,7 @@ export default function CheckoutPaymentPage() {
             type="button"
             className={styles.paymentSubmit}
             onClick={handleCompleteOrder}
-            disabled={paymentSubmitting || paymentSubmitted || serverTotal === null}
+            disabled={paymentSubmitting || paymentSubmitted || !totalVerified || serverTotal === null}
           >
             <span>{paymentSubmitting ? 'جارٍ إكمال الطلب...' : paymentSubmitted ? 'تم إرسال الطلب' : 'إكمال الدفع'}</span>
             <span aria-hidden="true">←</span>
