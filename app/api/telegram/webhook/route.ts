@@ -650,6 +650,8 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
   await sendTelegramMessage(
     chatId,
     'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
+      '\n\nرمز تأكيد الطلب: ' + (order.orderConfirmationOtpHash ? 'تم إنشاؤه' : 'لم يتم إنشاؤه بعد') +
+      (order.orderConfirmationVerifiedAt ? '\nتم التحقق من الرمز بنجاح.' : '') +
       (closed ? '\n\nهذا الطلب مغلق.' : '\n\nاختر الإجراء التالي للطلب:'),
     {
       reply_markup: {
