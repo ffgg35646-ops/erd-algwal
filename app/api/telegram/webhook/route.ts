@@ -718,7 +718,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
   const orderCounts = await getOrderSectionCounts(db);
   await sendTelegramMessage(chatId, result.insertedId
-    ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).join('، ') || 'غير محدد') + '\nالسعر: ' + data.price.toLocaleString('en-US') + ' ر.س\nعدد الصور: ' + data.images.length + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
+    ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).map((storage) => storage + (data.storagePrices?.[storage] ? ' — ' + data.storagePrices[storage].toLocaleString('en-US') + ' ر.س' : '')).join('، ') || 'غير محدد') + '\nالسعر الأساسي: ' + data.price.toLocaleString('en-US') + ' ر.س\nعدد الصور: ' + data.images.length + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
     : 'تعذر حفظ المنتج.', {
       reply_markup: adminReplyKeyboard(orderCounts.newCount + orderCounts.shippedCount)
     });
@@ -779,13 +779,14 @@ async function saveEditedField(db: Db, session: AdminSession, value: string, cha
     return;
   }
 
-  const updateDocument: Record<string, unknown> = { $set: { ...update, updatedAt: new Date() } };
-  if (session.step === 'edit_product_storage' && !('storagePrices' in update)) {
-    updateDocument.$unset = { storagePrices: '' };
-  }
   const result = await db.collection<StoredProduct>('products').updateOne(
     { _id: new ObjectId(id) },
-    updateDocument
+    {
+      $set: { ...update, updatedAt: new Date() },
+      ...(session.step === 'edit_product_storage' && !('storagePrices' in update)
+        ? { $unset: { storagePrices: '' } }
+        : {})
+    }
   );
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
   if (!result.matchedCount) {
