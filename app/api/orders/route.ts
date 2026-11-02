@@ -50,7 +50,7 @@ const CUSTOMER_BROWSER_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89a
 
 async function notifyAdminAboutNewOrder(db: Db, order: StoreOrder) {
   const adminId = process.env.TELEGRAM_ADMIN_ID || process.env.Id || '';
-  if (!/^\\d+$/.test(adminId)) return false;
+  if (!/^\d+$/.test(adminId)) return false;
 
   const collection = db.collection<StoreOrder & {
     telegramNotificationSent?: boolean;
@@ -94,7 +94,7 @@ async function notifyAdminAboutNewOrder(db: Db, order: StoreOrder) {
     `التقسيط: ${order.installment ? 'نعم' : 'لا'}`,
     '',
     'افتح تفاصيل الطلب لمراجعته وإنشاء رمز التأكيد.'
-  ].join('\\n');
+  ].join('\n');
 
   try {
     await sendTelegramMessage(adminId, message, {
