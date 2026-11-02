@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import type { Product } from '@/lib/products';
-import { formatPrice } from '@/lib/products';
+import { formatPrice, getProductPrice } from '@/lib/products';
 import { useCart } from '@/components/CartProvider';
 
 const COLOR_HEX: Record<string, string> = {
@@ -43,16 +43,22 @@ export default function ProductDetails({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const availableColors = product.colors?.filter(Boolean) || [];
+  const availableStorage = product.storageOptions?.filter(Boolean) || [];
   const [selectedColor, setSelectedColor] = useState(availableColors[0] || '');
+  const [selectedStorage, setSelectedStorage] = useState(availableStorage[0] || '');
   const gallery = product.images?.length ? product.images : [product.image];
   const safeImageIndex = Math.min(activeImageIndex, gallery.length - 1);
   const activeImage = gallery[safeImageIndex] || product.image;
   const colorsSignature = availableColors.join('|');
+  const storageSignature = availableStorage.join('|');
+  const selectedPrice = getProductPrice(product, selectedStorage);
+  const hasStoragePrice = Boolean(selectedStorage && product.storagePrices?.[selectedStorage]);
 
   useEffect(() => {
     setSelectedColor(availableColors[0] || '');
+    setSelectedStorage(availableStorage[0] || '');
     setActiveImageIndex(0);
-  }, [product.id, colorsSignature]);
+  }, [product.id, colorsSignature, storageSignature]);
 
   useEffect(() => {
     if (gallery.length < 2) return;
@@ -63,122 +69,123 @@ export default function ProductDetails({ product }: { product: Product }) {
   }, [gallery.length, activeImageIndex]);
 
   function handleAdd() {
-    addToCart(product.id, quantity, selectedColor || undefined);
+    addToCart(product.id, quantity, selectedColor || undefined, selectedStorage || undefined);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1500);
   }
 
   return (
-    <main className="container detail-page">
+    <main className="container product-detail-page">
       <div className="breadcrumbs"><Link href="/">الرئيسية</Link><span>/</span><Link href="/#categories">المنتجات</Link><span>/</span><span>{product.name}</span></div>
-      <div className="detail-layout">
-        <div className="detail-gallery">
-          <div className="detail-image-panel">
-            {product.badge ? <span className="product-badge detail-badge">{product.badge}</span> : null}
-            {activeImage ? (
-              <img
-                key={safeImageIndex}
-                src={activeImage}
-                alt={product.name + ' - الصورة ' + (safeImageIndex + 1)}
-                className="detail-image"
-                fetchPriority="high"
-                onError={(event) => {
-                  event.currentTarget.onerror = null;
-                  event.currentTarget.src = '/product-image-placeholder.svg';
-                }}
-              />
-            ) : <div className="detail-no-image">صورة المنتج غير متاحة</div>}
-            {gallery.length > 1 ? (
-              <>
-                <button
-                  type="button"
-                  className="detail-image-nav detail-image-previous"
-                  onClick={() => setActiveImageIndex((current) => (current - 1 + gallery.length) % gallery.length)}
-                  aria-label="الصورة السابقة"
-                >›</button>
-                <button
-                  type="button"
-                  className="detail-image-nav detail-image-next"
-                  onClick={() => setActiveImageIndex((current) => (current + 1) % gallery.length)}
-                  aria-label="الصورة التالية"
-                >‹</button>
-                <span className="detail-image-counter">{safeImageIndex + 1} / {gallery.length}</span>
-              </>
-            ) : null}
-          </div>
-          {gallery.length > 1 ? <div className="detail-thumbnails" aria-label="صور المنتج">
-            {gallery.map((image, index) => <button type="button" className={index === safeImageIndex ? 'detail-thumbnail active' : 'detail-thumbnail'} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)} aria-pressed={index === safeImageIndex}><img
-              src={image}
-              alt=""
-              loading="lazy"
+
+      <article className="product-detail-card">
+        <div className="product-detail-hero">
+          {product.badge ? <span className="product-detail-badge">{product.badge}</span> : null}
+          {activeImage ? (
+            <img
+              key={safeImageIndex}
+              src={activeImage}
+              alt={product.name + ' - الصورة ' + (safeImageIndex + 1)}
+              className="product-detail-image"
+              fetchPriority="high"
               onError={(event) => {
                 event.currentTarget.onerror = null;
                 event.currentTarget.src = '/product-image-placeholder.svg';
               }}
-            /></button>)}
-          </div> : null}
+            />
+          ) : <div className="detail-no-image">صورة المنتج غير متاحة</div>}
+          {gallery.length > 1 ? (
+            <>
+              <button type="button" className="product-detail-image-nav is-previous" onClick={() => setActiveImageIndex((current) => (current - 1 + gallery.length) % gallery.length)} aria-label="الصورة السابقة">›</button>
+              <button type="button" className="product-detail-image-nav is-next" onClick={() => setActiveImageIndex((current) => (current + 1) % gallery.length)} aria-label="الصورة التالية">‹</button>
+              <span className="product-detail-image-count">{safeImageIndex + 1} / {gallery.length}</span>
+            </>
+          ) : null}
         </div>
-        <div className="detail-information detail-glass-panel">
-          <span className="product-category detail-category-chip"><span aria-hidden="true">▦</span>{product.category}</span>
-          <div className="detail-product-summary">
-            <div className="detail-product-name-card">
-              <span className="detail-summary-label"><span aria-hidden="true">✦</span> المنتج</span>
-              <h1>{product.name}</h1>
-            </div>
-            <div className="detail-product-price-card">
-              <span className="detail-summary-label"><span aria-hidden="true">ر.س</span> السعر</span>
-              <strong>{formatPrice(product.price)}</strong>
-              {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
-            </div>
+
+        {gallery.length > 1 ? (
+          <div className="product-detail-thumbnails" aria-label="صور المنتج">
+            {gallery.map((image, index) => (
+              <button type="button" className={index === safeImageIndex ? 'is-active' : ''} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)} aria-pressed={index === safeImageIndex}>
+                <img src={image} alt="" loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/product-image-placeholder.svg'; }} />
+              </button>
+            ))}
           </div>
-          {product.shortDescription && product.shortDescription !== product.description && product.shortDescription.trim() !== 'اختيار عملي للاستخدام اليومي.' ? <p className="detail-lead"><span aria-hidden="true">✦</span>{product.shortDescription}</p> : null}
-          <div className="detail-rule" />
+        ) : null}
+
+        <div className="product-detail-content">
+          <div className="product-detail-badges">
+            <span className="product-detail-category">{product.category}</span>
+            <span className="product-detail-note">تفاصيل المنتج وخياراته</span>
+          </div>
+          <h1>{product.name}</h1>
+          {product.shortDescription && product.shortDescription !== product.description && product.shortDescription.trim() !== 'اختيار عملي للاستخدام اليومي.' ? (
+            <p className="product-detail-lead">{product.shortDescription}</p>
+          ) : null}
+
           {availableColors.length ? (
-            <section className="detail-options detail-color-options" aria-label="اختيار لون المنتج">
-              <div className="detail-option-heading"><h2><span aria-hidden="true">◉</span> اللون</h2><span className="detail-selected-color">{selectedColor ? 'اللون المختار: ' + selectedColor : 'اختر اللون'}</span></div>
-              <div className="detail-color-swatches">
+            <section className="product-detail-option">
+              <div className="product-detail-option-heading">
+                <h2>الألوان</h2>
+                <span>اللون المختار: <b>{selectedColor || '—'}</b></span>
+              </div>
+              <div className="product-detail-colors">
                 {availableColors.map((color) => (
-                  <button
-                    type="button"
-                    key={color}
-                    className={'detail-color-option' + (selectedColor === color ? ' is-selected' : '')}
-                    onClick={() => setSelectedColor(color)}
-                    aria-label={'اختيار اللون ' + color}
-                    aria-pressed={selectedColor === color}
-                    title={color}
-                  >
-                    <span className="detail-color-dot" style={{ backgroundColor: getColorHex(color) }} />
-                    <span className="detail-color-name">{color}</span>
+                  <button type="button" key={color} className={'product-detail-color' + (selectedColor === color ? ' is-selected' : '')} onClick={() => setSelectedColor(color)} aria-label={'اختيار اللون ' + color} aria-pressed={selectedColor === color} title={color}>
+                    <span className="product-detail-color-dot" style={{ backgroundColor: getColorHex(color) }} />
+                    <span>{color}</span>
                   </button>
                 ))}
               </div>
             </section>
           ) : null}
-          {product.storageOptions?.length ? (
-            <section className="detail-options"><div className="detail-option-heading"><h2><span aria-hidden="true">▣</span> مساحة التخزين</h2></div><div className="detail-option-chips">{product.storageOptions.map((storage) => <span key={storage}>{storage}</span>)}</div></section>
-          ) : null}
-          <section className="detail-copy-block">
-            <h2><span aria-hidden="true">✧</span> نبذة عن المنتج</h2>
-            <p className="detail-description">{product.description}</p>
-          </section>
-          {product.specifications.length ? (
-            <section className="detail-spec-block">
-              <h2><span aria-hidden="true">✓</span> تفاصيل ومميزات</h2>
-              <ul className="spec-list">{product.specifications.map((specification) => <li key={specification}><span aria-hidden="true">✓</span>{specification}</li>)}</ul>
+
+          {availableStorage.length ? (
+            <section className="product-detail-option">
+              <div className="product-detail-option-heading">
+                <h2>مساحة التخزين</h2>
+                <span>المساحة المختارة: <b>{selectedStorage || '—'}</b></span>
+              </div>
+              <div className="product-detail-storage-options">
+                {availableStorage.map((storage) => (
+                  <button type="button" key={storage} className={selectedStorage === storage ? 'is-selected' : ''} onClick={() => setSelectedStorage(storage)} aria-pressed={selectedStorage === storage}>
+                    <span>{storage}</span>
+                    {product.storagePrices?.[storage] ? <small>{formatPrice(product.storagePrices[storage])}</small> : null}
+                  </button>
+                ))}
+              </div>
             </section>
           ) : null}
-          <div className="detail-actions">
-            <div className="quantity-control" aria-label="الكمية">
+
+          <section className="product-detail-purchase">
+            <div className="product-detail-price">
+              <span>السعر</span>
+              <strong>{formatPrice(selectedPrice)}</strong>
+              {!hasStoragePrice && product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
+            </div>
+            <div className="product-detail-quantity" aria-label="الكمية">
               <button type="button" onClick={() => setQuantity((current) => Math.max(1, current - 1))} aria-label="تقليل الكمية">−</button>
-              <span>{quantity}</span>
+              <span aria-live="polite">{quantity}</span>
               <button type="button" onClick={() => setQuantity((current) => current + 1)} aria-label="زيادة الكمية">+</button>
             </div>
-            <button type="button" className="primary-button detail-add-button" onClick={handleAdd}>{added ? '✓ تمت الإضافة' : <><span aria-hidden="true">＋</span> أضف إلى السلة</>}</button>
-          </div>
-          <p className="detail-storage-note"><span aria-hidden="true">♧</span> اختياراتك محفوظة في سلة المشتريات على هذا المتصفح.</p>
-          <Link href="/cart" className="text-link">عرض سلة المشتريات <span aria-hidden="true">←</span></Link>
+          </section>
+
+          <button type="button" className="product-detail-add" onClick={handleAdd}>{added ? '✓ تمت الإضافة إلى السلة' : 'أضف إلى السلة'}</button>
+          <Link href="/cart" className="product-detail-cart-link">عرض سلة المشتريات <span aria-hidden="true">←</span></Link>
+
+          <section className="product-detail-description">
+            <h2>الوصف</h2>
+            <p>{product.description}</p>
+          </section>
+
+          {product.specifications.length ? (
+            <section className="product-detail-specifications">
+              <h2>تفاصيل ومميزات</h2>
+              <ul>{product.specifications.map((specification) => <li key={specification}>{specification}</li>)}</ul>
+            </section>
+          ) : null}
         </div>
-      </div>
+      </article>
     </main>
   );
 }
