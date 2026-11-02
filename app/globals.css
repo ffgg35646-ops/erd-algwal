@@ -5487,8 +5487,8 @@ button.strip-go-cart-button:focus-visible { outline: 2px solid #92702f; outline-
 
 /* Product details: compact mobile-first layout inspired by the supplied reference. */
 .product-detail-page {
-  width: min(560px, calc(100% - 28px));
-  max-width: 560px;
+  width: min(480px, calc(100% - 28px));
+  max-width: 480px;
   margin: 0 auto;
   padding-top: 18px;
   padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px));
@@ -5516,8 +5516,8 @@ button.strip-go-cart-button:focus-visible { outline: 2px solid #92702f; outline-
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 258px;
-  height: clamp(258px, 64vw, 320px);
+  min-height: 260px;
+  height: 260px;
   padding: 14px 20px;
   background: #fff;
 }
@@ -5644,7 +5644,9 @@ button.strip-go-cart-button:focus-visible { outline: 2px solid #92702f; outline-
   color: #777;
   font-size: 11px;
 }
-.product-detail-option-heading b { color: #222; }
+.product-detail-option-heading b,
+.product-detail-selected b { color: #222; }
+.product-detail-selected { margin-top: 10px; color: #666; font-size: 13px; }
 .product-detail-colors {
   display: flex;
   align-items: flex-start;
@@ -5683,30 +5685,28 @@ button.strip-go-cart-button:focus-visible { outline: 2px solid #92702f; outline-
 }
 .product-detail-storage-options button {
   display: flex;
-  min-width: 68px;
-  min-height: 45px;
+  min-width: 62px;
+  min-height: 50px;
   flex: 0 0 auto;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 7px 12px;
+  padding: 12px;
   border: 1px solid #d9d9de;
-  border-radius: 7px;
+  border-radius: 6px;
   background: #fff;
   color: #333;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
 }
 .product-detail-storage-options button.is-selected {
   border: 2px solid #171717;
-  padding: 6px 11px;
+  padding: 11px;
   color: #111;
   font-weight: 850;
 }
-.product-detail-storage-options small { color: #777; font-size: 10px; }
-.product-detail-storage-options button.is-selected small { color: #333; }
 .product-detail-purchase {
   display: flex;
   align-items: center;
