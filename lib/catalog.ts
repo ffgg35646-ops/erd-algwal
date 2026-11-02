@@ -24,6 +24,7 @@ export type StoredProduct = Document & {
   name: string;
   colors: string[];
   storageOptions: string[];
+  storagePrices?: Record<string, number>;
   price: number;
   details: string;
   images: string[];
@@ -103,6 +104,7 @@ async function initializeDefaultProducts(db: Db) {
             name: product.name,
             colors: product.colors || [],
             storageOptions: product.storageOptions || [],
+            ...(product.storagePrices ? { storagePrices: product.storagePrices } : {}),
             price: product.price,
             details: product.description,
             images: [],
@@ -146,6 +148,7 @@ export function serializeStoredProduct(product: StoredProduct): Product & {
   categoryId: string;
   colors: string[];
   storageOptions: string[];
+  storagePrices: Record<string, number>;
   images: string[];
 } {
   const id = product._id.toHexString();
@@ -164,6 +167,7 @@ export function serializeStoredProduct(product: StoredProduct): Product & {
     ...(product.badge ? { badge: product.badge } : {}),
     colors: product.colors || [],
     storageOptions: product.storageOptions || [],
+    storagePrices: product.storagePrices || {},
     shortDescription: product.shortDescription || product.details,
     description: product.details,
     specifications: product.specifications || []
