@@ -14,6 +14,7 @@ import {
   ensureTelegramIndexes
 } from '@/lib/telegram';
 import { formatOrderForAdmin, getRecentOrders, makeOrderNumber, type StoreOrder } from '@/lib/orders';
+import { generatePhoneCaseColorMask, isPhoneCaseProduct } from '@/lib/case-color-preview';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -462,13 +463,17 @@ async function refreshProductColorMessage(chatId: number, messageId: number | un
   await sendTelegramMessage(chatId, productColorPrompt(selectedColors), { reply_markup: productColorKeyboard(selectedColors) });
 }
 
-function editProductKeyboard(id: string, categoryId: string) {
+function editProductKeyboard(id: string, categoryId: string, canPreviewColors = false, hasColorMask = false) {
   return {
     inline_keyboard: [
       [{ text: 'القسم', callback_data: 'product-field:' + id + ':category' }, { text: 'اسم المنتج', callback_data: 'product-field:' + id + ':name' }],
       [{ text: 'الألوان', callback_data: 'product-field:' + id + ':colors' }, { text: 'مساحة التخزين', callback_data: 'product-field:' + id + ':storage' }],
       [{ text: 'السعر', callback_data: 'product-field:' + id + ':price' }, { text: 'تفاصيل المنتج', callback_data: 'product-field:' + id + ':details' }],
       [{ text: 'الصور (استبدال الصور)', callback_data: 'product-field:' + id + ':images' }],
+      ...(canPreviewColors ? [[{
+        text: hasColorMask ? '🔁 إعادة تجهيز معاينة الألوان' : '🎨 تجهيز معاينة تغيير الألوان',
+        callback_data: 'product-mask:' + id
+      }]] : []),
       [{ text: '🗑 حذف المنتج', callback_data: 'delete-product:' + id }],
       [{ text: '↩ رجوع لمنتجات القسم', callback_data: 'back-to-category-products:' + categoryId }],
       [{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]
@@ -495,10 +500,12 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
     'مساحات التخزين: ' + ((product.storageOptions || []).map((storage) => storage + (product.storagePrices?.[storage] ? ' — ' + product.storagePrices[storage].toLocaleString('en-US') + ' ر.س' : '')).join('، ') || 'غير محدد'),
     'السعر: ' + product.price.toLocaleString('en-US') + ' ر.س',
     'عدد الصور: ' + (product.images || []).length,
+    'معاينة تغيير لون الجراب: ' + (product.colorMask ? 'جاهزة ✅' : 'غير مجهزة'),
     '',
     'اختر الخانة التي تريد تعديلها. زر الحذف موجود بالأسفل.'
   ].join('\n');
-  await sendTelegramMessage(chatId, message, { reply_markup: editProductKeyboard(id, product.categoryId) });
+  const canPreviewColors = isPhoneCaseProduct(product.name, product.category, product.details) && Boolean(product.colors?.length) && Boolean(product.images?.length);
+  await sendTelegramMessage(chatId, message, { reply_markup: editProductKeyboard(id, product.categoryId, canPreviewColors, Boolean(product.colorMask)) });
 }
 
 async function ensureShortOrderNumbers(db: Db, orders: StoreOrder[]) {
@@ -681,12 +688,44 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
       await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
       return false;
     }
+
+    const productId = new ObjectId(data.productId);
+    const product = await db.collection<StoredProduct>('products').findOne({ _id: productId, deleted: { $ne: true } });
+    if (!product) {
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId, 'لم يتم العثور على المنتج.');
+      return false;
+    }
+
+    const canPreviewColors = isPhoneCaseProduct(product.name, product.category, product.details) && Boolean(product.colors?.length);
+    let colorMaskNote = '';
+    let colorMask: Awaited<ReturnType<typeof generatePhoneCaseColorMask>> | undefined;
+
+    if (canPreviewColors && process.env.MODEL_API_KEY) {
+      await sendTelegramMessage(chatId, '✅ تم استلام الصور الجديدة. جاري عزل الجراب في الصورة الأولى وتجهيز تغيير الألوان...');
+      try {
+        colorMask = await generatePhoneCaseColorMask(data.images[0], product.colorMask?.sourceColor || product.colors[0]);
+        colorMaskNote = '\n✅ تم تجهيز معاينة تغيير الألوان للصورة الأولى.';
+      } catch (error) {
+        console.error('Phone-case mask generation failed after image replacement:', error instanceof Error ? error.message : 'Unknown error');
+        colorMaskNote = '\n⚠️ تم تحديث الصور، لكن تعذر تجهيز عزل الجراب تلقائيًا. يمكنك المحاولة مرة أخرى من زر تجهيز معاينة الألوان.';
+      }
+    } else if (canPreviewColors) {
+      colorMaskNote = '\n⚠️ تم تحديث الصور. أضف MODEL_API_KEY لإعداد معاينة تغيير الألوان.';
+    }
+
     const result = await db.collection<StoredProduct>('products').updateOne(
-      { _id: new ObjectId(data.productId) },
-      { $set: { images: data.images.slice(0, 10), updatedAt: now } }
+      { _id: productId },
+      {
+        $set: { images: data.images.slice(0, 10), updatedAt: now, ...(colorMask ? { colorMask } : {}) },
+        ...(!colorMask ? { $unset: { colorMask: '' } } : {})
+      }
     );
+
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-    await sendTelegramMessage(chatId, result.matchedCount ? '✅ تم تحديث صور المنتج.' : 'لم يتم العثور على المنتج.');
+    await sendTelegramMessage(chatId, result.matchedCount
+      ? '✅ تم تحديث صور المنتج.' + colorMaskNote
+      : 'لم يتم العثور على المنتج.');
     await sendMainMenu(db, chatId);
     return result.matchedCount > 0;
   }
@@ -715,10 +754,30 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     createdAt: now,
     updatedAt: now
   });
+  let colorMaskNote = '';
+  if (result.insertedId && isPhoneCaseProduct(data.name, section.name, data.details) && (data.colors || []).length) {
+    if (!process.env.MODEL_API_KEY) {
+      colorMaskNote = '\n⚠️ تم حفظ المنتج، لكن معاينة تغيير الألوان تحتاج إضافة MODEL_API_KEY في إعدادات البيئة.';
+    } else {
+      await sendTelegramMessage(chatId, '✅ تم حفظ المنتج. جاري عزل الجراب في الصورة الأولى وتجهيز معاينة تغيير الألوان...');
+      try {
+        const colorMask = await generatePhoneCaseColorMask(data.images[0], data.colors?.[0] || '');
+        await db.collection<StoredProduct>('products').updateOne(
+          { _id: result.insertedId },
+          { $set: { colorMask, updatedAt: new Date() } }
+        );
+        colorMaskNote = '\n✅ تم تجهيز معاينة تغيير الألوان بنجاح. لا تحتاج إلى رفع صور إضافية للألوان.';
+      } catch (error) {
+        console.error('Phone-case mask generation failed after product creation:', error instanceof Error ? error.message : 'Unknown error');
+        colorMaskNote = '\n⚠️ تم حفظ المنتج، لكن تعذر عزل الجراب تلقائيًا من الصورة الأولى. افتح تعديل المنتج وحاول تجهيز المعاينة مرة أخرى.';
+      }
+    }
+  }
+
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
   const orderCounts = await getOrderSectionCounts(db);
   await sendTelegramMessage(chatId, result.insertedId
-    ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).map((storage) => storage + (data.storagePrices?.[storage] ? ' — ' + data.storagePrices[storage].toLocaleString('en-US') + ' ر.س' : '')).join('، ') || 'غير محدد') + '\nالسعر الأساسي: ' + data.price.toLocaleString('en-US') + ' ر.س\nعدد الصور: ' + data.images.length + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
+    ? '✅ تم حفظ المنتج بنجاح\n\nاسم المنتج: ' + data.name + '\nالقسم: ' + section.name + '\nالألوان: ' + ((data.colors || []).join('، ') || 'غير محدد') + '\nمساحات التخزين: ' + ((data.storageOptions || []).map((storage) => storage + (data.storagePrices?.[storage] ? ' — ' + data.storagePrices[storage].toLocaleString('en-US') + ' ر.س' : '')).join('، ') || 'غير محدد') + '\nالسعر الأساسي: ' + data.price.toLocaleString('en-US') + ' ر.س\nعدد الصور: ' + data.images.length + '\n' + colorMaskNote + '\n\nسيظهر على الموقع بعد تحديث الكتالوج.'
     : 'تعذر حفظ المنتج.', {
       reply_markup: adminReplyKeyboard(orderCounts.newCount + orderCounts.shippedCount)
     });
