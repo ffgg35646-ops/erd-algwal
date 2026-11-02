@@ -2,14 +2,12 @@ import OpenAI from 'openai';
 import {
   decodeMaskToRaster,
   parseImageStream,
-  recordsOfKind,
+  recordsOfKind
 } from '@meta-sam/parser';
 import { telegramApi } from '@/lib/telegram';
 import type { ProductColorMask } from '@/lib/products';
 
 type TelegramFile = { file_path?: string };
-
-
 
 /**
  * Only case/cover products get a recoloring mask. This prevents the AI mask
