@@ -4,7 +4,7 @@ import Link from 'next/link';
 import styles from '../checkout.module.css';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
-import { formatPrice } from '@/lib/products';
+import { formatPrice, getProductPrice } from '@/lib/products';
 
 type CheckoutDraft = {
   orderId?: string;
@@ -65,11 +65,11 @@ export default function CheckoutPaymentPage() {
   }, []);
 
   const lines = useMemo(() => Object.entries(cart).map(([cartKey, quantity]) => {
-    const { productId, color } = parseCartItemKey(cartKey);
-    return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
+    const { productId, color, storage } = parseCartItemKey(cartKey);
+    return { cartKey, color, storage, product: products.find((item) => item.id === productId), quantity };
   }).filter((line) => Boolean(line.product)), [cart, products]);
 
-  const cartTotal = lines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
+  const cartTotal = lines.reduce((sum, line) => sum + (line.product ? getProductPrice(line.product, line.storage) : 0) * line.quantity, 0);
   const total = typeof draft?.total === 'number' && Number.isFinite(draft.total) ? draft.total : cartTotal;
 
   async function handleCompleteOrder() {
