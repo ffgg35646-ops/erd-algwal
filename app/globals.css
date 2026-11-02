@@ -5476,3 +5476,11 @@ body {
     height: 23px;
   }
 }
+
+
+/* Home product actions: order opens details, cart icon adds directly to cart. */
+.strip-add-button { text-decoration: none; cursor: pointer; }
+button.strip-go-cart-button { padding: 0; appearance: none; cursor: pointer; font: inherit; }
+button.strip-go-cart-button.is-added { border-color: #b8dfc8; background: #e8f6ed; color: #147a46; }
+.strip-add-button:focus-visible,
+button.strip-go-cart-button:focus-visible { outline: 2px solid #92702f; outline-offset: 3px; }
