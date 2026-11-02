@@ -146,7 +146,7 @@ export default function VerifyPhonePage() {
       });
       const result = await response.json() as { ok?: boolean; error?: string; message?: string };
       if (!response.ok || !result.ok) {
-        setError(result.error || 'تعذر التحقق من الرمز. حاول مرة أخرى.');
+        setError('الرمز خاطئ');
         return;
       }
 
@@ -166,7 +166,7 @@ export default function VerifyPhonePage() {
         // Server-side verification remains authoritative even if local storage is unavailable.
       }
     } catch {
-      setError('تعذر الاتصال بالخادم. تحقق من الإنترنت وحاول مرة أخرى.');
+      setError('الرمز خاطئ');
     } finally {
       setIsVerifying(false);
     }
@@ -192,19 +192,16 @@ export default function VerifyPhonePage() {
 
         {verified ? (
           <>
-            <h1 id="verify-title">تم إنشاء الطلب بنجاح</h1>
-            {orderNumber ? <p className={styles.phone}>رقم الطلب: {orderNumber}</p> : null}
+            <h1 id="verify-title">الرمز صحيح</h1>
             {countdown > 0 ? (
               <div
                 className={styles.timerRow}
                 role="timer"
                 aria-label={`الوقت المتبقي ${countdown} ثانية`}
               >
-                <p className={styles.timer}>يرجى الانتظار</p>
                 <strong style={{ fontSize: 34, lineHeight: 1.2, color: '#5b2a9e', fontVariantNumeric: 'tabular-nums' }}>
-                  {String(countdown).padStart(2, '0')}
+                  00:{String(countdown).padStart(2, '0')}
                 </strong>
-                <p className={styles.timer}>ثانية</p>
               </div>
             ) : null}
           </>
