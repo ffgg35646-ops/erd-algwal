@@ -1,3 +1,18 @@
+export type ProductColorMask = {
+  version: 1;
+  sourceColor: string;
+  width: number;
+  height: number;
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  /** Base64-encoded row-major bytes. Each byte is 0 (outside) or 1 (case). */
+  data: string;
+  model: 'sam-3.1';
+  generatedAt: string | Date;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -14,6 +29,7 @@ export type Product = {
   storageOptions?: string[];
   storagePrices?: Record<string, number>;
   images?: string[];
+  colorMask?: ProductColorMask;
 };
 
 export const categories = [
