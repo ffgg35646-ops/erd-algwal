@@ -15,6 +15,7 @@ type CartContextValue = {
   addToCart: (productId: string, quantity?: number, color?: string, storage?: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
+  clearCart: () => void;
   refreshCatalog: () => Promise<void>;
 };
 
@@ -162,6 +163,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const clearCart = useCallback(() => {
+    setCart({});
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // The cart state is still cleared for the current session.
+    }
+  }, []);
+
   const itemCount = useMemo(
     () => Object.values(cart).reduce((total, quantity) => total + quantity, 0),
     [cart]
@@ -170,9 +180,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       cart, itemCount, hydrated, catalogProducts, catalogCategories,
-      addToCart, setQuantity, removeFromCart, refreshCatalog
+      addToCart, setQuantity, removeFromCart, clearCart, refreshCatalog
     }),
-    [cart, itemCount, hydrated, catalogProducts, catalogCategories, addToCart, setQuantity, removeFromCart, refreshCatalog]
+    [cart, itemCount, hydrated, catalogProducts, catalogCategories, addToCart, setQuantity, removeFromCart, clearCart, refreshCatalog]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
