@@ -210,8 +210,9 @@ export default function CustomerReviews() {
   return (
     <section className="customer-reviews" aria-labelledby="customer-reviews-title">
       <div className="customer-reviews-heading">
-        <div><span className="reviews-kicker">آراء وتجارب العملاء</span><h2 id="customer-reviews-title">آراء العملاء</h2><p>يسعدنا نعرف رأيك في تجربتك مع أرض الجوال.</p></div>
-        <span className="reviews-count">{reviews.length} تعليق</span>
+        <div className="reviews-title-glass">
+          <h2 id="customer-reviews-title">آراء العملاء</h2>
+        </div>
       </div>
       {reviews.length ? (
         <div className="reviews-track" aria-label="آراء العملاء المتحركة تلقائيًا">
