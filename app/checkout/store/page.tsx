@@ -317,6 +317,7 @@ export default function StoreCheckoutPage() {
         reviewToken = window.crypto.randomUUID();
       }
 
+      const customerNotificationKey = getCustomerNotificationKey();
       const checkoutDraft = {
         ...form,
         ...payload,
@@ -332,15 +333,46 @@ export default function StoreCheckoutPage() {
         currency: 'SAR',
         submissionId,
         submissionFingerprint: fingerprint,
-        customerNotificationKey: getCustomerNotificationKey(),
+        customerNotificationKey,
         reviewToken,
         savedAt: new Date().toISOString(),
         stage: 'phone-verification'
       };
 
-      // Keep the order as a browser-side draft until the phone is verified.
-      // No order is created and no payment/card flow is touched at this stage.
+      // Save the idempotency draft first, then create and notify the order using
+      // the existing order endpoint. No card/payment fields are sent here.
       window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(checkoutDraft));
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          submissionId,
+          reviewToken,
+          customerNotificationKey
+        })
+      });
+      const result = await response.json() as {
+        ok?: boolean;
+        orderId?: string;
+        orderNumber?: string;
+        notificationSent?: boolean;
+        error?: string;
+        message?: string;
+      };
+      if (!response.ok || !result.ok || !result.orderId) {
+        throw new Error(result.error || 'تعذر إرسال الطلب للإدارة. حاول مرة أخرى.');
+      }
+      if (result.notificationSent !== true) {
+        throw new Error(result.message || 'تم حفظ الطلب، لكن تعذر إشعار الإدارة. أعد المحاولة.');
+      }
+
+      window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify({
+        ...checkoutDraft,
+        orderId: result.orderId,
+        orderNumber: result.orderNumber || '',
+        adminNotificationSent: true
+      }));
       router.push('/checkout/verify-phone');
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'تعذر تجهيز تأكيد رقم الهاتف. حاول مرة أخرى.');
