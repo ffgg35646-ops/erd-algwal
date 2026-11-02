@@ -93,7 +93,7 @@ export default function AccountPage() {
   const [barcodeImageUrl, setBarcodeImageUrl] = useState('');
   const [barcodeRemoved, setBarcodeRemoved] = useState(false);
 
-  async function loadOrders(emailAddress: string = email) {
+  async function loadOrders(emailAddress: string = email, showLoading = true) {
     const normalizedEmail = emailAddress.trim().toLowerCase();
     activeEmailRef.current = normalizedEmail;
     if (!normalizedEmail) {
@@ -110,7 +110,7 @@ export default function AccountPage() {
       return;
     }
 
-    setOrdersLoading(true);
+    if (showLoading) setOrdersLoading(true);
     setLookupMessage('');
     try {
       const params = new URLSearchParams({ key, email: normalizedEmail });
@@ -128,7 +128,7 @@ export default function AccountPage() {
       setLookupMessage(error instanceof Error ? error.message : 'تعذر تحميل تاريخ الطلبات.');
       setOrdersLoaded(true);
     } finally {
-      setOrdersLoading(false);
+      if (showLoading) setOrdersLoading(false);
     }
   }
   useEffect(() => {
@@ -146,7 +146,7 @@ export default function AccountPage() {
     const refreshTimer = savedEmail.trim()
       ? window.setInterval(() => {
           const activeEmail = activeEmailRef.current;
-          if (document.visibilityState === 'visible' && activeEmail) void loadOrders(activeEmail);
+          if (document.visibilityState === 'visible' && activeEmail) void loadOrders(activeEmail, false);
         }, 15_000)
       : null;
     const handleFocus = () => {
