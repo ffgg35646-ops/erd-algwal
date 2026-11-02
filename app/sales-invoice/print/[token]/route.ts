@@ -105,7 +105,8 @@ export async function GET(
       return '<tr>' +
         '<td>' + (index + 1) + '</td>' +
         '<td class="product-name"><b>' + escapeHtml(item.name || 'منتج') + '</b>' +
-          (item.color ? '<small>اللون: ' + escapeHtml(item.color) + '</small>' : '') + '</td>' +
+          (item.color ? '<small>اللون: ' + escapeHtml(item.color) + '</small>' : '') +
+          (item.storage ? '<small>مساحة التخزين: ' + escapeHtml(item.storage) + '</small>' : '') + '</td>' +
         '<td>' + money(unitPrice) + ' ر.س</td>' +
         '<td>' + quantity + '</td>' +
         '<td>' + money(lineTotal) + ' ر.س</td>' +
