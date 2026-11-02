@@ -566,7 +566,9 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
 
 async function getOrderDocumentRows(db: Db, order: StoreOrder) {
   if (order.source !== 'website') return [] as Array<Array<{ text: string; url: string }>>;
+
   const tokenUpdates: Partial<StoreOrder> = {};
+  if (!order.adminOrderToken) tokenUpdates.adminOrderToken = randomBytes(24).toString('hex');
   if (order.installment) {
     if (!order.installmentInvoiceToken) tokenUpdates.installmentInvoiceToken = randomBytes(24).toString('hex');
     if (!order.installmentContractToken) tokenUpdates.installmentContractToken = randomBytes(24).toString('hex');
@@ -582,7 +584,7 @@ async function getOrderDocumentRows(db: Db, order: StoreOrder) {
 
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
-  if (!configuredOrigin) return [] as Array<Array<{ text: string; url: string }>>;
+  if (!configuredOrigin || !order.adminOrderToken) return [] as Array<Array<{ text: string; url: string }>>;
 
   let origin = '';
   try {
@@ -594,15 +596,10 @@ async function getOrderDocumentRows(db: Db, order: StoreOrder) {
     return [] as Array<Array<{ text: string; url: string }>>;
   }
 
-  const rows: Array<Array<{ text: string; url: string }>> = [];
-  if (order.installment) {
-    if (order.installmentInvoiceToken) rows.push([{ text: '📄 فتح فاتورة التقسيط', url: new URL('/installments-invoice/print/' + order.installmentInvoiceToken, origin).toString() }]);
-    if (order.installmentContractToken) rows.push([{ text: '📑 فتح عقد البيع', url: new URL('/installments-contract/print/' + order.installmentContractToken, origin).toString() }]);
-  } else {
-    if (order.saleInvoiceToken) rows.push([{ text: '📄 فتح فاتورة البيع', url: new URL('/sales-invoice/print/' + order.saleInvoiceToken, origin).toString() }]);
-    if (order.receiptToken) rows.push([{ text: '🧾 فتح سند القبض', url: new URL('/receipt/print/' + order.receiptToken, origin).toString() }]);
-  }
-  return rows;
+  return [[{
+    text: '📋 فتح الطلب والمستندات',
+    url: new URL('/admin-order/' + order.adminOrderToken, origin).toString()
+  }]];
 }
 
 async function listOrderDetails(db: Db, chatId: number, id: string) {
