@@ -17,18 +17,28 @@ export default function ProductDetailsLoader({
   const cachedProduct = catalogProducts.find((item) => item.id === id) || null;
   const [product, setProduct] = useState<Product | null>(initialProduct || cachedProduct);
   const [notFound, setNotFound] = useState(false);
+  const [detailLoadedFor, setDetailLoadedFor] = useState('');
 
   useEffect(() => {
-    if (cachedProduct) {
-      setProduct(cachedProduct);
-      setNotFound(false);
-    }
+    if (!cachedProduct || detailLoadedFor === id) return;
 
+    // The catalogue cache is intentionally compact and may not contain the
+    // colour mask. Never let it overwrite a detailed product already loaded
+    // from the single-product API.
+    setProduct((current) => (
+      current?.id === id && current.colorMask && !cachedProduct.colorMask
+        ? current
+        : cachedProduct
+    ));
+    setNotFound(false);
+  }, [cachedProduct, detailLoadedFor, id]);
+
+  useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
 
-    // Refresh the product in the background. The cached or built-in product
-    // remains visible while MongoDB responds.
+    // Refresh the product in the background. Keep the catalogue version visible
+    // while MongoDB responds, then retain the full product including its colour mask.
     void fetch('/api/products/' + encodeURIComponent(id), {
       cache: 'no-store',
       signal: controller.signal
@@ -37,6 +47,7 @@ export default function ProductDetailsLoader({
         if (!cancelled) {
           setProduct(null);
           setNotFound(true);
+          setDetailLoadedFor(id);
         }
         return;
       }
@@ -46,6 +57,7 @@ export default function ProductDetailsLoader({
       if (!cancelled && payload.product) {
         setProduct(payload.product);
         setNotFound(false);
+        setDetailLoadedFor(id);
       }
     }).catch(() => {
       // Keep the already visible product when background refresh is unavailable.
@@ -55,7 +67,7 @@ export default function ProductDetailsLoader({
       cancelled = true;
       controller.abort();
     };
-  }, [id, cachedProduct]);
+  }, [id]);
 
   if (product) return <ProductDetails product={product} />;
   if (!notFound) return null;
