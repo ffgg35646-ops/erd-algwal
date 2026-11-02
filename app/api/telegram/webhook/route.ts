@@ -1742,6 +1742,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     const orderCollection = db.collection<StoreOrder & {
       customerInvoiceSentAt?: Date;
       customerInvoiceNotificationId?: string;
+      customerInvoiceSendingAt?: Date;
     }>('orders');
     const order = await orderCollection.findOne({ _id: new ObjectId(id), source: 'website' });
     if (!order) {
@@ -1764,27 +1765,55 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       return;
     }
 
-    const notification = await db.collection('customer_notifications').insertOne({
-      customerNotificationKey: order.customerNotificationKey,
-      orderId: order._id.toHexString(),
-      orderNumber: order.orderNumber || '#' + order._id.toString().slice(-6),
-      status: 'invoice_documents',
-      statusLabel: order.installment ? 'تم اعتماد طلب التقسيط وإرسال مستنداته' : 'تم اعتماد الطلب وإرسال مستنداته',
-      documents,
-      createdAt: new Date(),
-      readAt: null
-    });
-
-    await orderCollection.updateOne(
-      { _id: order._id, customerInvoiceSentAt: { $exists: false } },
+    const claim = await orderCollection.updateOne(
       {
-        $set: {
-          customerInvoiceSentAt: new Date(),
-          customerInvoiceNotificationId: notification.insertedId.toHexString(),
-          updatedAt: new Date()
-        }
-      }
+        _id: order._id,
+        customerInvoiceSentAt: { $exists: false },
+        customerInvoiceSendingAt: { $exists: false }
+      },
+      { $set: { customerInvoiceSendingAt: new Date() } }
     );
+    if (!claim.modifiedCount) {
+      const latest = await orderCollection.findOne({ _id: order._id });
+      await sendTelegramMessage(chatId, latest?.customerInvoiceSentAt
+        ? 'تم إرسال مستندات هذا الطلب للعميل بالفعل.'
+        : 'يتم تجهيز إشعار مستندات هذا الطلب حاليًا. حاول مرة أخرى بعد لحظات.');
+      await listOrderDetails(db, chatId, id);
+      return;
+    }
+
+    let notificationId = '';
+    try {
+      const notification = await db.collection('customer_notifications').insertOne({
+        customerNotificationKey: order.customerNotificationKey,
+        orderId: order._id.toHexString(),
+        orderNumber: order.orderNumber || '#' + order._id.toString().slice(-6),
+        status: 'invoice_documents',
+        statusLabel: order.installment ? 'تم اعتماد طلب التقسيط وإرسال مستنداته' : 'تم اعتماد الطلب وإرسال مستنداته',
+        documents,
+        createdAt: new Date(),
+        readAt: null
+      });
+      notificationId = notification.insertedId.toHexString();
+
+      await orderCollection.updateOne(
+        { _id: order._id, customerInvoiceSendingAt: { $exists: true } },
+        {
+          $set: {
+            customerInvoiceSentAt: new Date(),
+            customerInvoiceNotificationId: notificationId,
+            updatedAt: new Date()
+          },
+          $unset: { customerInvoiceSendingAt: '' }
+        }
+      );
+    } catch (error) {
+      await orderCollection.updateOne(
+        { _id: order._id },
+        { $unset: { customerInvoiceSendingAt: '' } }
+      ).catch(() => undefined);
+      throw error;
+    }
 
     await sendTelegramMessage(
       chatId,
