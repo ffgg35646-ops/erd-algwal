@@ -257,6 +257,7 @@ export async function POST(request: NextRequest) {
       installment,
       ...(!installment ? { receiptToken: randomBytes(24).toString('hex') } : {}),
       ...(!installment ? { saleInvoiceToken: randomBytes(24).toString('hex') } : {}),
+      adminOrderToken: randomBytes(24).toString('hex'),
       ...(installment ? { installmentInvoiceToken: randomBytes(24).toString('hex') } : {}),
       ...(installment ? { installmentContractToken: randomBytes(24).toString('hex') } : {}),
       ...(installment ? { installmentDownPayment, installmentMonths } : {}),
