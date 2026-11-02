@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import CaseColorImage from '@/components/CaseColorImage';
 import type { Product } from '@/lib/products';
 import { formatPrice, getProductPrice } from '@/lib/products';
 import { useCart } from '@/components/CartProvider';
@@ -55,7 +56,9 @@ export default function ProductDetails({ product }: { product: Product }) {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const availableColors = product.colors?.filter(Boolean) || [];
   const availableStorage = product.storageOptions?.filter(Boolean) || [];
-  const [selectedColor, setSelectedColor] = useState(availableColors[0] || '');
+  const imageSourceColor = product.colorMask?.sourceColor || availableColors[0] || '';
+  const initialColor = availableColors.includes(imageSourceColor) ? imageSourceColor : (availableColors[0] || '');
+  const [selectedColor, setSelectedColor] = useState(initialColor);
   const [selectedStorage, setSelectedStorage] = useState(availableStorage[0] || '');
   const gallery = product.images?.length ? product.images : [product.image];
   const safeImageIndex = Math.min(activeImageIndex, gallery.length - 1);
@@ -66,10 +69,10 @@ export default function ProductDetails({ product }: { product: Product }) {
   const hasStoragePrice = Boolean(selectedStorage && product.storagePrices?.[selectedStorage]);
 
   useEffect(() => {
-    setSelectedColor(availableColors[0] || '');
+    setSelectedColor(initialColor);
     setSelectedStorage(availableStorage[0] || '');
     setActiveImageIndex(0);
-  }, [product.id, colorsSignature, storageSignature]);
+  }, [product.id, colorsSignature, storageSignature, imageSourceColor]);
 
   useEffect(() => {
     if (gallery.length < 2) return;
@@ -92,17 +95,28 @@ export default function ProductDetails({ product }: { product: Product }) {
         <div className="product-detail-hero">
           {product.badge ? <span className="product-detail-badge">{product.badge}</span> : null}
           {activeImage ? (
-            <img
-              key={safeImageIndex}
-              src={activeImage}
-              alt={product.name + ' - الصورة ' + (safeImageIndex + 1)}
-              className="product-detail-image"
-              fetchPriority="high"
-              onError={(event) => {
-                event.currentTarget.onerror = null;
-                event.currentTarget.src = '/product-image-placeholder.svg';
-              }}
-            />
+            safeImageIndex === 0 && product.colorMask ? (
+              <CaseColorImage
+                key={activeImage}
+                src={activeImage}
+                alt={product.name + ' - الصورة ' + (safeImageIndex + 1)}
+                className="product-detail-image"
+                mask={product.colorMask}
+                selectedColor={selectedColor || product.colorMask.sourceColor}
+              />
+            ) : (
+              <img
+                key={safeImageIndex}
+                src={activeImage}
+                alt={product.name + ' - الصورة ' + (safeImageIndex + 1)}
+                className="product-detail-image"
+                fetchPriority="high"
+                onError={(event) => {
+                  event.currentTarget.onerror = null;
+                  event.currentTarget.src = '/product-image-placeholder.svg';
+                }}
+              />
+            )
           ) : <div className="detail-no-image">صورة المنتج غير متاحة</div>}
           {gallery.length > 1 ? (
             <>
@@ -117,7 +131,17 @@ export default function ProductDetails({ product }: { product: Product }) {
           <div className="product-detail-thumbnails" aria-label="صور المنتج">
             {gallery.map((image, index) => (
               <button type="button" className={index === safeImageIndex ? 'is-active' : ''} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)} aria-pressed={index === safeImageIndex}>
-                <img src={image} alt="" loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/product-image-placeholder.svg'; }} />
+                {index === 0 && product.colorMask ? (
+                  <CaseColorImage
+                    key={image}
+                    src={image}
+                    alt=""
+                    mask={product.colorMask}
+                    selectedColor={selectedColor || product.colorMask.sourceColor}
+                  />
+                ) : (
+                  <img src={image} alt="" loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/product-image-placeholder.svg'; }} />
+                )}
               </button>
             ))}
           </div>
