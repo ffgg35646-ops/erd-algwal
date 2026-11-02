@@ -37,8 +37,18 @@ function getColorHex(color: string) {
   return COLOR_HEX[key] || '#b7b7b7';
 }
 
+function ProductCartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" />
+      <circle cx="10" cy="20" r="1.2" />
+      <circle cx="18" cy="20" r="1.2" />
+    </svg>
+  );
+}
+
 export default function ProductDetails({ product }: { product: Product }) {
-  const { addToCart } = useCart();
+  const { addToCart, itemCount } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -170,8 +180,15 @@ export default function ProductDetails({ product }: { product: Product }) {
             </div>
           </section>
 
-          <button type="button" className="product-detail-add" onClick={handleAdd}>{added ? '✓ تمت الإضافة إلى السلة' : 'أضف إلى السلة'}</button>
-          <Link href="/cart" className="product-detail-cart-link">عرض سلة المشتريات <span aria-hidden="true">←</span></Link>
+          <div className="product-detail-actions-row">
+            <button type="button" className="product-detail-add" onClick={handleAdd}>
+              {added ? '✓ تمت الإضافة' : 'إضافة ومتابعة التسوق'}
+            </button>
+            <Link href="/cart" className="product-detail-cart-button" aria-label="فتح سلة المشتريات" title="فتح سلة المشتريات">
+              <ProductCartIcon />
+              {itemCount > 0 ? <span className="product-detail-cart-count">{itemCount > 99 ? '99+' : itemCount}</span> : null}
+            </Link>
+          </div>
 
           <section className="product-detail-description">
             <h2>الوصف</h2>
