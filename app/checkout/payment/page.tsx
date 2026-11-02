@@ -92,7 +92,7 @@ export default function CheckoutPaymentPage() {
         }
         if (saved.paymentNotificationSent === true && (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa')) {
           setPaymentSubmitted(true);
-          setPaymentMessage('تم إرسال الطلب واختيار طريقة الدفع إلى الإدارة.');
+          setPaymentMessage('تم إرسال طلبك.');
           setPaymentMessageSuccess(true);
         }
       }
@@ -281,7 +281,7 @@ export default function CheckoutPaymentPage() {
       setFieldErrors({});
       setPaymentSubmitted(notified);
       setPaymentMessage(notified
-        ? 'تم التحقق من البيانات ✓ (واجهة تجريبية، مفيش دفع حقيقي) وتم إرسال الطلب إلى الإدارة.'
+        ? 'تم إرسال طلبك.'
         : 'تم التحقق من البيانات ✓ (واجهة تجريبية، مفيش دفع حقيقي)، لكن تعذر إرسال إشعار الإدارة. اضغط «إكمال الدفع» مرة أخرى للمحاولة.');
       setPaymentMessageSuccess(true);
     } catch (error) {
