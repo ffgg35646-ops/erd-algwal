@@ -274,9 +274,11 @@ export default function CheckoutPaymentPage() {
         // Keep the confirmation visible even when session storage is unavailable.
       }
 
-      // Drop the full card number and security code from the live form after validation.
-      setCardNumber('');
-      setCvc('');
+      // Drop the full card number and security code after the order is successfully notified.
+      if (notified) {
+        setCardNumber('');
+        setCvc('');
+      }
       setFieldErrors({});
       setPaymentSubmitted(notified);
       setPaymentMessage(notified
