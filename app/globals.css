@@ -5857,3 +5857,59 @@ button.strip-go-cart-button:focus-visible { outline: 2px solid #92702f; outline-
   .product-detail-actions-row { gap: 7px; }
   .product-detail-actions-row .product-detail-add { font-size: 12px; }
 }
+
+
+/* Customer reviews: keep only a small glass title, without an enclosing card. */
+.customer-reviews {
+  width: min(1100px, calc(100% - 32px)) !important;
+  max-width: 1100px !important;
+  margin: 22px auto 26px !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.customer-reviews-heading {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  margin: 0 0 14px !important;
+}
+.reviews-title-glass {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border: 1px solid rgba(255,255,255,.62);
+  border-radius: 999px;
+  background: rgba(255,255,255,.28);
+  color: #26313d;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.75), 0 4px 14px rgba(31,45,61,.07);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.reviews-title-glass h2 {
+  margin: 0 !important;
+  color: inherit !important;
+  font-size: 15px !important;
+  line-height: 1.4;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+@media (max-width: 760px) {
+  .customer-reviews {
+    width: calc(100% - 28px) !important;
+    margin: 18px auto 22px !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .customer-reviews-heading { margin-bottom: 12px !important; }
+  .reviews-title-glass { padding: 7px 15px; }
+  .reviews-title-glass h2 { font-size: 14px !important; }
+}
