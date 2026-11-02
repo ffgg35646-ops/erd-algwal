@@ -115,7 +115,8 @@ function recolorMaskedCase(
   } catch {
     return false;
   }
-  if (binaryMask.length !== mask.width * mask.height) return false;
+  const pixelCount = mask.width * mask.height;
+  if (mask.encoding !== 'bit-packed-msb' || binaryMask.length !== Math.ceil(pixelCount / 8)) return false;
 
   const sourceHex = getColorHex(mask.sourceColor);
   const targetHex = getColorHex(selectedColor);
@@ -146,9 +147,11 @@ function recolorMaskedCase(
 
   for (let y = 0; y < mask.height; y += 1) {
     for (let x = 0; x < mask.width; x += 1) {
-      if (binaryMask[y * mask.width + x] === 0) continue;
+      const maskIndex = y * mask.width + x;
+      const isCasePixel = (binaryMask[maskIndex >> 3] & (1 << (7 - (maskIndex & 7)))) !== 0;
+      if (!isCasePixel) continue;
 
-      const pixelIndex = (y * mask.width + x) * 4;
+      const pixelIndex = maskIndex * 4;
       const original = rgbToHsl(
         pixels.data[pixelIndex],
         pixels.data[pixelIndex + 1],
