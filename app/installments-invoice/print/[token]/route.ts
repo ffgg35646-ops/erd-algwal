@@ -135,7 +135,8 @@ export async function GET(
       const unitPrice = Math.max(0, Number(item.unitPrice) || 0);
       const itemTotal = unitPrice * quantity;
       const details = [
-        item.color ? '<span class="tag">اللون: ' + escapeHtml(item.color) + '</span>' : ''
+        item.color ? '<span class="tag">اللون: ' + escapeHtml(item.color) + '</span>' : '',
+        item.storage ? '<span class="tag">التخزين: ' + escapeHtml(item.storage) + '</span>' : ''
       ].join('');
       return '<tr>' +
         '<td>' + (index + 1) + '</td>' +
