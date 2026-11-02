@@ -20,6 +20,7 @@ type CustomerOrder = {
   paymentStatus: string;
   installment: boolean;
   notes: string;
+  cancellationReason?: string;
   customerName: string;
   customerPhone: string;
   customerAddress: string;
@@ -91,7 +92,15 @@ export default function AccountPage() {
   const [barcodeImageUrl, setBarcodeImageUrl] = useState('');
   const [barcodeRemoved, setBarcodeRemoved] = useState(false);
 
-  async function loadOrders() {
+  async function loadOrders(emailAddress: string = email) {
+    const normalizedEmail = emailAddress.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setOrders([]);
+      setLookupMessage('اكتب بريدك الإلكتروني أولًا.');
+      setOrdersLoaded(true);
+      return;
+    }
+
     const key = getCustomerNotificationKey();
     if (!key) {
       setLookupMessage('تعذر قراءة بيانات هذا المتصفح. حدّث الصفحة وحاول مرة أخرى.');
@@ -102,14 +111,17 @@ export default function AccountPage() {
     setOrdersLoading(true);
     setLookupMessage('');
     try {
-      const response = await fetch('/api/orders?key=' + encodeURIComponent(key), { cache: 'no-store' });
+      const params = new URLSearchParams({ key, email: normalizedEmail });
+      const response = await fetch('/api/orders?' + params.toString(), { cache: 'no-store' });
       const data = await response.json() as { ok?: boolean; orders?: CustomerOrder[]; error?: string };
       if (!response.ok || !data.ok || !Array.isArray(data.orders)) {
         throw new Error(data.error || 'تعذر تحميل تاريخ الطلبات.');
       }
       setOrders(data.orders);
       setOrdersLoaded(true);
-      if (!data.orders.length) setLookupMessage('لا توجد طلبات مسجلة من هذا المتصفح حتى الآن.');
+      if (!data.orders.length) {
+        setLookupMessage('عند إتمام عملية شراء بهذا البريد الإلكتروني، ستظهر طلباتك هنا.');
+      }
     } catch (error) {
       setLookupMessage(error instanceof Error ? error.message : 'تعذر تحميل تاريخ الطلبات.');
       setOrdersLoaded(true);
@@ -117,7 +129,6 @@ export default function AccountPage() {
       setOrdersLoading(false);
     }
   }
-
   useEffect(() => {
     let alive = true;
     let savedEmail = '';
@@ -128,7 +139,16 @@ export default function AccountPage() {
       // The email field remains usable if browser storage is unavailable.
     }
 
-    if (savedEmail.trim()) void loadOrders();
+    if (savedEmail.trim()) void loadOrders(savedEmail);
+    const refreshTimer = savedEmail.trim()
+      ? window.setInterval(() => {
+          if (document.visibilityState === 'visible') void loadOrders(savedEmail);
+        }, 15_000)
+      : null;
+    const handleFocus = () => {
+      if (savedEmail.trim()) void loadOrders(savedEmail);
+    };
+    window.addEventListener('focus', handleFocus);
 
     fetch('/api/store-settings', { cache: 'no-store' })
       .then(async (response) => {
@@ -143,11 +163,17 @@ export default function AccountPage() {
         // Keep the account page usable if store settings are unavailable.
       });
 
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+      if (refreshTimer !== null) window.clearInterval(refreshTimer);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   function handleEmailChange(value: string) {
     setEmail(value);
+    setOrders([]);
+    setOrdersLoaded(false);
     setLookupMessage('');
     try {
       window.localStorage.setItem(CUSTOMER_EMAIL_STORAGE_KEY, value);
@@ -168,7 +194,7 @@ export default function AccountPage() {
     } catch {
       // Continue with the current browser session if storage is unavailable.
     }
-    await loadOrders();
+    await loadOrders(normalizedEmail);
   }
 
   const latestOrder = orders[0];
@@ -285,6 +311,11 @@ export default function AccountPage() {
                   <span>طريقة الطلب: {order.installment ? 'تقسيط مطلوب' : 'شراء عادي'}</span>
                 </div>
                 {order.customerAddress ? <p className={styles.orderExtra}>عنوان التوصيل: {order.customerAddress}</p> : null}
+                {order.status === 'cancelled' ? (
+                  <p className={styles.orderExtra}>
+                    سبب الإلغاء: {order.cancellationReason || 'لم يتم توضيح سبب الإلغاء من الإدارة.'}
+                  </p>
+                ) : null}
                 {order.notes ? <p className={styles.orderExtra}>ملاحظات الطلب: {order.notes}</p> : null}
               </article>
             ))}
