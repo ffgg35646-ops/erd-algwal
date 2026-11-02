@@ -1,5 +1,5 @@
 import { ObjectId, type Db, type Document } from 'mongodb';
-import { categories as seedCategories, defaultStoreProducts, products as seedProducts, type Product } from '@/lib/products';
+import { categories as seedCategories, defaultStoreProducts, products as seedProducts, type Product, type ProductColorMask } from '@/lib/products';
 
 export type StoreCategory = Document & {
   _id: ObjectId;
@@ -28,6 +28,7 @@ export type StoredProduct = Document & {
   price: number;
   details: string;
   images: string[];
+  colorMask?: ProductColorMask;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -210,7 +211,7 @@ export async function listCategories(db: Db) {
   return db.collection<StoreCategory>('categories').find({ deleted: { $ne: true } }).sort({ createdAt: 1, name: 1 }).toArray();
 }
 
-export function serializeStoredProduct(product: StoredProduct): Product & {
+export function serializeStoredProduct(product: StoredProduct, options: { includeColorMask?: boolean } = {}): Product & {
   categoryId: string;
   colors: string[];
   storageOptions: string[];
@@ -236,7 +237,8 @@ export function serializeStoredProduct(product: StoredProduct): Product & {
     storagePrices: product.storagePrices || {},
     shortDescription: product.shortDescription || product.details,
     description: product.details,
-    specifications: product.specifications || []
+    specifications: product.specifications || [],
+    ...(options.includeColorMask && product.colorMask ? { colorMask: product.colorMask } : {})
   };
 }
 
