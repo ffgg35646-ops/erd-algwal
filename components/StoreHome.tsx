@@ -344,18 +344,27 @@ function StripProductCard({ product }: { product: Product }) {
             {product.oldPrice ? <del>{formatPrice(product.oldPrice)}</del> : null}
           </div>
           <div className="strip-product-actions">
+            <Link
+              href={'/products/' + product.id}
+              className="strip-add-button"
+              aria-label={'اطلب ' + product.name + ' الآن'}
+              title="اطلب الآن"
+            >
+              اطلب الآن
+            </Link>
             <button
               type="button"
-              className={'strip-add-button' + (added ? ' is-added' : '')}
+              className={'strip-go-cart-button' + (added ? ' is-added' : '')}
               onClick={handleAdd}
-              aria-label={'إضافة ' + product.name + ' إلى السلة'}
-              title="أضف إلى السلة"
+              aria-label={added ? 'تمت إضافة ' + product.name + ' إلى السلة' : 'إضافة ' + product.name + ' إلى السلة'}
+              title={added ? 'تمت الإضافة إلى السلة' : 'إضافة إلى السلة'}
             >
-              {added ? 'تمت الإضافة' : 'أضف إلى السلة'}
+              {added ? (
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" /></svg>
+              ) : (
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg>
+              )}
             </button>
-            <Link href="/cart" className="strip-go-cart-button" aria-label="الانتقال إلى سلة المشتريات" title="عرض السلة">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" /><circle cx="10" cy="20" r="1.2" /><circle cx="18" cy="20" r="1.2" /></svg>
-            </Link>
           </div>
         </div>
       </div>
