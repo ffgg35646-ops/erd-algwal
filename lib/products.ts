@@ -392,6 +392,8 @@ export const products: Product[] = [
     }
 ];
 
+export const defaultStoreProducts: Product[] = products.slice(-10);
+
 export function formatPrice(value: number) {
   const amount = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 0,
