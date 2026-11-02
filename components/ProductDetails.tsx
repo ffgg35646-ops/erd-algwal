@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { Product } from '@/lib/products';
 import { formatPrice, getProductPrice } from '@/lib/products';
@@ -48,9 +49,9 @@ function ProductCartIcon() {
 }
 
 export default function ProductDetails({ product }: { product: Product }) {
+  const router = useRouter();
   const { addToCart, itemCount } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [added, setAdded] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const availableColors = product.colors?.filter(Boolean) || [];
   const availableStorage = product.storageOptions?.filter(Boolean) || [];
@@ -80,8 +81,7 @@ export default function ProductDetails({ product }: { product: Product }) {
 
   function handleAdd() {
     addToCart(product.id, quantity, selectedColor || undefined, selectedStorage || undefined);
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 1500);
+    router.push('/cart');
   }
 
   return (
@@ -182,7 +182,7 @@ export default function ProductDetails({ product }: { product: Product }) {
 
           <div className="product-detail-actions-row">
             <button type="button" className="product-detail-add" onClick={handleAdd}>
-              {added ? '✓ تمت الإضافة' : 'إضافة ومتابعة التسوق'}
+              متابعة الطلب
             </button>
             <Link href="/cart" className="product-detail-cart-button" aria-label="فتح سلة المشتريات" title="فتح سلة المشتريات">
               <ProductCartIcon />
