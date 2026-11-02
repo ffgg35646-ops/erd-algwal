@@ -4,7 +4,6 @@ import Link from 'next/link';
 import styles from '../checkout.module.css';
 import { useEffect, useMemo, useState } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
-import { formatPrice } from '@/lib/products';
 
 type CheckoutDraft = {
   orderId?: string;
@@ -371,11 +370,11 @@ export default function CheckoutPaymentPage() {
           </div>
 
           <div className={styles.paymentAmount}>
-            المبلغ المستحق : <strong>{formatPrice(serverTotal)}</strong>
+            المبلغ المستحق : <strong>{serverTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س</strong>
           </div>
 
           <div className={styles.paymentFields}>
-            <div className={styles.paymentField}>
+            <div className={styles.paymentField + ' ' + styles.paymentFieldIcon}>
               <input
                 className={fieldErrors.name ? styles.paymentInput + ' ' + styles.paymentInputBad : styles.paymentInput}
                 name="cardholderName"
@@ -393,7 +392,7 @@ export default function CheckoutPaymentPage() {
               />
             </div>
 
-            <div className={styles.paymentField}>
+            <div className={styles.paymentField + ' ' + styles.paymentFieldIcon}>
               <input
                 className={fieldErrors.number ? styles.paymentInput + ' ' + styles.paymentInputBad : styles.paymentInput}
                 name="cardNumber"
