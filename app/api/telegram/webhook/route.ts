@@ -1537,6 +1537,44 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await showProductEditMenu(db, chatId, id || '');
     return;
   }
+  if (action === 'product-mask') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
+    const product = await db.collection<StoredProduct>('products').findOne({
+      _id: new ObjectId(id),
+      deleted: { $ne: true }
+    });
+    if (!product) return void await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج.');
+    if (!isPhoneCaseProduct(product.name, product.category, product.details)) {
+      return void await sendTelegramMessage(chatId, 'معاينة تغيير الألوان مخصصة لمنتجات الجرابات والكفرات فقط.');
+    }
+    if (!product.images?.[0]) {
+      return void await sendTelegramMessage(chatId, 'لا توجد صورة مرفوعة عبر البوت لهذا المنتج. استبدل الصور أولًا ثم أعد المحاولة.');
+    }
+    if (!product.colors?.length) {
+      return void await sendTelegramMessage(chatId, 'أضف ألوان المنتج أولًا، واجعل أول لون هو اللون الظاهر في الصورة الأولى.');
+    }
+    if (!process.env.MODEL_API_KEY) {
+      return void await sendTelegramMessage(chatId, 'خدمة عزل الجراب تحتاج إضافة MODEL_API_KEY في إعدادات البيئة أولًا.');
+    }
+
+    await sendTelegramMessage(chatId, 'جاري عزل الجراب من الصورة الأولى وتجهيز معاينة تغيير الألوان...');
+    try {
+      const colorMask = await generatePhoneCaseColorMask(
+        product.images[0],
+        product.colorMask?.sourceColor || product.colors[0]
+      );
+      await db.collection<StoredProduct>('products').updateOne(
+        { _id: product._id },
+        { $set: { colorMask, updatedAt: new Date() } }
+      );
+      await sendTelegramMessage(chatId, '✅ تم تجهيز عزل الجراب. ستتغير ألوان الجراب فقط في الصورة الأولى، وستبقى الخلفية وباقي الصور كما هي.');
+    } catch (error) {
+      console.error('Manual phone-case mask generation failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, '⚠️ تعذر عزل الجراب من الصورة الحالية. تأكد أن الصورة واضحة وتظهر جرابًا واحدًا، ثم جرّب مرة أخرى.');
+    }
+    await showProductEditMenu(db, chatId, id);
+    return;
+  }
   if (action === 'product-field') {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
     const product = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
