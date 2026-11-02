@@ -5,7 +5,7 @@ import styles from '../checkout.module.css';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
-import { formatPrice } from '@/lib/products';
+import { formatPrice, getProductPrice } from '@/lib/products';
 import { CUSTOMER_EMAIL_STORAGE_KEY, getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
 type SaudiCity = {
@@ -178,11 +178,11 @@ export default function StoreCheckoutPage() {
   }, []);
 
   const cartLines = useMemo(() => Object.entries(cart).map(([cartKey, quantity]) => {
-    const { productId, color } = parseCartItemKey(cartKey);
-    return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
+    const { productId, color, storage } = parseCartItemKey(cartKey);
+    return { cartKey, color, storage, product: products.find((item) => item.id === productId), quantity };
   }).filter((line) => Boolean(line.product)), [cart]);
 
-  const total = cartLines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
+  const total = cartLines.reduce((sum, line) => sum + (line.product ? getProductPrice(line.product, line.storage) : 0) * line.quantity, 0);
   const cityOptions = useMemo(() => {
     const term = normalizeCitySearch(citySearch);
     if (!term) return saudiCities;
@@ -268,10 +268,11 @@ export default function StoreCheckoutPage() {
       return;
     }
 
-    const items = cartLines.map(({ product, quantity, color }) => ({
+    const items = cartLines.map(({ product, quantity, color, storage }) => ({
       productId: product!.id,
       quantity,
-      ...(color ? { color } : {})
+      ...(color ? { color } : {}),
+      ...(storage ? { storage } : {})
     }));
     const payload = {
       fullName: form.fullName.trim(),
@@ -308,12 +309,13 @@ export default function StoreCheckoutPage() {
       const checkoutDraft = {
         ...form,
         ...payload,
-        items: cartLines.map(({ product, quantity, color }) => ({
+        items: cartLines.map(({ product, quantity, color, storage }) => ({
           productId: product!.id,
           name: product!.name,
-          unitPrice: product!.price,
+          unitPrice: getProductPrice(product!, storage),
           quantity,
-          ...(color ? { color } : {})
+          ...(color ? { color } : {}),
+          ...(storage ? { storage } : {})
         })),
         total,
         currency: 'SAR',
