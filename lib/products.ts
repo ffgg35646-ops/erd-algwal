@@ -12,6 +12,7 @@ export type Product = {
   categoryId?: string;
   colors?: string[];
   storageOptions?: string[];
+  storagePrices?: Record<string, number>;
   images?: string[];
 };
 
@@ -397,6 +398,13 @@ export function formatPrice(value: number) {
     useGrouping: true
   }).format(value);
   return amount + ' ر.س';
+}
+
+export function getProductPrice(product: Pick<Product, 'price' | 'storagePrices'>, storage?: string) {
+  const optionPrice = storage ? product.storagePrices?.[storage] : undefined;
+  return typeof optionPrice === 'number' && Number.isFinite(optionPrice) && optionPrice > 0
+    ? optionPrice
+    : product.price;
 }
 
 export function getProduct(id: string) {
