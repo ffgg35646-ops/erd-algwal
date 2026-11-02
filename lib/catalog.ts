@@ -1,5 +1,5 @@
 import { ObjectId, type Db, type Document } from 'mongodb';
-import { categories as seedCategories, products as seedProducts, type Product } from '@/lib/products';
+import { categories as seedCategories, defaultStoreProducts, products as seedProducts, type Product } from '@/lib/products';
 
 export type StoreCategory = Document & {
   _id: ObjectId;
@@ -82,15 +82,54 @@ export async function ensureDefaultCategories(db: Db) {
 
 // Link the existing visible demo catalogue to the same MongoDB records the bot edits.
 // Upsert only missing seed identities: never overwrite an existing admin edit.
+const DEFAULT_PRODUCTS_MIGRATION_ID = 'default-products-10-v1';
+
 async function initializeDefaultProducts(db: Db) {
   await ensureDefaultCategories(db);
-  const sections = await db.collection<StoreCategory>('categories')
-    .find({ seedName: { $exists: true }, deleted: { $ne: true } }).toArray();
-  const bySeedName = new Map(sections.map(section => [String(section.seedName), section]));
+
   const collection = db.collection<StoredProduct>('products');
+  const categoryCollection = db.collection<StoreCategory>('categories');
+  const settings = db.collection('store_settings');
   await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
+
+  const migration = await settings.findOne({ _id: DEFAULT_PRODUCTS_MIGRATION_ID });
+  if (!migration) {
+    // Ensure the category needed by the initial ten products is active once.
+    const defaultCategoryNames = [...new Set(defaultStoreProducts.map((product) => product.category))];
+    for (const categoryName of defaultCategoryNames) {
+      const seededCategory = await categoryCollection.findOne({ seedName: categoryName });
+      if (seededCategory) {
+        if (seededCategory.deleted) {
+          await categoryCollection.updateOne(
+            { _id: seededCategory._id },
+            { $unset: { deleted: '' }, $set: { updatedAt: new Date() } }
+          );
+        }
+        continue;
+      }
+
+      const legacyCategory = await categoryCollection.findOne({ name: categoryName });
+      if (legacyCategory) {
+        await categoryCollection.updateOne(
+          { _id: legacyCategory._id },
+          { $set: { seedName: categoryName, updatedAt: new Date() }, $unset: { deleted: '' } }
+        );
+      } else {
+        await categoryCollection.updateOne(
+          { seedName: categoryName },
+          { $setOnInsert: { name: categoryName, seedName: categoryName, description: 'أجهزة آيفون', createdAt: new Date(), updatedAt: new Date() } },
+          { upsert: true }
+        );
+      }
+    }
+  }
+
+  const sections = await categoryCollection
+    .find({ seedName: { $exists: true }, deleted: { $ne: true } })
+    .toArray();
+  const bySeedName = new Map(sections.map((section) => [String(section.seedName), section]));
   const now = new Date();
-  const operations = seedProducts.flatMap((product) => {
+  const operations = defaultStoreProducts.flatMap((product) => {
     const section = bySeedName.get(product.category);
     if (!section) return [];
     return [{
@@ -122,6 +161,33 @@ async function initializeDefaultProducts(db: Db) {
     }];
   });
   if (operations.length) await collection.bulkWrite(operations, { ordered: false });
+
+  if (!migration) {
+    const defaultIds = defaultStoreProducts.map((product) => product.id);
+    const legacySeedIds = seedProducts
+      .filter((product) => !defaultIds.includes(product.id))
+      .map((product) => product.id);
+
+    // Hide the six older demo entries so the initial catalogue contains ten.
+    if (legacySeedIds.length) {
+      await collection.updateMany(
+        { seedId: { $in: legacySeedIds } },
+        { $set: { deleted: true, updatedAt: now } }
+      );
+    }
+
+    // Restore the ten initial products once during this migration. Later
+    // Telegram deletions stay deleted after the migration marker is saved.
+    await collection.updateMany(
+      { seedId: { $in: defaultIds }, deleted: true },
+      { $unset: { deleted: '' }, $set: { updatedAt: now } }
+    );
+    await settings.updateOne(
+      { _id: DEFAULT_PRODUCTS_MIGRATION_ID },
+      { $setOnInsert: { completedAt: now, productIds: defaultIds } },
+      { upsert: true }
+    );
+  }
 }
 
 export async function ensureDefaultProducts(db: Db) {
