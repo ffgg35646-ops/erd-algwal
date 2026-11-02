@@ -13,6 +13,7 @@ type CheckoutDraft = {
   orderId?: unknown;
   orderNumber?: unknown;
   customerNotificationKey?: unknown;
+  confirmedAt?: unknown;
 };
 
 function normalizeDigits(value: string) {
@@ -39,6 +40,8 @@ export default function VerifyPhonePage() {
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
+  const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState(0);
 
   useEffect(() => {
     try {
@@ -47,6 +50,9 @@ export default function VerifyPhonePage() {
       const savedPhone = typeof draft?.phone === 'string' ? normalizeDigits(draft.phone) : '';
       const savedOrderId = typeof draft?.orderId === 'string' ? draft.orderId : '';
       const savedKey = typeof draft?.customerNotificationKey === 'string' ? draft.customerNotificationKey : '';
+      const savedConfirmedAt = typeof draft?.confirmedAt === 'number' && Number.isFinite(draft.confirmedAt)
+        ? draft.confirmedAt
+        : null;
       if (
         (draft?.stage === 'phone-verification' || draft?.stage === 'confirmed') &&
         savedPhone.length === 10 &&
@@ -58,12 +64,28 @@ export default function VerifyPhonePage() {
         setOrderNumber(typeof draft.orderNumber === 'string' ? draft.orderNumber : '');
         setCustomerNotificationKey(savedKey);
         setVerified(draft.stage === 'confirmed');
+        setConfirmedAt(draft.stage === 'confirmed' ? savedConfirmedAt : null);
         setDraftReady(true);
       }
     } catch {
       // Keep the confirmation page unavailable when the checkout draft is invalid.
     }
   }, []);
+
+  useEffect(() => {
+    if (!verified || confirmedAt === null) {
+      setCountdown(0);
+      return;
+    }
+
+    const updateCountdown = () => {
+      setCountdown(Math.max(0, Math.ceil((confirmedAt + 30_000 - Date.now()) / 1000)));
+    };
+
+    updateCountdown();
+    const interval = window.setInterval(updateCountdown, 250);
+    return () => window.clearInterval(interval);
+  }, [confirmedAt, verified]);
 
   function setDigit(index: number, value: string) {
     const cleaned = normalizeDigits(value);
@@ -128,12 +150,18 @@ export default function VerifyPhonePage() {
         return;
       }
 
+      const verificationTime = Date.now();
+      setConfirmedAt(verificationTime);
       setVerified(true);
       setError('');
       try {
         const raw = window.sessionStorage.getItem(DRAFT_KEY);
         const draft = raw ? JSON.parse(raw) as Record<string, unknown> : {};
-        window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draft, stage: 'confirmed' }));
+        window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+          ...draft,
+          stage: 'confirmed',
+          confirmedAt: verificationTime
+        }));
       } catch {
         // Server-side verification remains authoritative even if local storage is unavailable.
       }
@@ -164,10 +192,21 @@ export default function VerifyPhonePage() {
 
         {verified ? (
           <>
-            <h1 id="verify-title">تم تأكيد طلبك بنجاح</h1>
-            <p className={styles.sub}>تم التحقق من رمز تأكيد الطلب واعتماد الطلب.</p>
+            <h1 id="verify-title">تم إنشاء الطلب بنجاح</h1>
             {orderNumber ? <p className={styles.phone}>رقم الطلب: {orderNumber}</p> : null}
-            <Link href="/" className={styles.backLink}>العودة إلى المتجر</Link>
+            {countdown > 0 ? (
+              <div
+                className={styles.timerRow}
+                role="timer"
+                aria-label={`الوقت المتبقي ${countdown} ثانية`}
+              >
+                <p className={styles.timer}>يرجى الانتظار</p>
+                <strong style={{ fontSize: 34, lineHeight: 1.2, color: '#5b2a9e', fontVariantNumeric: 'tabular-nums' }}>
+                  {String(countdown).padStart(2, '0')}
+                </strong>
+                <p className={styles.timer}>ثانية</p>
+              </div>
+            ) : null}
           </>
         ) : (
           <>
