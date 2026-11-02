@@ -84,6 +84,8 @@ export default function CheckoutPaymentPage() {
       return;
     }
 
+    const verifiedOrderId = draft.orderId;
+    const verifiedSubmissionId = draft.submissionId;
     let cancelled = false;
     async function verifySavedOrderTotal() {
       setTotalVerified(false);
@@ -99,8 +101,8 @@ export default function CheckoutPaymentPage() {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             action: 'verify-total',
-            orderId: draft.orderId,
-            submissionId: draft.submissionId,
+            orderId: verifiedOrderId,
+            submissionId: verifiedSubmissionId,
             reviewToken
           })
         });
@@ -108,12 +110,16 @@ export default function CheckoutPaymentPage() {
         if (!response.ok || !result.ok || typeof result.total !== 'number' || !Number.isFinite(result.total) || result.total <= 0) {
           throw new Error(result.error || 'تعذر التحقق من إجمالي الطلب المسجل.');
         }
+        const verifiedTotal = result.total;
+        if (typeof verifiedTotal !== 'number' || !Number.isFinite(verifiedTotal) || verifiedTotal <= 0) {
+          throw new Error('إجمالي الطلب المسجل غير صالح.');
+        }
         if (cancelled) return;
 
-        setServerTotal(result.total);
+        setServerTotal(verifiedTotal);
         setDraft((current) => current ? {
           ...current,
-          total: result.total,
+          total: verifiedTotal,
           currency: result.currency || current.currency || 'SAR',
           orderNumber: result.orderNumber || current.orderNumber
         } : current);
