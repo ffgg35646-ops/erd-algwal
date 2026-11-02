@@ -141,13 +141,14 @@ function recolorMaskedCase(
   canvas.height = imageHeight;
   context.drawImage(image, 0, 0, imageWidth, imageHeight);
 
-  const pixels = context.getImageData(0, 0, imageWidth, imageHeight);
+  // Read and update only the case's bounding rectangle, not the full photo.
+  const pixels = context.getImageData(mask.left, mask.top, mask.width, mask.height);
 
   for (let y = 0; y < mask.height; y += 1) {
     for (let x = 0; x < mask.width; x += 1) {
       if (binaryMask[y * mask.width + x] === 0) continue;
 
-      const pixelIndex = ((mask.top + y) * imageWidth + mask.left + x) * 4;
+      const pixelIndex = (y * mask.width + x) * 4;
       const original = rgbToHsl(
         pixels.data[pixelIndex],
         pixels.data[pixelIndex + 1],
@@ -179,7 +180,7 @@ function recolorMaskedCase(
     }
   }
 
-  context.putImageData(pixels, 0, 0);
+  context.putImageData(pixels, mask.left, mask.top);
   return true;
 }
 
@@ -245,6 +246,10 @@ export default function CaseColorImage({
         className={className}
         style={{ ...style, display: recolored ? 'none' : style?.display }}
         loading="eager"
+        onError={(event) => {
+          event.currentTarget.onerror = null;
+          event.currentTarget.src = '/product-image-placeholder.svg';
+        }}
       />
       <canvas
         ref={canvasRef}
