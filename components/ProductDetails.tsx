@@ -38,6 +38,69 @@ function getColorHex(color: string) {
   return COLOR_HEX[key] || '#b7b7b7';
 }
 
+function getRgb(hex: string) {
+  const value = hex.replace('#', '');
+  const normalized = value.length === 3
+    ? value.split('').map((part) => part + part).join('')
+    : value;
+  const number = Number.parseInt(normalized, 16);
+  return {
+    r: (number >> 16) & 255,
+    g: (number >> 8) & 255,
+    b: number & 255
+  };
+}
+
+function getHsl(color: string) {
+  const { r, g, b } = getRgb(getColorHex(color));
+  const red = r / 255;
+  const green = g / 255;
+  const blue = b / 255;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+  const lightness = (max + min) / 2;
+  let hue = 0;
+  let saturation = 0;
+
+  if (delta > 0) {
+    saturation = delta / (1 - Math.abs(2 * lightness - 1));
+    if (max === red) hue = ((green - blue) / delta) % 6;
+    else if (max === green) hue = (blue - red) / delta + 2;
+    else hue = (red - green) / delta + 4;
+    hue *= 60;
+    if (hue < 0) hue += 360;
+  }
+
+  return { hue, saturation, lightness };
+}
+
+/**
+ * Uses the first product color as the source color represented by its single
+ * uploaded image. CSS filters preserve the image's shading and need no extra
+ * image files or canvas/CORS access.
+ */
+function getProductImageColorFilter(sourceColor: string, selectedColor: string) {
+  if (!sourceColor || !selectedColor || sourceColor === selectedColor) return 'none';
+
+  const source = getHsl(sourceColor);
+  const target = getHsl(selectedColor);
+
+  // Neutral variants have no meaningful hue to rotate.
+  if (target.saturation < 0.1) return 'grayscale(1)';
+
+  // A neutral source needs a small sepia base before its hue can be shifted.
+  if (source.saturation < 0.1) {
+    const hueShift = target.hue - 38;
+    const saturation = Math.min(3.2, Math.max(1.8, target.saturation * 3));
+    return `sepia(.85) saturate(${saturation.toFixed(2)}) hue-rotate(${hueShift.toFixed(1)}deg)`;
+  }
+
+  const hueShift = target.hue - source.hue;
+  const saturation = Math.min(1.6, Math.max(0.65, target.saturation / source.saturation));
+  return `hue-rotate(${hueShift.toFixed(1)}deg) saturate(${saturation.toFixed(2)})`;
+}
+
 function ProductCartIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -60,6 +123,7 @@ export default function ProductDetails({ product }: { product: Product }) {
   const gallery = product.images?.length ? product.images : [product.image];
   const safeImageIndex = Math.min(activeImageIndex, gallery.length - 1);
   const activeImage = gallery[safeImageIndex] || product.image;
+  const imageColorFilter = getProductImageColorFilter(availableColors[0] || '', selectedColor);
   const colorsSignature = availableColors.join('|');
   const storageSignature = availableStorage.join('|');
   const selectedPrice = getProductPrice(product, selectedStorage);
@@ -97,6 +161,7 @@ export default function ProductDetails({ product }: { product: Product }) {
               src={activeImage}
               alt={product.name + ' - الصورة ' + (safeImageIndex + 1)}
               className="product-detail-image"
+              style={{ filter: imageColorFilter, transition: 'filter 220ms ease' }}
               fetchPriority="high"
               onError={(event) => {
                 event.currentTarget.onerror = null;
@@ -117,7 +182,7 @@ export default function ProductDetails({ product }: { product: Product }) {
           <div className="product-detail-thumbnails" aria-label="صور المنتج">
             {gallery.map((image, index) => (
               <button type="button" className={index === safeImageIndex ? 'is-active' : ''} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)} aria-pressed={index === safeImageIndex}>
-                <img src={image} alt="" loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/product-image-placeholder.svg'; }} />
+                <img src={image} alt="" loading="lazy" style={{ filter: imageColorFilter, transition: 'filter 220ms ease' }} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/product-image-placeholder.svg'; }} />
               </button>
             ))}
           </div>
