@@ -98,19 +98,40 @@ export default function CustomerNotifications() {
     const opening = !isOpen;
     setIsOpen(opening);
     setToast(null);
-    if (!opening || !key || unreadCount === 0) return;
+    if (!opening) return;
+
+    // Resolve the browser key immediately so a fast first click still marks alerts as read.
+    const activeKey = key || getCustomerNotificationKey();
+    if (!activeKey) return;
+    if (!key) setKey(activeKey);
 
     try {
+      const latest = await fetch('/api/customer-notifications?key=' + encodeURIComponent(activeKey), {
+        cache: 'no-store'
+      });
+      if (latest.ok) {
+        const data = await latest.json() as {
+          ok?: boolean;
+          unreadCount?: number;
+          notifications?: CustomerNotification[];
+        };
+        if (data.ok && Array.isArray(data.notifications)) {
+          setNotifications(data.notifications);
+          setUnreadCount(Number(data.unreadCount || 0));
+        }
+      }
+
+      // Opening the bell marks every notification currently available to this browser as read.
       const response = await fetch('/api/customer-notifications', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ key, action: 'mark-read' })
+        body: JSON.stringify({ key: activeKey, action: 'mark-read' })
       });
       if (!response.ok) return;
       setNotifications((current) => current.map((item) => ({ ...item, read: true })));
       setUnreadCount(0);
     } catch {
-      // The next poll will retry the server state.
+      // Keep the list open; the next poll can refresh it and the next opening retries mark-read.
     }
   }
 
