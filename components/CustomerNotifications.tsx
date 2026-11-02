@@ -14,9 +14,13 @@ type CustomerNotification = {
 };
 
 function notificationMessage(item: CustomerNotification) {
-  return item.status === 'cancelled' && item.cancellationReason
-    ? `${item.statusLabel} · الطلب ${item.orderNumber} · السبب: ${item.cancellationReason}`
-    : `${item.statusLabel} · الطلب ${item.orderNumber}`;
+  if (item.status === 'cancelled') {
+    const reason = item.cancellationReason
+      ? 'السبب: ' + item.cancellationReason
+      : 'لم يتم توضيح سبب الإلغاء من الإدارة';
+    return `${item.statusLabel} · الطلب ${item.orderNumber} · ${reason}`;
+  }
+  return `${item.statusLabel} · الطلب ${item.orderNumber}`;
 }
 
 function formatDate(value: string) {
@@ -170,8 +174,10 @@ export default function CustomerNotifications() {
                       {item.statusLabel}
                     </strong>
                     <p>الطلب: {item.orderNumber}</p>
-                    {item.status === 'cancelled' && item.cancellationReason && (
-                      <p className="notification-cancellation-reason">سبب الإلغاء: {item.cancellationReason}</p>
+                    {item.status === 'cancelled' && (
+                      <p className="notification-cancellation-reason">
+                        سبب الإلغاء: {item.cancellationReason || 'لم يتم توضيح سبب الإلغاء من الإدارة.'}
+                      </p>
                     )}
                     <time dateTime={item.createdAt}>{formatDate(item.createdAt)}</time>
                   </div>
