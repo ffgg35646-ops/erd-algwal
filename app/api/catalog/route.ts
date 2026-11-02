@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { listCatalogProducts, listCategories } from '@/lib/catalog';
-import { categories as fallbackCategories, products as fallbackProducts } from '@/lib/products';
+import { categories as fallbackCategories, defaultStoreProducts } from '@/lib/products';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +16,7 @@ export async function GET() {
   if (!process.env.MONGODB_URI) {
     return NextResponse.json({
       categories: fallbackCategoryItems,
-      products: fallbackProducts,
+      products: defaultStoreProducts,
       sources: { categories: 'fallback', products: 'fallback' }
     }, { headers: { 'cache-control': 'no-store, max-age=0' } });
   }
@@ -59,7 +59,7 @@ export async function GET() {
       }
     }
 
-    let productItems = fallbackProducts;
+    let productItems = defaultStoreProducts;
     let productSource: 'database' | 'fallback' = 'fallback';
     try {
       productItems = await listCatalogProducts(db);
@@ -77,7 +77,7 @@ export async function GET() {
     console.error('Catalogue database connection failed:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({
       categories: fallbackCategoryItems,
-      products: fallbackProducts,
+      products: defaultStoreProducts,
       sources: { categories: 'fallback', products: 'fallback' }
     }, { headers: { 'cache-control': 'no-store, max-age=0' } });
   }
