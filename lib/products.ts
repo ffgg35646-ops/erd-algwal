@@ -7,7 +7,7 @@ export type ProductColorMask = {
   top: number;
   right: number;
   bottom: number;
-    /** Base64-encoded, MSB-first bit-packed mask: 1 = case, 0 = outside. */
+  /** Base64-encoded, MSB-first bit-packed mask: 1 = case, 0 = outside. */
   encoding: 'bit-packed-msb';
   data: string;
   model: 'sam-3.1';
