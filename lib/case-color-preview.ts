@@ -6,23 +6,11 @@ import {
   type ResponsesEvent
 } from '@meta-sam/parser';
 import { telegramApi } from '@/lib/telegram';
+import type { ProductColorMask } from '@/lib/products';
 
 type TelegramFile = { file_path?: string };
 
-export type ProductColorMask = {
-  version: 1;
-  sourceColor: string;
-  width: number;
-  height: number;
-  left: number;
-  top: number;
-  right: number;
-  bottom: number;
-  /** Base64-encoded row-major bytes. Each byte is 0 (outside) or 1 (case). */
-  data: string;
-  model: 'sam-3.1';
-  generatedAt: Date;
-};
+
 
 /**
  * Only case/cover products get a recoloring mask. This prevents the AI mask
