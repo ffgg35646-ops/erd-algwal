@@ -136,8 +136,7 @@ export default function ProductDetails({ product }: { product: Product }) {
           {availableColors.length ? (
             <section className="product-detail-option">
               <div className="product-detail-option-heading">
-                <h2>الألوان</h2>
-                <span>اللون المختار: <b>{selectedColor || '—'}</b></span>
+                <h2>الألوان:</h2>
               </div>
               <div className="product-detail-colors">
                 {availableColors.map((color) => (
@@ -147,23 +146,23 @@ export default function ProductDetails({ product }: { product: Product }) {
                   </button>
                 ))}
               </div>
+              <div className="product-detail-selected">الألوان المختارة: <b>{selectedColor || '—'}</b></div>
             </section>
           ) : null}
 
           {availableStorage.length ? (
             <section className="product-detail-option">
               <div className="product-detail-option-heading">
-                <h2>مساحة التخزين</h2>
-                <span>المساحة المختارة: <b>{selectedStorage || '—'}</b></span>
+                <h2>مساحة التخزين:</h2>
               </div>
               <div className="product-detail-storage-options">
                 {availableStorage.map((storage) => (
                   <button type="button" key={storage} className={selectedStorage === storage ? 'is-selected' : ''} onClick={() => setSelectedStorage(storage)} aria-pressed={selectedStorage === storage}>
                     <span>{storage}</span>
-                    {product.storagePrices?.[storage] ? <small>{formatPrice(product.storagePrices[storage])}</small> : null}
                   </button>
                 ))}
               </div>
+              <div className="product-detail-selected">مساحة التخزين المختارة: <b>{selectedStorage || '—'}</b></div>
             </section>
           ) : null}
 
