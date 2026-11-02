@@ -1694,6 +1694,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     const orderCollection = db.collection<StoreOrder & {
       orderConfirmationOtpHash?: string;
       orderConfirmationOtpSalt?: string;
+      orderConfirmationOtpIssuedAt?: Date;
       orderConfirmationOtpVersion?: number;
       orderConfirmationVerifiedAt?: Date;
     }>('orders');
