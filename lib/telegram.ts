@@ -140,7 +140,7 @@ export function statusInlineKeyboard(orderId: string, currentStatus: OrderStatus
   return {
     inline_keyboard: statuses.length
       ? [statuses.map((status) => ({
-          text: ORDER_STATUS_LABELS[status],
+          text: status === 'cancelled' ? 'إلغاء الطلب' : ORDER_STATUS_LABELS[status],
           callback_data: `status:${orderId}:${status}`
         }))]
       : []
