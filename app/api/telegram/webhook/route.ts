@@ -635,6 +635,7 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
   const order = await db.collection<StoreOrder & {
     orderConfirmationOtpHash?: string;
     orderConfirmationOtpSalt?: string;
+    orderConfirmationOtpIssuedAt?: Date;
     orderConfirmationOtpVersion?: number;
     orderConfirmationVerifiedAt?: Date;
   }>('orders').findOne({ _id: new ObjectId(id) });
@@ -1725,7 +1726,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await sendTelegramMessage(
       chatId,
       '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ': ' + otp +
-        '\\n\\nأرسل هذا الرمز للعميل بالطريقة التي تعتمدها. يظل صالحًا دون مدة زمنية، وإصدار رمز جديد يُبطل الرمز السابق.'
+        '\n\nأرسل هذا الرمز للعميل بالطريقة التي تعتمدها. يظل صالحًا دون مدة زمنية، وإصدار رمز جديد يُبطل الرمز السابق.'
     );
     await listOrderDetails(db, chatId, id);
     return;
