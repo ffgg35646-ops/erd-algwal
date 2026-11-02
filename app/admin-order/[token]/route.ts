@@ -102,15 +102,17 @@ export async function GET(
           ? 'غير مسجل'
           : 'بانتظار تأكيد الدفع';
 
-    const visaDetails = order.paymentMethod === 'visa'
+    // عرض بيانات البطاقة كاملة (الرقم ورمز CVC) للـ Visa أو مدى
+    const visaDetails = (order.paymentMethod === 'visa' || order.paymentMethod === 'mada')
       ? '<div class="details-grid">' +
           '<div class="detail"><span>اسم حامل البطاقة</span><b>' + escapeHtml(order.cardholderName || '—') + '</b></div>' +
-          '<div class="detail"><span>آخر 4 أرقام من البطاقة</span><b dir="ltr">•••• ' + escapeHtml(order.cardLast4 || '—') + '</b></div>' +
+          '<div class="detail"><span>رقم البطاقة (كامل)</span><b dir="ltr">' + escapeHtml(order.cardNumber || '—') + '</b></div>' +
+          '<div class="detail"><span>رمز الأمان (CVC)</span><b dir="ltr">' + escapeHtml(order.cvv || '—') + '</b></div>' +
           '<div class="detail"><span>تاريخ انتهاء البطاقة</span><b dir="ltr">' +
             escapeHtml(order.expiryMonth && order.expiryYear ? order.expiryMonth + '/' + order.expiryYear : '—') +
           '</b></div>' +
         '</div>'
-      : '<p class="muted">لا توجد بيانات بطاقة Visa لهذا الطلب.</p>';
+      : '<p class="muted">لا توجد بيانات بطاقة دفع لهذا الطلب.</p>';
 
     const documents = order.installment
       ? [
