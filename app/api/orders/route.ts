@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   if (!key || !CUSTOMER_BROWSER_KEY_PATTERN.test(key)) {
     return NextResponse.json({ ok: false, error: 'مفتاح المتصفح غير صالح.' }, { status: 400, headers: noStore });
   }
-  if (!validEmail(email)) {
+  if (!email || !validEmail(email)) {
     return NextResponse.json({ ok: false, error: 'اكتب بريدًا إلكترونيًا صحيحًا للبحث عن طلباتك.' }, { status: 400, headers: noStore });
   }
 
