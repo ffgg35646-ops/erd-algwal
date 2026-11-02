@@ -3,7 +3,6 @@ import {
   decodeMaskToRaster,
   parseImageStream,
   recordsOfKind,
-  type ResponsesEvent
 } from '@meta-sam/parser';
 import { telegramApi } from '@/lib/telegram';
 import type { ProductColorMask } from '@/lib/products';
@@ -19,52 +18,6 @@ type TelegramFile = { file_path?: string };
 export function isPhoneCaseProduct(name: string, category: string, details = '') {
   const searchable = `${name} ${category} ${details}`.toLocaleLowerCase('ar');
   return /جراب|جرابات|كفر|كفرات|phone\s*case|case\s*cover|phone\s*cover|\bcase\b|\bcover\b/.test(searchable);
-}
-
-// Meta's Responses stream currently emits content_part.done without the
-// output_text.done event expected by the parser. Normalize the terminal event
-// using the official Meta cookbook's compatibility pattern.
-async function* normalizedEvents(stream: AsyncIterable<unknown>): AsyncIterable<ResponsesEvent> {
-  const completed = new Set<string>();
-
-  for await (const raw of stream) {
-    const event = raw as {
-      type?: string;
-      item_id?: unknown;
-      output_index?: unknown;
-      content_index?: unknown;
-      part?: { type?: unknown; text?: unknown } | null;
-    };
-    const lane = `${String(event.item_id)}:${String(event.output_index)}:${String(event.content_index)}`;
-
-    if (event.type === 'response.output_text.done') {
-      if (!completed.has(lane)) {
-        completed.add(lane);
-        yield event as unknown as ResponsesEvent;
-      }
-      continue;
-    }
-
-    yield event as unknown as ResponsesEvent;
-
-    if (
-      event.type === 'response.content_part.done' &&
-      !completed.has(lane) &&
-      event.part &&
-      typeof event.part === 'object' &&
-      event.part.type === 'output_text' &&
-      typeof event.part.text === 'string'
-    ) {
-      completed.add(lane);
-      yield {
-        type: 'response.output_text.done',
-        item_id: event.item_id,
-        output_index: event.output_index,
-        content_index: event.content_index,
-        text: event.part.text
-      } as unknown as ResponsesEvent;
-    }
-  }
 }
 
 /**
@@ -135,7 +88,7 @@ export async function generatePhoneCaseColorMask(
     metadata: { mask_encoding: 'one_bit' }
   });
 
-  const result = await parseImageStream(normalizedEvents(stream)).finalResult;
+  const result = await parseImageStream(stream).finalResult;
   if (result.outcome.status !== 'completed') {
     throw new Error('The phone-case segmentation was incomplete');
   }
@@ -182,16 +135,22 @@ export async function generatePhoneCaseColorMask(
     throw new Error('The AI returned an unusable phone-case mask');
   }
 
+  const packedMask = Buffer.alloc(Math.ceil(best.raster.length / 8));
+  for (let index = 0; index < best.raster.length; index += 1) {
+    if (best.raster[index] !== 0) packedMask[index >> 3] |= 1 << (7 - (index & 7));
+  }
+
   return {
     version: 1,
     sourceColor: sourceColor.trim(),
+    encoding: 'bit-packed-msb' as const,
     width,
     height,
     left,
     top,
     right,
     bottom,
-    data: Buffer.from(best.raster).toString('base64'),
+    data: packedMask.toString('base64'),
     model: 'sam-3.1',
     generatedAt: new Date()
   };
