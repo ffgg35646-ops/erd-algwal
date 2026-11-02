@@ -443,7 +443,7 @@ function productColorKeyboard(selectedColors: string[] = []) {
 }
 
 function productColorPrompt(selectedColors: string[] = []) {
-  return '🎨 اختر الألوان المتوفرة للمنتج بالضغط على دوائر الألوان. يمكنك تحديد أكثر من لون، ثم اضغط «حفظ الألوان».\n\nالألوان المختارة: ' + (selectedColors.join('، ') || 'لم يتم اختيار ألوان بعد.');
+  return '🎨 اختر الألوان المتوفرة للمنتج بالضغط على دوائر الألوان. يمكنك تحديد أكثر من لون، ثم اضغط «حفظ الألوان».\n\nمهم لمعاينة تغيير اللون: اجعل أول لون تختاره هو نفس لون الجراب الظاهر في الصورة الأولى.\n\nالألوان المختارة: ' + (selectedColors.join('، ') || 'لم يتم اختيار ألوان بعد.');
 }
 
 async function refreshProductColorMessage(chatId: number, messageId: number | undefined, selectedColors: string[]) {
