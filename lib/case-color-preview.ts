@@ -93,7 +93,7 @@ export async function generatePhoneCaseColorMask(
 
   const imageResponse = await fetch(
     `https://api.telegram.org/file/bot${botToken}/${telegramFile.file_path}`,
-    { cache: 'no-store', signal: AbortSignal.timeout(20_000) }
+    { cache: 'no-store', signal: AbortSignal.timeout(12_000) }
   );
   if (!imageResponse.ok) {
     throw new Error(`Could not download the Telegram product image: ${imageResponse.status}`);
@@ -112,7 +112,7 @@ export async function generatePhoneCaseColorMask(
   const client = new OpenAI({
     baseURL: 'https://api.meta.ai/v1',
     apiKey,
-    timeout: 45_000,
+    timeout: 35_000,
     maxRetries: 0
   });
 
@@ -171,6 +171,7 @@ export async function generatePhoneCaseColorMask(
     width < 1 ||
     height < 1 ||
     width * height !== best.raster.length ||
+    width * height > 4_000_000 ||
     left < 0 ||
     top < 0 ||
     right <= left ||
