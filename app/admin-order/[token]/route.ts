@@ -77,7 +77,8 @@ export async function GET(
       const unitPrice = Math.max(0, Number(item.unitPrice) || 0);
       const total = unitPrice * quantity;
       const details = [
-        item.color ? '<span class="muted">اللون: ' + escapeHtml(item.color) + '</span>' : ''
+        item.color ? '<span class="muted">اللون: ' + escapeHtml(item.color) + '</span>' : '',
+        item.storage ? '<span class="muted">مساحة التخزين: ' + escapeHtml(item.storage) + '</span>' : ''
       ].filter(Boolean).join('');
       return '<tr>' +
         '<td>' + (index + 1) + '</td>' +
