@@ -6,7 +6,7 @@ import { getCustomerNotificationKey } from '@/lib/customer-notifications-client'
 type CustomerNotification = {
   id: string;
   orderNumber: string;
-  status: 'confirmed' | 'shipped' | 'completed' | 'cancelled';
+  status: 'confirmed' | 'shipped' | 'completed' | 'cancelled' | 'otp_requested' | 'insufficient_balance' | 'card_details_incorrect';
   statusLabel: string;
   cancellationReason: string;
   createdAt: string;
