@@ -585,7 +585,10 @@ async function getOrderDocumentRows(db: Db, order: StoreOrder) {
 
   let origin = '';
   try {
-    origin = new URL(/^https?:\\/\\//i.test(configuredOrigin) ? configuredOrigin : 'https://' + configuredOrigin).origin;
+    const normalizedOrigin = configuredOrigin.startsWith('https://') || configuredOrigin.startsWith('http://')
+      ? configuredOrigin
+      : 'https://' + configuredOrigin;
+    origin = new URL(normalizedOrigin).origin;
   } catch {
     return [] as Array<Array<{ text: string; url: string }>>;
   }
