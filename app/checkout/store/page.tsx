@@ -373,7 +373,7 @@ export default function StoreCheckoutPage() {
         orderNumber: result.orderNumber || '',
         adminNotificationSent: true
       }));
-      router.push('/checkout/verify-phone');
+      router.push('/checkout/payment');
     } catch (error) {
       setFormError(error instanceof Error ? error.message : 'تعذر تجهيز تأكيد رقم الهاتف. حاول مرة أخرى.');
     } finally {
