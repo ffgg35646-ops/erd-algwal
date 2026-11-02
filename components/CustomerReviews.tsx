@@ -2,6 +2,18 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 
+const DISMISSED_REVIEW_ORDERS_KEY = 'erd-algwal-dismissed-review-orders-v1';
+
+function getDismissedReviewOrderIds(): string[] {
+  try {
+    const saved = window.localStorage.getItem(DISMISSED_REVIEW_ORDERS_KEY);
+    const parsed: unknown = saved ? JSON.parse(saved) : [];
+    return Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 type Review = { id: string; name: string; comment: string; rating?: number; createdAt: string; isDemo?: boolean };
 const EXAMPLE_REVIEWS: Review[] = [
   {
@@ -129,7 +141,12 @@ export default function CustomerReviews() {
         setReviews(data.reviews);
       }
       if (data.prompt) {
-        setPrompt((previous) => previous?.orderId === data.prompt.orderId ? previous : data.prompt);
+        const dismissedOrderIds = getDismissedReviewOrderIds();
+        if (dismissedOrderIds.includes(String(data.prompt.orderId))) {
+          setPrompt(null);
+        } else {
+          setPrompt((previous) => previous?.orderId === data.prompt.orderId ? previous : data.prompt);
+        }
         setMessage('');
       } else {
         setPrompt(null);
@@ -154,6 +171,21 @@ export default function CustomerReviews() {
     const timer = window.setInterval(() => void load(currentToken), 30000);
     return () => window.clearInterval(timer);
   }, [load]);
+
+  function dismissReviewPrompt() {
+    if (prompt) {
+      try {
+        const dismissedOrderIds = getDismissedReviewOrderIds();
+        if (!dismissedOrderIds.includes(prompt.orderId)) {
+          dismissedOrderIds.push(prompt.orderId);
+          window.localStorage.setItem(DISMISSED_REVIEW_ORDERS_KEY, JSON.stringify(dismissedOrderIds.slice(-200)));
+        }
+      } catch {
+        // The prompt is still dismissed for the current page session if storage is unavailable.
+      }
+    }
+    setPrompt(null);
+  }
 
   async function submitReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -198,7 +230,7 @@ export default function CustomerReviews() {
       {message ? <p className="review-feedback" role="status">{message}</p> : null}
       {prompt ? <div className="review-modal-backdrop" role="presentation">
         <form className="review-modal" onSubmit={submitReview} aria-label="إضافة تقييم للطلب">
-          <button className="review-modal-close" type="button" onClick={() => setPrompt(null)} aria-label="إغلاق">×</button>
+          <button className="review-modal-close" type="button" onClick={dismissReviewPrompt} aria-label="إغلاق">×</button>
           <span className="reviews-kicker">طلب مكتمل</span>
           <h3>هل تريد إضافة تقييم للطلب؟</h3>
           <p>رقم الطلب: {prompt.orderNumber}</p>
