@@ -7,6 +7,14 @@ import styles from './verify-phone.module.css';
 const DRAFT_KEY = 'erd-algwal-checkout-draft-v1';
 const EMPTY_CODE = ['', '', '', ''];
 
+type CheckoutDraft = {
+  phone?: unknown;
+  stage?: unknown;
+  orderId?: unknown;
+  orderNumber?: unknown;
+  customerNotificationKey?: unknown;
+};
+
 function normalizeDigits(value: string) {
   return value
     .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
@@ -23,21 +31,37 @@ function maskPhone(value: string) {
 export default function VerifyPhonePage() {
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [phone, setPhone] = useState('');
+  const [orderId, setOrderId] = useState('');
+  const [orderNumber, setOrderNumber] = useState('');
+  const [customerNotificationKey, setCustomerNotificationKey] = useState('');
   const [draftReady, setDraftReady] = useState(false);
   const [digits, setDigits] = useState<string[]>(EMPTY_CODE);
   const [error, setError] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem(DRAFT_KEY);
-      const draft = raw ? JSON.parse(raw) as { phone?: unknown; stage?: unknown } : null;
+      const draft = raw ? JSON.parse(raw) as CheckoutDraft : null;
       const savedPhone = typeof draft?.phone === 'string' ? normalizeDigits(draft.phone) : '';
-      if (draft?.stage === 'phone-verification' && savedPhone.length === 10) {
+      const savedOrderId = typeof draft?.orderId === 'string' ? draft.orderId : '';
+      const savedKey = typeof draft?.customerNotificationKey === 'string' ? draft.customerNotificationKey : '';
+      if (
+        (draft?.stage === 'phone-verification' || draft?.stage === 'confirmed') &&
+        savedPhone.length === 10 &&
+        savedOrderId &&
+        savedKey
+      ) {
         setPhone(savedPhone);
+        setOrderId(savedOrderId);
+        setOrderNumber(typeof draft.orderNumber === 'string' ? draft.orderNumber : '');
+        setCustomerNotificationKey(savedKey);
+        setVerified(draft.stage === 'confirmed');
         setDraftReady(true);
       }
     } catch {
-      // An unavailable or invalid browser draft must not bypass phone verification.
+      // Keep the confirmation page unavailable when the checkout draft is invalid.
     }
   }, []);
 
@@ -49,8 +73,7 @@ export default function VerifyPhonePage() {
         next[index + offset] = cleaned[offset];
       }
       setDigits(next);
-      const focusIndex = Math.min(index + cleaned.length, 3);
-      inputRefs.current[focusIndex]?.focus();
+      inputRefs.current[Math.min(index + cleaned.length, 3)]?.focus();
       setError('');
       return;
     }
@@ -80,27 +103,54 @@ export default function VerifyPhonePage() {
     setError('');
   }
 
-  function handleVerify() {
+  async function handleVerify() {
     if (digits.some((digit) => !digit)) {
-      setError('من فضلك أدخل الكود كاملاً');
+      setError('من فضلك أدخل رمز التأكيد المكوّن من أربعة أرقام.');
       return;
     }
-    setError('لم يتم ربط إرسال رمز التحقق والتحقق من صحته بعد. لن يتم إنشاء الطلب أو اعتماده قبل اكتمال التحقق الفعلي.');
-  }
+    if (isVerifying || verified) return;
 
-  function handleResend() {
-    setError('إعادة إرسال الكود ستُفعّل بعد تحديد وسيلة إرسال رمز التحقق.');
+    setIsVerifying(true);
+    setError('');
+    try {
+      const response = await fetch('/api/orders/verify-confirmation-otp', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          customerNotificationKey,
+          code: digits.join('')
+        })
+      });
+      const result = await response.json() as { ok?: boolean; error?: string; message?: string };
+      if (!response.ok || !result.ok) {
+        setError(result.error || 'تعذر التحقق من الرمز. حاول مرة أخرى.');
+        return;
+      }
+
+      setVerified(true);
+      setError('');
+      try {
+        const raw = window.sessionStorage.getItem(DRAFT_KEY);
+        const draft = raw ? JSON.parse(raw) as Record<string, unknown> : {};
+        window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draft, stage: 'confirmed' }));
+      } catch {
+        // Server-side verification remains authoritative even if local storage is unavailable.
+      }
+    } catch {
+      setError('تعذر الاتصال بالخادم. تحقق من الإنترنت وحاول مرة أخرى.');
+    } finally {
+      setIsVerifying(false);
+    }
   }
 
   if (!draftReady) {
     return (
       <main className={styles.page}>
         <section className={styles.card} aria-labelledby="verify-title">
-          <div className={styles.icon} aria-hidden="true">
-            <PhoneIcon />
-          </div>
-          <h1 id="verify-title">تأكيد رقم الهاتف</h1>
-          <p className={styles.sub}>لا توجد بيانات طلب جاهزة لتأكيد رقم الهاتف.</p>
+          <div className={styles.icon} aria-hidden="true"><PhoneIcon /></div>
+          <h1 id="verify-title">تأكيد الطلب</h1>
+          <p className={styles.sub}>لا توجد بيانات طلب جاهزة للتأكيد.</p>
           <Link href="/checkout/store" className={styles.backLink}>العودة لإدخال بيانات الطلب</Link>
         </section>
       </main>
@@ -110,52 +160,56 @@ export default function VerifyPhonePage() {
   return (
     <main className={styles.page}>
       <section className={styles.card} aria-labelledby="verify-title">
-        <div className={styles.icon} aria-hidden="true">
-          <PhoneIcon />
-        </div>
+        <div className={styles.icon} aria-hidden="true"><PhoneIcon /></div>
 
-        <h1 id="verify-title">تأكيد رقم الهاتف</h1>
-        <p className={styles.sub}>سيتم إرسال كود التحقق إلى الرقم التالي بعد ربط وسيلة الإرسال:</p>
-        <p className={styles.sub}><span className={styles.phone}>{maskPhone(phone)}</span></p>
+        {verified ? (
+          <>
+            <h1 id="verify-title">تم تأكيد طلبك بنجاح</h1>
+            <p className={styles.sub}>تم التحقق من رمز تأكيد الطلب واعتماد الطلب.</p>
+            {orderNumber ? <p className={styles.phone}>رقم الطلب: {orderNumber}</p> : null}
+            <Link href="/" className={styles.backLink}>العودة إلى المتجر</Link>
+          </>
+        ) : (
+          <>
+            <h1 id="verify-title">تأكيد الطلب</h1>
+            <p className={styles.sub}>تم إرسال طلبك إلى الإدارة للمراجعة.</p>
+            {orderNumber ? <p className={styles.phone}>رقم الطلب: {orderNumber}</p> : null}
+            <p className={styles.sub}>رقم الجوال المسجل: <span className={styles.phone}>{maskPhone(phone)}</span></p>
+            <p className={styles.notice}>أدخل رمز تأكيد الطلب المكوّن من أربعة أرقام بعد استلامه. يظل الرمز صالحًا حتى تنشئ الإدارة رمزًا جديدًا.</p>
 
-        <div className={styles.inputs} dir="ltr" onPaste={handlePaste} aria-label="رمز التحقق المكوّن من أربعة أرقام">
-          {digits.map((digit, index) => (
-            <input
-              key={index}
-              ref={(element) => { inputRefs.current[index] = element; }}
-              type="text"
-              inputMode="numeric"
-              autoComplete={index === 0 ? 'one-time-code' : 'off'}
-              pattern="[0-9]*"
-              maxLength={1}
-              value={digit}
-              onChange={(event) => setDigit(index, event.target.value)}
-              onKeyDown={(event) => handleKeyDown(index, event)}
-              aria-label={`رقم ${index + 1} من رمز التحقق`}
-            />
-          ))}
-        </div>
+            <div className={styles.inputs} dir="ltr" onPaste={handlePaste} aria-label="رمز تأكيد الطلب المكوّن من أربعة أرقام">
+              {digits.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(element) => { inputRefs.current[index] = element; }}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                  pattern="[0-9]*"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(event) => setDigit(index, event.target.value)}
+                  onKeyDown={(event) => handleKeyDown(index, event)}
+                  aria-label={`رقم ${index + 1} من رمز التأكيد`}
+                  disabled={isVerifying}
+                />
+              ))}
+            </div>
 
-        <div className={styles.error} role="status" aria-live="polite">{error}</div>
+            <div className={styles.error} role="alert" aria-live="polite">{error}</div>
 
-        <button
-          type="button"
-          className={styles.verifyButton}
-          onClick={handleVerify}
-          disabled={digits.some((digit) => !digit)}
-        >
-          تأكيد
-        </button>
-
-        <div className={styles.timerRow}>
-          <span className={styles.timer}>سيظهر عداد إعادة الإرسال بعد ربط خدمة إرسال الكود</span>
-          <button type="button" className={styles.resendButton} onClick={handleResend} disabled>
-            إعادة إرسال الكود
-          </button>
-        </div>
-
-        <p className={styles.notice}>لم يتم اعتماد الطلب أو إرساله للإدارة بعد. سيكتمل ذلك فقط بعد التحقق من رقم الهاتف.</p>
-        <Link href="/checkout/store" className={styles.backLink}>العودة لتعديل بيانات الطلب</Link>
+            <button
+              type="button"
+              className={styles.verifyButton}
+              onClick={() => { void handleVerify(); }}
+              disabled={digits.some((digit) => !digit) || isVerifying}
+            >
+              {isVerifying ? 'جارٍ التحقق...' : 'تأكيد الطلب'}
+            </button>
+            <p className={styles.notice}>لن تتغير حالة الطلب إلى «تم التأكيد» إلا بعد إدخال الرمز الصحيح.</p>
+            <Link href="/" className={styles.backLink}>العودة إلى المتجر</Link>
+          </>
+        )}
       </section>
     </main>
   );
