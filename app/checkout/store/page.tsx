@@ -523,7 +523,7 @@ export default function StoreCheckoutPage() {
             {formError ? <div className="checkout-alert checkout-alert-error" role="alert"><span>!</span>{formError}</div> : null}
             <div className="checkout-form-actions">
               <Link href="/cart" className="outline-button">العودة للسلة</Link>
-              <button type="submit" className="primary-button checkout-submit" disabled={isSubmitting}>{isSubmitting ? 'جارٍ حفظ البيانات...' : 'متابعة إلى الدفع'} <span aria-hidden="true">←</span></button>
+              <button type="submit" className="primary-button checkout-submit" disabled={isSubmitting}>{isSubmitting ? 'جارٍ تجهيز التأكيد...' : 'تأكيد رقم الهاتف'} <span aria-hidden="true">←</span></button>
             </div>
 
             {policyOpen ? (
