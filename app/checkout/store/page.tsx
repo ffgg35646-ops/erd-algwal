@@ -306,6 +306,17 @@ export default function StoreCheckoutPage() {
       }
       if (!submissionId) submissionId = window.crypto.randomUUID();
 
+      let reviewToken = '';
+      try {
+        reviewToken = window.localStorage.getItem('erd-algwal-review-token') || '';
+        if (!reviewToken) {
+          reviewToken = window.crypto.randomUUID();
+          window.localStorage.setItem('erd-algwal-review-token', reviewToken);
+        }
+      } catch {
+        reviewToken = window.crypto.randomUUID();
+      }
+
       const checkoutDraft = {
         ...form,
         ...payload,
@@ -321,55 +332,18 @@ export default function StoreCheckoutPage() {
         currency: 'SAR',
         submissionId,
         submissionFingerprint: fingerprint,
+        customerNotificationKey: getCustomerNotificationKey(),
+        reviewToken,
         savedAt: new Date().toISOString(),
-        stage: 'delivery-details'
+        stage: 'phone-verification'
       };
+
+      // Keep the order as a browser-side draft until the phone is verified.
+      // No order is created and no payment/card flow is touched at this stage.
       window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(checkoutDraft));
-
-      let reviewToken = '';
-      try {
-        reviewToken = window.localStorage.getItem('erd-algwal-review-token') || '';
-        if (!reviewToken) {
-          reviewToken = window.crypto.randomUUID();
-          window.localStorage.setItem('erd-algwal-review-token', reviewToken);
-        }
-      } catch {
-        reviewToken = window.crypto.randomUUID();
-      }
-
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ ...payload, submissionId, customerNotificationKey: getCustomerNotificationKey(), reviewToken })
-      });
-      const result = await response.json() as {
-        ok?: boolean;
-        orderId?: string;
-        orderNumber?: string;
-        total?: number;
-        currency?: string;
-        notificationSent?: boolean;
-        error?: string;
-        message?: string;
-      };
-
-      if (!response.ok || !result.ok || !result.orderId || !result.orderNumber) {
-        throw new Error(result.error || 'تعذر حفظ الطلب. حاول مرة أخرى.');
-      }
-
-      window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify({
-        ...checkoutDraft,
-        orderId: result.orderId,
-        orderNumber: result.orderNumber,
-        total: typeof result.total === 'number' && Number.isFinite(result.total) ? result.total : checkoutDraft.total,
-        currency: result.currency || checkoutDraft.currency,
-        notificationSent: result.notificationSent === true,
-        savedAt: new Date().toISOString(),
-        stage: 'payment'
-      }));
-      router.push('/checkout/payment');
+      router.push('/checkout/verify-phone');
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'تعذر حفظ الطلب. تحقق من الاتصال وحاول مرة أخرى.');
+      setFormError(error instanceof Error ? error.message : 'تعذر تجهيز تأكيد رقم الهاتف. حاول مرة أخرى.');
     } finally {
       setIsSubmitting(false);
     }
