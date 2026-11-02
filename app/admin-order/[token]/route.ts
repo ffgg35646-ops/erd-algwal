@@ -144,13 +144,13 @@ export async function GET(
         '<div class="detail"><span>المبلغ المتبقي</span><b>' + money(Math.max(0, Number(order.total || 0) - Number(order.installmentDownPayment || 0))) + ' ر.س</b></div>'
       : '<div class="detail"><span>نوع البيع</span><b>نقدي</b></div>';
 
-    const html = \`<!doctype html>
+    const html = `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
-<title>تفاصيل الطلب \${escapeHtml(orderNumber)} — أرض الجوال</title>
+<title>تفاصيل الطلب ${escapeHtml(orderNumber)} — أرض الجوال</title>
 <style>
   * { box-sizing: border-box; }
   body { margin: 0; padding: 24px 14px 44px; background: #f4f5f7; color: #202124; font-family: Tahoma, "Segoe UI", Arial, sans-serif; }
@@ -204,27 +204,27 @@ export async function GET(
 <main class="page">
   <header class="top">
     <div class="brand">أرض الجوال<small>تفاصيل الطلب ومستنداته</small></div>
-    <div class="order-number">\${escapeHtml(orderNumber)}</div>
+    <div class="order-number">${escapeHtml(orderNumber)}</div>
   </header>
 
   <section class="card">
-    <h1 class="heading"><span>ملخص الطلب</span><span class="badge">\${escapeHtml(statusLabel(order.status))}</span></h1>
+    <h1 class="heading"><span>ملخص الطلب</span><span class="badge">${escapeHtml(statusLabel(order.status))}</span></h1>
     <div class="details-grid">
-      <div class="detail"><span>تاريخ الطلب</span><b>\${escapeHtml(dateText)}</b></div>
-      \${installmentHtml}
-      <div class="detail"><span>حالة الدفع</span><b>\${escapeHtml(paymentStatus)}</b></div>
-      <div class="detail"><span>طريقة الدفع</span><b>\${escapeHtml(paymentMethod)}</b></div>
+      <div class="detail"><span>تاريخ الطلب</span><b>${escapeHtml(dateText)}</b></div>
+      ${installmentHtml}
+      <div class="detail"><span>حالة الدفع</span><b>${escapeHtml(paymentStatus)}</b></div>
+      <div class="detail"><span>طريقة الدفع</span><b>${escapeHtml(paymentMethod)}</b></div>
     </div>
   </section>
 
   <section class="card">
     <h2 class="heading">بيانات العميل والتوصيل</h2>
     <div class="details-grid">
-      <div class="detail"><span>اسم العميل</span><b>\${escapeHtml(customer.name || '—')}</b></div>
-      <div class="detail"><span>رقم الجوال</span><b dir="ltr">\${escapeHtml(customer.phone || '—')}</b></div>
-      <div class="detail"><span>البريد الإلكتروني</span><b>\${escapeHtml(customer.email || '—')}</b></div>
-      <div class="detail"><span>رقم الهوية</span><b dir="ltr">\${escapeHtml(customer.idNumber || '—')}</b></div>
-      <div class="detail wide"><span>عنوان التوصيل</span><b>\${escapeHtml(customer.address || '—')}</b></div>
+      <div class="detail"><span>اسم العميل</span><b>${escapeHtml(customer.name || '—')}</b></div>
+      <div class="detail"><span>رقم الجوال</span><b dir="ltr">${escapeHtml(customer.phone || '—')}</b></div>
+      <div class="detail"><span>البريد الإلكتروني</span><b>${escapeHtml(customer.email || '—')}</b></div>
+      <div class="detail"><span>رقم الهوية</span><b dir="ltr">${escapeHtml(customer.idNumber || '—')}</b></div>
+      <div class="detail wide"><span>عنوان التوصيل</span><b>${escapeHtml(customer.address || '—')}</b></div>
     </div>
   </section>
 
@@ -233,27 +233,27 @@ export async function GET(
     <div class="table-wrap">
       <table>
         <thead><tr><th>#</th><th>المنتج</th><th>الكمية</th><th>سعر الوحدة</th><th>الإجمالي</th></tr></thead>
-        <tbody>\${productRows || '<tr><td colspan="5">لا توجد منتجات مسجلة.</td></tr>'}</tbody>
+        <tbody>${productRows || '<tr><td colspan="5">لا توجد منتجات مسجلة.</td></tr>'}</tbody>
       </table>
     </div>
-    <div class="total"><span>إجمالي الطلب</span><strong>\${money(Number(order.total) || 0)} ر.س</strong></div>
+    <div class="total"><span>إجمالي الطلب</span><strong>${money(Number(order.total) || 0)} ر.س</strong></div>
   </section>
 
   <section class="card">
     <h2 class="heading">بيانات الدفع</h2>
-    \${visaDetails}
-    \${order.installment ? '<p class="muted">تم اختيار نظام التقسيط. تفاصيل الدفعة المقدمة والمدة والمبلغ المتبقي موضحة في ملخص الطلب، وجدول الدفعات داخل فاتورة الأقساط.</p>' : ''}
+    ${visaDetails}
+    ${order.installment ? '<p class="muted">تم اختيار نظام التقسيط. تفاصيل الدفعة المقدمة والمدة والمبلغ المتبقي موضحة في ملخص الطلب، وجدول الدفعات داخل فاتورة الأقساط.</p>' : ''}
   </section>
 
   <section class="card">
     <h2 class="heading">مستندات الطلب</h2>
-    <div class="documents">\${documentHtml}</div>
+    <div class="documents">${documentHtml}</div>
   </section>
 
-  \${order.notes ? '<section class="card"><h2 class="heading">ملاحظات الطلب</h2><div class="note">' + escapeHtml(order.notes) + '</div></section>' : ''}
+  ${order.notes ? '<section class="card"><h2 class="heading">ملاحظات الطلب</h2><div class="note">' + escapeHtml(order.notes) + '</div></section>' : ''}
 </main>
 </body>
-</html>\`;
+</html>`;
 
     return new Response(html, { status: 200, headers });
   } catch (error) {
