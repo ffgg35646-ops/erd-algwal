@@ -158,12 +158,6 @@ export default function StoreHome() {
       </div>
 
       <CustomerReviews />
-      <section className="store-documents" aria-label="التوثيقات والاعتمادات">
-        <div className="store-documents-inner">
-          <h2>التوثيقات والاعتمادات</h2>
-          <div className="store-documents-list"><div className="store-document-placeholder">تُضاف وثائق واعتمادات المتجر هنا</div></div>
-        </div>
-      </section>
     </main>
   );
 }
@@ -230,6 +224,11 @@ function AutoProductSlider({ categoryName, products }: { categoryName: string; p
       if (cards.length <= visibleCount || slider.scrollWidth <= slider.clientWidth + 2) return;
 
       intervalId = window.setInterval(() => {
+        // Do not call scrollIntoView for rails outside the viewport: it can move
+        // the whole document vertically back to a product section while the user is elsewhere.
+        const sliderRect = slider.getBoundingClientRect();
+        if (sliderRect.top < 0 || sliderRect.bottom > window.innerHeight) return;
+
         const currentCards = getCards();
         const currentVisibleCount = getVisibleCount(currentCards);
         if (currentCards.length <= currentVisibleCount || slider.scrollWidth <= slider.clientWidth + 2) {
