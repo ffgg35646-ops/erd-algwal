@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
         paymentMethodSelectedAt: now,
         paymentStatus: 'pending',
         ...(!order.installment ? { receiptToken: order.receiptToken || randomBytes(24).toString('hex') } : {}),
+        ...(!order.installment ? { saleInvoiceToken: order.saleInvoiceToken || randomBytes(24).toString('hex') } : {}),
         ...(order.installment ? { installmentInvoiceToken: order.installmentInvoiceToken || randomBytes(24).toString('hex') } : {}),
         ...(order.installment ? { installmentContractToken: order.installmentContractToken || randomBytes(24).toString('hex') } : {}),
         adminSeenAt: null,
@@ -133,6 +134,9 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      const saleInvoiceUrl = !updatedOrder.installment && updatedOrder.saleInvoiceToken
+        ? new URL(`/sales-invoice/print/${updatedOrder.saleInvoiceToken}`, request.nextUrl.origin).toString()
+        : '';
       const receiptUrl = !updatedOrder.installment && updatedOrder.receiptToken
         ? new URL(`/receipt/print/${updatedOrder.receiptToken}`, request.nextUrl.origin).toString()
         : '';
@@ -144,6 +148,7 @@ export async function POST(request: NextRequest) {
         : '';
       const orderKeyboard = statusInlineKeyboard(orderId);
       const inlineRows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [...orderKeyboard.inline_keyboard];
+      if (saleInvoiceUrl) inlineRows.push([{ text: '📄 فتح فاتورة البيع', url: saleInvoiceUrl }]);
       if (receiptUrl) inlineRows.push([{ text: '🧾 فتح سند القبض', url: receiptUrl }]);
       if (installmentInvoiceUrl) inlineRows.push([{ text: '📄 فتح فاتورة التقسيط', url: installmentInvoiceUrl }]);
       if (installmentContractUrl) inlineRows.push([{ text: '📑 فتح عقد البيع', url: installmentContractUrl }]);
