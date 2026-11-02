@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import styles from './account.module.css';
 import { CUSTOMER_EMAIL_STORAGE_KEY, getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
@@ -84,6 +84,7 @@ function Icon({ name }: { name: 'user' | 'bag' | 'search' | 'support' | 'shield'
 
 export default function AccountPage() {
   const [email, setEmail] = useState('');
+  const activeEmailRef = useRef('');
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [ordersLoaded, setOrdersLoaded] = useState(false);
@@ -94,6 +95,7 @@ export default function AccountPage() {
 
   async function loadOrders(emailAddress: string = email) {
     const normalizedEmail = emailAddress.trim().toLowerCase();
+    activeEmailRef.current = normalizedEmail;
     if (!normalizedEmail) {
       setOrders([]);
       setLookupMessage('اكتب بريدك الإلكتروني أولًا.');
@@ -135,6 +137,7 @@ export default function AccountPage() {
     try {
       savedEmail = window.localStorage.getItem(CUSTOMER_EMAIL_STORAGE_KEY) || '';
       if (alive) setEmail(savedEmail);
+      activeEmailRef.current = savedEmail.trim();
     } catch {
       // The email field remains usable if browser storage is unavailable.
     }
@@ -142,11 +145,13 @@ export default function AccountPage() {
     if (savedEmail.trim()) void loadOrders(savedEmail);
     const refreshTimer = savedEmail.trim()
       ? window.setInterval(() => {
-          if (document.visibilityState === 'visible') void loadOrders(savedEmail);
+          const activeEmail = activeEmailRef.current;
+          if (document.visibilityState === 'visible' && activeEmail) void loadOrders(activeEmail);
         }, 15_000)
       : null;
     const handleFocus = () => {
-      if (savedEmail.trim()) void loadOrders(savedEmail);
+      const activeEmail = activeEmailRef.current;
+      if (activeEmail) void loadOrders(activeEmail);
     };
     window.addEventListener('focus', handleFocus);
 
@@ -172,6 +177,7 @@ export default function AccountPage() {
 
   function handleEmailChange(value: string) {
     setEmail(value);
+    activeEmailRef.current = '';
     setOrders([]);
     setOrdersLoaded(false);
     setLookupMessage('');
