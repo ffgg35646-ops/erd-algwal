@@ -9,6 +9,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type PaymentMethodBody = {
+  action?: 'verify-total' | 'submit';
   orderId?: string;
   submissionId?: string;
   reviewToken?: string;
@@ -41,6 +42,46 @@ export async function POST(request: NextRequest) {
   if (!/^[a-f0-9]{24}$/i.test(orderId) || !UUID_PATTERN.test(submissionId) || !UUID_PATTERN.test(reviewToken)) {
     return NextResponse.json({ ok: false, error: 'تعذر التحقق من الطلب. ارجع لبيانات التوصيل وحاول مرة أخرى.' }, { status: 400 });
   }
+
+  if (body.action === 'verify-total') {
+    try {
+      const db = await getDb();
+      const verifiedOrder = await db.collection<StoreOrder & {
+        checkoutRequestId?: string;
+        reviewToken?: string;
+      }>('orders').findOne({
+        _id: new ObjectId(orderId),
+        source: 'website',
+        checkoutRequestId: submissionId,
+        reviewToken
+      });
+      if (!verifiedOrder) {
+        return NextResponse.json({ ok: false, error: 'لم يتم العثور على الطلب أو تعذر التحقق من ملكيته.' }, {
+          status: 404,
+          headers: { 'cache-control': 'no-store, max-age=0' }
+        });
+      }
+      if (!Number.isFinite(verifiedOrder.total) || verifiedOrder.total <= 0) {
+        return NextResponse.json({ ok: false, error: 'إجمالي الطلب المسجل غير صالح.' }, {
+          status: 409,
+          headers: { 'cache-control': 'no-store, max-age=0' }
+        });
+      }
+      return NextResponse.json({
+        ok: true,
+        total: verifiedOrder.total,
+        currency: verifiedOrder.currency || 'SAR',
+        orderNumber: verifiedOrder.orderNumber
+      }, { headers: { 'cache-control': 'no-store, max-age=0' } });
+    } catch (error) {
+      console.error('Payment amount verification failed:', error instanceof Error ? error.message : 'Unknown error');
+      return NextResponse.json({ ok: false, error: 'تعذر التحقق من إجمالي الطلب حاليًا.' }, {
+        status: 500,
+        headers: { 'cache-control': 'no-store, max-age=0' }
+      });
+    }
+  }
+
   if (paymentMethod !== 'mada' && paymentMethod !== 'visa') {
     return NextResponse.json({ ok: false, error: 'اختر بطاقة Visa أو مدى.' }, { status: 400 });
   }

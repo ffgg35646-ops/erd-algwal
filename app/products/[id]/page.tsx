@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import ProductDetails from '@/components/ProductDetails';
 import { getProduct } from '@/lib/products';
 import { getDb } from '@/lib/mongodb';
-import { findStoredProduct, serializeStoredProduct } from '@/lib/catalog';
+import { ensureDefaultProducts, findStoredProduct, serializeStoredProduct } from '@/lib/catalog';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,15 +12,25 @@ type ProductPageProps = {
 
 async function resolveProduct(id: string) {
   const builtIn = getProduct(id);
-  if (builtIn) return builtIn;
-  if (!process.env.MONGODB_URI) return null;
+  if (!process.env.MONGODB_URI) return builtIn || null;
+
   try {
     const db = await getDb();
+    await ensureDefaultProducts(db);
     const stored = await findStoredProduct(db, id);
-    return stored ? serializeStoredProduct(stored) : null;
+    if (stored) return serializeStoredProduct(stored);
+
+    if (builtIn) {
+      const deletedSeed = await db.collection('products').findOne(
+        { seedId: id, deleted: true },
+        { projection: { _id: 1 } }
+      );
+      if (deletedSeed) return null;
+    }
+    return builtIn || null;
   } catch (error) {
     console.error('Product details load failed:', error instanceof Error ? error.message : 'Unknown error');
-    return null;
+    return builtIn || null;
   }
 }
 

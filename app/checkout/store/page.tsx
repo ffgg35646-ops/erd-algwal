@@ -5,7 +5,7 @@ import styles from '../checkout.module.css';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { parseCartItemKey, useCart } from '@/components/CartProvider';
-import { formatPrice } from '@/lib/products';
+import { formatPrice, getProductPrice } from '@/lib/products';
 import { CUSTOMER_EMAIL_STORAGE_KEY, getCustomerNotificationKey } from '@/lib/customer-notifications-client';
 
 type SaudiCity = {
@@ -178,11 +178,11 @@ export default function StoreCheckoutPage() {
   }, []);
 
   const cartLines = useMemo(() => Object.entries(cart).map(([cartKey, quantity]) => {
-    const { productId, color } = parseCartItemKey(cartKey);
-    return { cartKey, color, product: products.find((item) => item.id === productId), quantity };
+    const { productId, color, storage } = parseCartItemKey(cartKey);
+    return { cartKey, color, storage, product: products.find((item) => item.id === productId), quantity };
   }).filter((line) => Boolean(line.product)), [cart]);
 
-  const total = cartLines.reduce((sum, line) => sum + (line.product?.price || 0) * line.quantity, 0);
+  const total = cartLines.reduce((sum, line) => sum + (line.product ? getProductPrice(line.product, line.storage) : 0) * line.quantity, 0);
   const cityOptions = useMemo(() => {
     const term = normalizeCitySearch(citySearch);
     if (!term) return saudiCities;
@@ -268,10 +268,11 @@ export default function StoreCheckoutPage() {
       return;
     }
 
-    const items = cartLines.map(({ product, quantity, color }) => ({
+    const items = cartLines.map(({ product, quantity, color, storage }) => ({
       productId: product!.id,
       quantity,
-      ...(color ? { color } : {})
+      ...(color ? { color } : {}),
+      ...(storage ? { storage } : {})
     }));
     const payload = {
       fullName: form.fullName.trim(),
@@ -308,12 +309,13 @@ export default function StoreCheckoutPage() {
       const checkoutDraft = {
         ...form,
         ...payload,
-        items: cartLines.map(({ product, quantity, color }) => ({
+        items: cartLines.map(({ product, quantity, color, storage }) => ({
           productId: product!.id,
           name: product!.name,
-          unitPrice: product!.price,
+          unitPrice: getProductPrice(product!, storage),
           quantity,
-          ...(color ? { color } : {})
+          ...(color ? { color } : {}),
+          ...(storage ? { storage } : {})
         })),
         total,
         currency: 'SAR',
@@ -580,11 +582,11 @@ export default function StoreCheckoutPage() {
           <aside className="checkout-order-summary checkout-order-summary-compact">
             <h2>ملخص طلبك</h2>
             <div className="checkout-order-items">
-              {cartLines.map(({ cartKey, product, color, quantity }) => product ? (
+              {cartLines.map(({ cartKey, product, color, storage, quantity }) => product ? (
                 <div className="checkout-order-item" key={cartKey}>
                   <img src={product.image} alt={product.name} />
-                  <div><strong>{product.name}</strong>{color ? <small>اللون: {color}</small> : null}<small>الكمية: {quantity}</small></div>
-                  <b>{formatPrice(product.price * quantity)}</b>
+                  <div><strong>{product.name}</strong>{color ? <small>اللون: {color}</small> : null}{storage ? <small>مساحة التخزين: {storage}</small> : null}<small>الكمية: {quantity}</small></div>
+                  <b>{formatPrice(getProductPrice(product, storage) * quantity)}</b>
                 </div>
               ) : null)}
             </div>

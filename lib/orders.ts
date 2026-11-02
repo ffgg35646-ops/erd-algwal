@@ -7,6 +7,7 @@ export type OrderItem = {
   quantity: number;
   unitPrice?: number;
   color?: string;
+  storage?: string;
 };
 
 export type StoreOrder = Document & {
@@ -72,7 +73,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
       : '';
     return [
       `${index + 1}) ${name}`,
-      `   العدد: ${quantity}${item.color ? ' | اللون: ' + String(item.color) : ''}${lineTotal ? ' | الإجمالي: ' + lineTotal : ''}`
+      `   العدد: ${quantity}${item.color ? ' | اللون: ' + String(item.color) : ''}${item.storage ? ' | التخزين: ' + String(item.storage) : ''}${lineTotal ? ' | الإجمالي: ' + lineTotal : ''}`
     ].join('\n');
   }).join('\n') || 'لا توجد منتجات مسجلة';
   const total = Number(order.total || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });

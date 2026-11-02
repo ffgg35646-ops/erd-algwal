@@ -131,7 +131,8 @@ export async function GET(
     const products = (order.items || []).map((item) => {
       const quantity = Math.max(1, Number(item.quantity) || 1);
       return escapeHtml(item.name || 'منتج') + ' × ' + quantity +
-        (item.color ? ' — اللون: ' + escapeHtml(item.color) : '');
+        (item.color ? ' — اللون: ' + escapeHtml(item.color) : '') +
+        (item.storage ? ' — مساحة التخزين: ' + escapeHtml(item.storage) : '');
     }).join('، ') || '—';
     const createdAt = new Date(order.createdAt);
     const dateText = Number.isNaN(createdAt.getTime())
