@@ -582,11 +582,11 @@ export default function StoreCheckoutPage() {
           <aside className="checkout-order-summary checkout-order-summary-compact">
             <h2>ملخص طلبك</h2>
             <div className="checkout-order-items">
-              {cartLines.map(({ cartKey, product, color, quantity }) => product ? (
+              {cartLines.map(({ cartKey, product, color, storage, quantity }) => product ? (
                 <div className="checkout-order-item" key={cartKey}>
                   <img src={product.image} alt={product.name} />
-                  <div><strong>{product.name}</strong>{color ? <small>اللون: {color}</small> : null}<small>الكمية: {quantity}</small></div>
-                  <b>{formatPrice(product.price * quantity)}</b>
+                  <div><strong>{product.name}</strong>{color ? <small>اللون: {color}</small> : null}{storage ? <small>مساحة التخزين: {storage}</small> : null}<small>الكمية: {quantity}</small></div>
+                  <b>{formatPrice(getProductPrice(product, storage) * quantity)}</b>
                 </div>
               ) : null)}
             </div>
