@@ -465,8 +465,7 @@ export default function CheckoutPaymentPage() {
             </div>
           </div>
 
-          <div className={styles.paymentSafe}>🛡️ تسوق إلكتروني آمن 100%</div>
-          <p className={styles.paymentInstruction}>واجهة تجريبية للتحقق من شكل بيانات البطاقة فقط؛ لا يتم تنفيذ خصم مالي، ولا نرسل رقم البطاقة الكامل أو رمز CVC أو نخزنهما.</p>
+          <div className={styles.paymentSafe}>الدفع الإلكتروني قيد التفعيل؛ لا يتم خصم أي مبلغ من هذه الصفحة حاليًا.</div>
 
           {paymentMessage ? (
             <div className={paymentMessageSuccess ? styles.paymentInlineMessage + ' ' + styles.paymentInlineMessageSuccess : styles.paymentInlineMessage} role={paymentMessageSuccess ? 'status' : 'alert'}>
