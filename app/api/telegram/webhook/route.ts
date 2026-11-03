@@ -2188,15 +2188,22 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
 
     if (message.photo?.length) {
       const photo = message.photo[message.photo.length - 1];
-      const result = await db.collection<StoredProduct>('products').updateOne(
-        { _id: new ObjectId(productId), deleted: { $ne: true }, colors: color },
-        { $set: { ['colorImages.' + color]: photo.file_id, updatedAt: new Date() } }
-      );
-      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-      if (!result.matchedCount) {
+      const product = await db.collection<StoredProduct>('products').findOne({
+        _id: new ObjectId(productId),
+        deleted: { $ne: true },
+        colors: color
+      });
+      if (!product) {
+        await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
         await showProductColorImagesMenu(db, chatId, productId, 'لم يتم حفظ الصورة لأن اللون لم يعد ضمن ألوان المنتج.');
         return;
       }
+      const colorImages = { ...(product.colorImages || {}), [color]: photo.file_id };
+      await db.collection<StoredProduct>('products').updateOne(
+        { _id: product._id, deleted: { $ne: true } },
+        { $set: { colorImages, updatedAt: new Date() } }
+      );
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
       await showProductColorImagesMenu(db, chatId, productId, '✅ تم ربط صورة اللون «' + color + '» بنجاح.');
       return;
     }
@@ -2206,11 +2213,13 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
         { _id: new ObjectId(productId), deleted: { $ne: true } },
         { projection: { colorImages: 1 } }
       );
-      const hadImage = Boolean(existingProduct?.colorImages?.[color]);
+      const remainingColorImages: Record<string, string> = { ...(existingProduct?.colorImages || {}) };
+      const hadImage = Boolean(remainingColorImages[color]);
       if (hadImage) {
+        delete remainingColorImages[color];
         await db.collection<StoredProduct>('products').updateOne(
           { _id: new ObjectId(productId), deleted: { $ne: true } },
-          { $unset: { ['colorImages.' + color]: '' }, $set: { updatedAt: new Date() } }
+          { $set: { colorImages: remainingColorImages, updatedAt: new Date() } }
         );
       }
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
