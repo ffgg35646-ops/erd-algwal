@@ -82,7 +82,7 @@ async function notifyAdminAboutNewOrder(db: Db, order: StoreOrder) {
     '🆕 طلب جديد وصل إلى المتجر',
     `رقم الطلب: ${order.orderNumber}`,
     `اسم العميل: ${customer.name || '—'}`,
-    `رقم الجوال: ${customer.phone || '—'}`,
+    `☎️ رقم الهاتف: ${customer.phone || (order as StoreOrder & { phone?: string }).phone || 'غير مسجل'}`,
     `البريد الإلكتروني: ${customer.email || '—'}`,
     `الهوية: ${customer.idNumber || '—'}`,
     `العنوان: ${customer.address || '—'}`,
