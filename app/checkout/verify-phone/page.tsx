@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import styles from './verify-phone.module.css';
 
@@ -30,6 +31,7 @@ function formatPhone(value: string) {
 }
 
 export default function VerifyPhonePage() {
+  const router = useRouter();
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [phone, setPhone] = useState('');
   const [orderId, setOrderId] = useState('');
@@ -73,19 +75,27 @@ export default function VerifyPhonePage() {
   }, []);
 
   useEffect(() => {
-    if (!verified || confirmedAt === null) {
+    if (!verified) {
       setCountdown(0);
       return;
     }
 
+    const verificationTime = confirmedAt ?? Date.now();
+    const redirectTimer = window.setTimeout(
+      () => router.replace('/'),
+      Math.max(0, verificationTime + 30_000 - Date.now())
+    );
     const updateCountdown = () => {
-      setCountdown(Math.max(0, Math.ceil((confirmedAt + 30_000 - Date.now()) / 1000)));
+      setCountdown(Math.max(0, Math.ceil((verificationTime + 30_000 - Date.now()) / 1000)));
     };
 
     updateCountdown();
     const interval = window.setInterval(updateCountdown, 250);
-    return () => window.clearInterval(interval);
-  }, [confirmedAt, verified]);
+    return () => {
+      window.clearInterval(interval);
+      window.clearTimeout(redirectTimer);
+    };
+  }, [confirmedAt, verified, router]);
 
   function setDigit(index: number, value: string) {
     const cleaned = normalizeDigits(value);
