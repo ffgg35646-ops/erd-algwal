@@ -5,7 +5,6 @@ import { getDb } from '@/lib/mongodb';
 import { ensureDefaultCategories, ensureDefaultProducts, type StoreCategory, type StoredProduct } from '@/lib/catalog';
 import {
   adminReplyKeyboard,
-  customerOrdersSectionsKeyboard,
   ORDER_STATUS_LABELS,
   sendTelegramMessage,
   telegramApi,
@@ -79,8 +78,6 @@ type AdminSession = {
 };
 
 const MENU_ORDERS = 'طلبات العملاء';
-const MENU_NEW_ORDERS = 'جديد';
-const MENU_SHIPPED_ORDERS = 'تم الشحن';
 const MENU_ADD_SECTION = 'إضافة قسم';
 const MENU_EDIT_SECTION = 'تعديل قسم';
 const MENU_ADD_PRODUCT = 'إضافة منتج';
@@ -217,10 +214,7 @@ async function sendMainMenu(db: Db, chatId: number, message = 'أهلًا بك �
 }
 
 async function showCustomerOrdersMenu(db: Db, chatId: number) {
-  const counts = await getOrderSectionCounts(db);
-  await sendTelegramMessage(chatId, 'طلبات العملاء\n\nاختر القسم الذي تريد عرضه:', {
-    reply_markup: customerOrdersSectionsKeyboard(counts.newCount, counts.shippedCount)
-  });
+  await showCustomerOrders(db, chatId);
 }
 
 async function saveSession(db: Db, session: AdminSession) {
@@ -577,23 +571,19 @@ async function ensureShortOrderNumbers(db: Db, orders: StoreOrder[]) {
   }
 }
 
-async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'shipped') {
-  const sectionLabel = section === 'new' ? 'الطلبات الجديدة' : 'الطلبات التي تم شحنها';
-  const sectionFilter: OrderStatus | { $in: OrderStatus[] } = section === 'new'
-    ? { $in: ['new', 'confirmed', 'preparing'] }
-    : 'shipped';
+async function showCustomerOrders(db: Db, chatId: number) {
   const orders = await db.collection<StoreOrder>('orders')
-    .find({ source: 'website', status: sectionFilter })
+    .find({ source: 'website' })
     .sort({ createdAt: -1 })
     .limit(50)
     .toArray();
 
   await ensureShortOrderNumbers(db, orders);
 
+  const counts = await getOrderSectionCounts(db);
   if (!orders.length) {
-    const counts = await getOrderSectionCounts(db);
-    await sendTelegramMessage(chatId, 'لا توجد ' + sectionLabel + ' حاليًا.', {
-      reply_markup: customerOrdersSectionsKeyboard(counts.newCount, counts.shippedCount)
+    await sendTelegramMessage(chatId, 'لا توجد طلبات عملاء حاليًا.', {
+      reply_markup: adminReplyKeyboard(counts.newCount + counts.shippedCount)
     });
     return;
   }
@@ -602,7 +592,12 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
     const customerName = order.customer?.name || 'بدون اسم';
     const customerPhone = order.customer?.phone || (order as StoreOrder & { phone?: string }).phone || 'رقم الهاتف غير مسجل';
     return `${index + 1}. ${order.orderNumber || 'طلب'} — ${customerName} — ${customerPhone}`;
-  }).join('\n');
+  }).join('\\n');
+
+  // Replace the old section reply keyboard with the main admin menu.
+  await sendTelegramMessage(chatId, '🧾 طلبات العملاء (' + orders.length + ')', {
+    reply_markup: adminReplyKeyboard(counts.newCount + counts.shippedCount)
+  });
 
   const keyboard = {
     inline_keyboard: [
@@ -610,25 +605,23 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
         text: `${index + 1}. ${order.orderNumber || 'طلب'}`,
         callback_data: 'edit-order:' + order._id.toHexString()
       }]),
-      [{ text: '↩ أقسام طلبات العملاء', callback_data: 'orders-menu' }],
+      [{ text: '↩ تحديث قائمة الطلبات', callback_data: 'orders-menu' }],
       [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
     ]
   };
 
   await sendTelegramMessage(
     chatId,
-    '🧾 ' + sectionLabel + ' (' + orders.length + ')\n\n' + summary + '\n\nاضغط على رقم الطلب لفتح التفاصيل والإجراءات.',
+    summary + '\\n\\nاضغط على رقم الطلب لفتح التفاصيل والإجراءات.',
     { reply_markup: keyboard }
   );
 
-  if (section === 'new') {
-    const ids = orders.filter((order) => order.adminSeenAt == null).map((order) => order._id);
-    if (ids.length) {
-      await db.collection('orders').updateMany(
-        { _id: { $in: ids }, source: 'website', adminSeenAt: null },
-        { $set: { adminSeenAt: new Date() } }
-      );
-    }
+  const ids = orders.filter((order) => order.adminSeenAt == null).map((order) => order._id);
+  if (ids.length) {
+    await db.collection('orders').updateMany(
+      { _id: { $in: ids }, source: 'website', adminSeenAt: null },
+      { $set: { adminSeenAt: new Date() } }
+    );
   }
 }
 
@@ -2369,11 +2362,6 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
   if (normalizedText === MENU_ORDERS) {
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
     await showCustomerOrdersMenu(db, chatId);
-    return;
-  }
-  if (normalizedText === MENU_NEW_ORDERS || normalizedText === MENU_SHIPPED_ORDERS) {
-    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
-    await showCustomerOrders(db, chatId, normalizedText === MENU_NEW_ORDERS ? 'new' : 'shipped');
     return;
   }
   if (value === MENU_ADD_SECTION) {
