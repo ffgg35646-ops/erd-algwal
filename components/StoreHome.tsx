@@ -344,6 +344,7 @@ function AutoProductSlider({ categoryName, products }: { categoryName: string; p
 function StripProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
+  const availableProductColors = product.colors?.filter((color) => typeof color === 'string' && color.trim()) || [];
 
   function handleAdd() {
     addToCart(product.id);
@@ -368,24 +369,24 @@ function StripProductCard({ product }: { product: Product }) {
       <div className="strip-product-info">
         <span className="strip-product-category">{product.category}</span>
         <Link href={'/products/' + product.id} className="strip-product-name">{product.name}</Link>
-        {product.colors?.filter(Boolean).length ? (
+        {availableProductColors.length ? (
           <div
             className="strip-product-colors"
             role="img"
-            aria-label={'الألوان المتاحة: ' + product.colors.filter(Boolean).join('، ')}
-            title={'الألوان: ' + product.colors.filter(Boolean).join('، ')}
+            aria-label={'الألوان المتاحة: ' + availableProductColors.join('، ')}
+            title={'الألوان: ' + availableProductColors.join('، ')}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, minHeight: 15, margin: '2px 0 5px', overflow: 'hidden' }}
           >
             <span style={{ color: '#777', fontSize: 9, whiteSpace: 'nowrap' }}>الألوان</span>
-            {product.colors.filter(Boolean).slice(0, 5).map((color) => (
+            {availableProductColors.slice(0, 5).map((color) => (
               <span
                 key={color}
                 aria-hidden="true"
                 style={{ display: 'inline-block', flex: '0 0 auto', width: 11, height: 11, borderRadius: '50%', border: '1px solid rgba(0,0,0,.16)', backgroundColor: getProductColorHex(color) }}
               />
             ))}
-            {product.colors.filter(Boolean).length > 5 ? (
-              <span style={{ color: '#777', fontSize: 9 }}>+{product.colors.filter(Boolean).length - 5}</span>
+            {availableProductColors.length > 5 ? (
+              <span style={{ color: '#777', fontSize: 9 }}>+{availableProductColors.length - 5}</span>
             ) : null}
           </div>
         ) : null}
