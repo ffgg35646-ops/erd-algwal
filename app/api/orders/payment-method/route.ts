@@ -194,7 +194,19 @@ try {
         adminId,
         '🛍️ تم إكمال طلب جديد — أرض الجوال\n\n' +
           formatOrderForAdmin(updatedOrder as unknown as Record<string, unknown>) +
-          orderLinkText
+          orderLinkText,
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '1️⃣ إظهار الفاتورة للعميل', callback_data: 'send-order-documents:' + updatedOrder._id.toHexString() }],
+              [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + updatedOrder._id.toHexString() + ':otp' }],
+              [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + updatedOrder._id.toHexString() + ':balance' }],
+              [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + updatedOrder._id.toHexString() + ':card' }],
+              [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + updatedOrder._id.toHexString() }],
+              [{ text: '6️⃣ ✅ طلب مكتمل', callback_data: 'status:' + updatedOrder._id.toHexString() + ':completed' }]
+            ]
+          }
+        }
       );
       const notifiedAt = new Date();
       await orders.updateOne(filter, {
