@@ -39,19 +39,9 @@ function getColorHex(color: string) {
   return COLOR_HEX[key] || '#b7b7b7';
 }
 
-function ProductCartIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 1.9-1.4L21 8H6" />
-      <circle cx="10" cy="20" r="1.2" />
-      <circle cx="18" cy="20" r="1.2" />
-    </svg>
-  );
-}
-
 export default function ProductDetails({ product }: { product: Product }) {
   const router = useRouter();
-  const { addToCart, itemCount } = useCart();
+  const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const availableColors = product.colors?.filter(Boolean) || [];
@@ -213,10 +203,6 @@ export default function ProductDetails({ product }: { product: Product }) {
             <button type="button" className="product-detail-add" onClick={handleAdd}>
               متابعة الطلب
             </button>
-            <Link href="/cart" className="product-detail-cart-button" aria-label="فتح سلة المشتريات" title="فتح سلة المشتريات">
-              <ProductCartIcon />
-              {itemCount > 0 ? <span className="product-detail-cart-count">{itemCount > 99 ? '99+' : itemCount}</span> : null}
-            </Link>
           </div>
 
           <section className="product-detail-description">
