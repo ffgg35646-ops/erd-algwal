@@ -106,7 +106,7 @@ async function notifyAdminAboutNewOrder(db: Db, order: StoreOrder) {
           [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + orderId + ':balance' }],
           [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + orderId + ':card' }],
           [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + orderId }],
-          [{ text: '✅ طلب مكتمل', callback_data: 'status:' + orderId + ':completed' }]
+          [{ text: '6️⃣ ✅ طلب مكتمل', callback_data: 'status:' + orderId + ':completed' }]
         ]
       }
     });
