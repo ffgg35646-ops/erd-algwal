@@ -535,15 +535,17 @@ async function showProductColorImagesMenu(db: Db, chatId: number, id: string, no
   keyboard.push([{ text: '↩ رجوع إلى تعديل المنتج', callback_data: 'edit-product:' + id }]);
 
   const linkedCount = colors.filter((color) => Boolean(colorImages[color])).length;
-  await sendTelegramMessage(
-    chatId,
-    (notice ? notice + '\\n\\n' : '') +
-      '📸 ربط صور الألوان — ' + product.name +
-      '\\n\\nاضغط على اللون، ثم أرسل صورة واحدة واضحة لهذا اللون. الصورة القديمة ستُستبدل تلقائيًا إذا رفعت صورة جديدة.' +
-      '\\n\\nالصور المرتبطة: ' + linkedCount + ' من ' + colors.length +
-      '\\n\\nاللون الذي لا تربط له صورة سيستخدم الصورة الأساسية أو معاينة تغيير اللون الحالية.',
-    { reply_markup: { inline_keyboard: keyboard } }
-  );
+  const lines = [
+    ...(notice ? [notice, ''] : []),
+    '📸 ربط صور الألوان — ' + product.name,
+    '',
+    'اضغط على اللون، ثم أرسل صورة واحدة واضحة لهذا اللون. الصورة القديمة ستُستبدل تلقائيًا إذا رفعت صورة جديدة.',
+    '',
+    'الصور المرتبطة: ' + linkedCount + ' من ' + colors.length,
+    '',
+    'اللون الذي لا تربط له صورة سيستخدم الصورة الأساسية أو معاينة تغيير اللون الحالية.'
+  ];
+  await sendTelegramMessage(chatId, lines.join('\n'), { reply_markup: { inline_keyboard: keyboard } });
 }
 
 async function ensureShortOrderNumbers(db: Db, orders: StoreOrder[]) {
@@ -1271,7 +1273,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     return;
   }
   if (action === 'product-color-image') {
-    if (!isObjectId(id || '') || !/^\\d+$/.test(field || '')) {
+    if (!isObjectId(id || '') || !/^\d+$/.test(field || '')) {
       return void await sendTelegramMessage(chatId, 'اللون المحدد غير صالح.');
     }
     const product = await db.collection<StoredProduct>('products').findOne({
@@ -1287,7 +1289,13 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       'edit_product',
       'edit_product_color_image',
       { productId: id, colorImageColor: color },
-      '📸 أرسل الآن صورة المنتج الخاصة باللون «' + color + '».\\n\\nارفع الصورة كصورة في تيليجرام، وليس كملف. سيتم ربطها بهذا اللون فقط.\\n\\nيمكنك الضغط على «' + REMOVE_COLOR_IMAGE_TEXT + '» لحذف الصورة الحالية لهذا اللون.',
+      [
+        '📸 أرسل الآن صورة المنتج الخاصة باللون «' + color + '».',
+        '',
+        'ارفع الصورة كصورة في تيليجرام، وليس كملف. سيتم ربطها بهذا اللون فقط.',
+        '',
+        'يمكنك الضغط على «' + REMOVE_COLOR_IMAGE_TEXT + '» لحذف الصورة الحالية لهذا اللون.'
+      ].join('\\n'),
       {
         keyboard: [[{ text: REMOVE_COLOR_IMAGE_TEXT }], [{ text: MAIN_MENU_TEXT }]],
         resize_keyboard: true,
