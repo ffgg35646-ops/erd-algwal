@@ -27,6 +27,8 @@ export type Product = {
   specifications: string[];
   categoryId?: string;
   colors?: string[];
+  /** Per-color product image URLs returned by the catalogue API. */
+  colorImages?: Record<string, string>;
   storageOptions?: string[];
   storagePrices?: Record<string, number>;
   images?: string[];
