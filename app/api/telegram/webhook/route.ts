@@ -1941,10 +1941,18 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     );
     await sendTelegramMessage(
       chatId,
-      '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ': ' + otp +
-        '\n\nأرسل هذا الرمز للعميل بالطريقة التي تعتمدها. يظل صالحًا دون مدة زمنية، وإصدار رمز جديد يُبطل الرمز السابق.'
+      '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ':\n\n' + otp +
+        '\n\nاضغط «📋 نسخ الرمز» لنسخه مباشرة، أو اضغط مطولًا على الرمز لنسخه يدويًا.\n' +
+        'أرسل هذا الرمز للعميل بالطريقة التي تعتمدها. يظل صالحًا دون مدة زمنية، وإصدار رمز جديد يُبطل الرمز السابق.',
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '📋 نسخ الرمز', copy_text: { text: otp } }],
+            [{ text: '📄 عرض تفاصيل الطلب', callback_data: 'edit-order:' + id }]
+          ]
+        }
+      }
     );
-    await listOrderDetails(db, chatId, id);
     return;
   }
 
