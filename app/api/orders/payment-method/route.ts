@@ -182,15 +182,14 @@ export async function POST(request: NextRequest) {
         message: 'تم حفظ الطلب، لكن لم يتم ضبط مستلم إشعارات الإدارة.'
       });
     }
+try {
+  const orderUrl = updatedOrder.adminOrderToken
+    ? new URL(`/admin-order/${updatedOrder.adminOrderToken}`, request.nextUrl.origin).toString()
+    : '';
 
-    try {
-      const orderUrl = updatedOrder.adminOrderToken
-        ? new URL(`/admin-order/${updatedOrder.adminOrderToken}`, request.nextUrl.origin).toString()
-        : '';
-      const orderLinkText = orderUrl
-        ? '\\n\\n📋 فتح الطلب والمستندات:\\n' + orderUrl
-        : '';
-
+  const orderLinkText = orderUrl
+    ? '\n\n📋 فتح الطلب والمستندات:\n' + orderUrl
+    : '';
       await sendTelegramMessage(
         adminId,
         '🛍️ تم إكمال طلب جديد — أرض الجوال\\n\\n' +
