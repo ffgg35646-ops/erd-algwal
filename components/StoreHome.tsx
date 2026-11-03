@@ -15,6 +15,37 @@ const categorySymbols: Record<string, string> = {
   'إكسسوارات': '✦'
 };
 
+const PRODUCT_COLOR_HEX: Record<string, string> = {
+  'أسود': '#171717', 'اسود': '#171717', black: '#171717',
+  'أبيض': '#fafafa', 'ابيض': '#fafafa', white: '#fafafa',
+  'أحمر': '#d93642', 'احمر': '#d93642', red: '#d93642',
+  'أصفر': '#f3cb3d', 'اصفر': '#f3cb3d', yellow: '#f3cb3d',
+  'أزرق': '#2874d9', 'ازرق': '#2874d9', blue: '#2874d9',
+  'أخضر': '#299660', 'اخضر': '#299660', green: '#299660',
+  'بنفسجي': '#8255c5', purple: '#8255c5',
+  'وردي': '#f09ab9', pink: '#f09ab9',
+  'بني': '#805438', brown: '#805438',
+  'برتقالي': '#ee851d', orange: '#ee851d',
+  'رمادي': '#92969c', gray: '#92969c', grey: '#92969c',
+  'ذهبي': '#c8a04c', gold: '#c8a04c',
+  'فضي': '#c6cbd1', silver: '#c6cbd1',
+  'تيتانيوم طبيعي': '#aaa69d', 'تيتانيوم': '#aaa69d',
+  'أزرق داكن': '#1d355c', 'ازرق داكن': '#1d355c',
+  'جليدي': '#dce8f4', 'خمري': '#76263f',
+  'برتقالي كوني': '#e87932', 'أزرق ضبابي': '#a9c4dd',
+  'أخضر مريمي': '#97aa92', 'أبيض سحابي': '#f5f5f0',
+  'ذهبي فاتح': '#d9c59e', 'وردي ناعم': '#f4cbd5',
+  'أسود فضائي': '#292d37', 'تيتانيوم أسود': '#55565a',
+  'تيتانيوم أبيض': '#e6e4df', 'تيتانيوم صحراوي': '#bfa58b',
+  'أزرق سماوي': '#9dc8e9'
+};
+
+function getProductColorHex(color: string) {
+  const normalized = color.trim().toLocaleLowerCase('ar');
+  if (/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(normalized)) return normalized;
+  return PRODUCT_COLOR_HEX[normalized] || '#b7b7b7';
+}
+
 function normalizeSearchValue(value: string | number) {
   return String(value)
     .normalize('NFKC')
@@ -337,6 +368,27 @@ function StripProductCard({ product }: { product: Product }) {
       <div className="strip-product-info">
         <span className="strip-product-category">{product.category}</span>
         <Link href={'/products/' + product.id} className="strip-product-name">{product.name}</Link>
+        {product.colors?.filter(Boolean).length ? (
+          <div
+            className="strip-product-colors"
+            role="img"
+            aria-label={'الألوان المتاحة: ' + product.colors.filter(Boolean).join('، ')}
+            title={'الألوان: ' + product.colors.filter(Boolean).join('، ')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, minHeight: 15, margin: '2px 0 5px', overflow: 'hidden' }}
+          >
+            <span style={{ color: '#777', fontSize: 9, whiteSpace: 'nowrap' }}>الألوان</span>
+            {product.colors.filter(Boolean).slice(0, 5).map((color) => (
+              <span
+                key={color}
+                aria-hidden="true"
+                style={{ display: 'inline-block', flex: '0 0 auto', width: 11, height: 11, borderRadius: '50%', border: '1px solid rgba(0,0,0,.16)', backgroundColor: getProductColorHex(color) }}
+              />
+            ))}
+            {product.colors.filter(Boolean).length > 5 ? (
+              <span style={{ color: '#777', fontSize: 9 }}>+{product.colors.filter(Boolean).length - 5}</span>
+            ) : null}
+          </div>
+        ) : null}
         <div className="strip-product-bottom">
           <div className="strip-price-group">
             <strong>{formatPrice(product.price)}</strong>
