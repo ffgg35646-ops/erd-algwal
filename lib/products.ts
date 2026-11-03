@@ -10,7 +10,7 @@ export type ProductColorMask = {
   /** Base64-encoded, MSB-first bit-packed mask: 1 = case, 0 = outside. */
   encoding: 'bit-packed-msb';
   data: string;
-  model: 'sam-3.1';
+  model: 'sam-3.1' | 'manual-brush-v1';
   generatedAt: string | Date;
 };
 
