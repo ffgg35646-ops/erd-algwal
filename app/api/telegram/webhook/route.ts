@@ -728,7 +728,8 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
     [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + id + ':otp' }],
     [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + id + ':balance' }],
     [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + id + ':card' }],
-    [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + id }]
+    [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + id }],
+    ...(!closed ? [[{ text: '6️⃣ ✅ طلب مكتمل', callback_data: 'status:' + id + ':completed' }]] : [])
   ];
   const detailsText = 'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
     '\n\nرمز تأكيد الطلب: ' + (order.orderConfirmationOtpHash ? 'تم إنشاؤه' : 'لم يتم إنشاؤه بعد') +
