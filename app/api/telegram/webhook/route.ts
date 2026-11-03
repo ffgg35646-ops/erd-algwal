@@ -735,12 +735,12 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
     [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + id + ':card' }],
     [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + id }]
   ];
-  const detailsText = 'تفاصيل الطلب\\n\\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
-    '\\n\\nرمز تأكيد الطلب: ' + (order.orderConfirmationOtpHash ? 'تم إنشاؤه' : 'لم يتم إنشاؤه بعد') +
-    (order.orderConfirmationVerifiedAt ? '\\nتم التحقق من الرمز بنجاح.' : '') +
-    (closed ? '\\n\\nهذا الطلب مغلق.' : '\\n\\nاختر الإجراء التالي للطلب:');
+  const detailsText = 'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
+    '\n\nرمز تأكيد الطلب: ' + (order.orderConfirmationOtpHash ? 'تم إنشاؤه' : 'لم يتم إنشاؤه بعد') +
+    (order.orderConfirmationVerifiedAt ? '\nتم التحقق من الرمز بنجاح.' : '') +
+    (closed ? '\n\nهذا الطلب مغلق.' : '\n\nاختر الإجراء التالي للطلب:');
   const orderText = escapeTelegramHtml(detailsText) +
-    (documentUrl ? '\\n\\n<a href="' + escapeTelegramHtml(documentUrl) + '">📋 فتح الطلب والمستندات</a>' : '');
+    (documentUrl ? '\n\n<a href="' + escapeTelegramHtml(documentUrl) + '">📋 فتح الطلب والمستندات</a>' : '');
 
   // Keep only customer-notification and OTP actions here. Order status and navigation
   // controls are intentionally omitted from the order details message.
