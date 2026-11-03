@@ -62,6 +62,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
   const customer = (order.customer && typeof order.customer === 'object')
     ? order.customer as Record<string, unknown>
     : {};
+  const customerPhone = String(customer.phone || order.phone || 'غير مسجل');
   const items = Array.isArray(order.items) ? order.items as Array<Record<string, unknown>> : [];
   const status = typeof order.status === 'string' && order.status in ORDER_STATUS_LABELS
     ? ORDER_STATUS_LABELS[order.status as OrderStatus]
@@ -113,7 +114,7 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     '━━━━━━━━━━━━━━━━',
     '👤 بيانات العميل',
     `الاسم: ${String(customer.name || '—')}`,
-    `📞 الجوال: ${String(customer.phone || '—')}`,
+    `☎️ رقم الهاتف: ${customerPhone}`,
     ...(typeof customer.email === 'string' && customer.email.trim() ? [`✉️ البريد: ${customer.email.trim()}`] : []),
     ...(typeof customer.idNumber === 'string' && customer.idNumber.trim() ? [`🪪 الهوية: ${customer.idNumber.trim()}`] : []),
     '━━━━━━━━━━━━━━━━',
