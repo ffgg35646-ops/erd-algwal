@@ -187,16 +187,15 @@ export async function POST(request: NextRequest) {
       const orderUrl = updatedOrder.adminOrderToken
         ? new URL(`/admin-order/${updatedOrder.adminOrderToken}`, request.nextUrl.origin).toString()
         : '';
-      const orderKeyboard = statusInlineKeyboard(orderId);
-      const inlineRows: Array<Array<{ text: string; callback_data?: string; url?: string }>> = [...orderKeyboard.inline_keyboard];
-      if (orderUrl) inlineRows.push([{ text: '📋 فتح الطلب والمستندات', url: orderUrl }]);
+      const orderLinkText = orderUrl
+        ? '\\n\\n📋 فتح الطلب والمستندات:\\n' + orderUrl
+        : '';
 
       await sendTelegramMessage(
         adminId,
-        '🛍️ تم إكمال طلب جديد — أرض الجوال\n\n' +
+        '🛍️ تم إكمال طلب جديد — أرض الجوال\\n\\n' +
           formatOrderForAdmin(updatedOrder as unknown as Record<string, unknown>) +
-          '\n\nاستخدم الأزرار لتحديث حالة الطلب.',
-        { reply_markup: { inline_keyboard: inlineRows } }
+          orderLinkText
       );
       const notifiedAt = new Date();
       await orders.updateOne(filter, {
