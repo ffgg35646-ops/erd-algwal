@@ -268,7 +268,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
           colorImages: Object.fromEntries(
             Object.keys(product.colorImages || {}).map((color) => [
               color,
-              `/api/products/${id}/image?color=${encodeURIComponent(color)}`
+              `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${product.updatedAt.getTime()}`
             ])
           )
         }
