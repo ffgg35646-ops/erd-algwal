@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import styles from '../checkout.module.css';
 import { useEffect, useMemo, useState } from 'react';
 import { makeCartItemKey, parseCartItemKey, useCart } from '@/components/CartProvider';
@@ -14,6 +15,8 @@ type CheckoutDraft = {
   paymentMethod?: 'mada' | 'visa';
   paymentNotificationSent?: boolean;
   notificationSent?: boolean;
+  customerNotificationKey?: string;
+  stage?: 'phone-verification' | 'confirmed';
   fullName?: string;
   phone?: string;
   email?: string;
@@ -69,6 +72,7 @@ function passesLuhn(value: string) {
 }
 
 export default function CheckoutPaymentPage() {
+  const router = useRouter();
   const { cart, hydrated, catalogProducts: products, clearCart } = useCart();
   const [draft, setDraft] = useState<CheckoutDraft | null>(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
@@ -291,7 +295,8 @@ export default function CheckoutPaymentPage() {
         total: serverTotal,
         paymentMethod: savedMethod,
         paymentNotificationSent: notified,
-        notificationSent: notified
+        notificationSent: notified,
+        stage: 'phone-verification'
       };
       setDraft(updatedDraft);
       try {
@@ -312,6 +317,7 @@ export default function CheckoutPaymentPage() {
         ? 'تم إرسال طلبك.'
         : 'تم التحقق من البيانات ✓، لكن تعذر إرسال إشعار الإدارة. اضغط «إكمال الدفع» مرة أخرى للمحاولة.');
       setPaymentMessageSuccess(true);
+      if (notified) router.replace('/checkout/verify-phone');
     } catch (error) {
       setPaymentMessage(error instanceof Error ? error.message : 'تعذر إرسال الطلب.');
       setPaymentMessageSuccess(false);
