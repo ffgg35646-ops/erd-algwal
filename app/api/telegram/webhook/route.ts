@@ -933,7 +933,8 @@ async function updateOrderStatus(
   telegramUserId: number,
   orderId: string,
   nextStatus: OrderStatus,
-  cancellationReason = ''
+  cancellationReason = '',
+  sourceMessage?: TelegramMessage
 ) {
   if (!isObjectId(orderId)) {
     await sendTelegramMessage(chatId, 'معرّف الطلب غير صالح.');
@@ -994,7 +995,7 @@ async function updateOrderStatus(
       statusLabel: nextStatus === 'shipped'
         ? 'تم الشحن'
         : nextStatus === 'completed'
-          ? 'تم اكتمال الطلب'
+          ? '✅ تم استلام الطلب بنجاح'
           : 'تم إلغاء الطلب',
       ...(nextStatus === 'cancelled' && reason ? { cancellationReason: reason } : {}),
       createdAt: now,
@@ -1007,6 +1008,18 @@ async function updateOrderStatus(
     chatId,
     '✅ تم تعديل حالة الطلب ' + (order.orderNumber || orderId) + '\nالحالة الجديدة: ' + ORDER_STATUS_LABELS[nextStatus] + reasonLine
   );
+  if (nextStatus === 'completed' && sourceMessage?.message_id) {
+    try {
+      await telegramApi('editMessageReplyMarkup', {
+        chat_id: sourceMessage.chat.id,
+        message_id: sourceMessage.message_id,
+        reply_markup: { inline_keyboard: [] }
+      });
+    } catch (error) {
+      console.error('Could not close completed order notification buttons:', error instanceof Error ? error.message : 'Unknown error');
+    }
+  }
+
   await sendMainMenu(db, chatId);
 }
 
@@ -2052,7 +2065,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     return;
   }
   if (action === 'status' && id && field && field in ORDER_STATUS_LABELS && field !== 'preparing' && isObjectId(id)) {
-    await updateOrderStatus(db, chatId, callback.from.id, id, field as OrderStatus);
+    await updateOrderStatus(db, chatId, callback.from.id, id, field as OrderStatus, '', callback.message);
     return;
   }
   await sendTelegramMessage(chatId, 'الأمر غير معروف. ارجع إلى القائمة الرئيسية.');
