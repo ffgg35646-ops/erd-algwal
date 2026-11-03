@@ -1935,20 +1935,16 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
         }
       }
     );
-    await sendTelegramMessage(
-      chatId,
-      '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ':\n\n' + otp +
-        '\n\nاضغط «📋 نسخ الرمز» لنسخه مباشرة، أو اضغط مطولًا على الرمز لنسخه يدويًا.\n' +
-        'أرسل هذا الرمز للعميل بالطريقة التي تعتمدها. يظل صالحًا دون مدة زمنية، وإصدار رمز جديد يُبطل الرمز السابق.',
-      {
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '📋 نسخ الرمز', copy_text: { text: otp } }],
-            [{ text: '📄 عرض تفاصيل الطلب', callback_data: 'edit-order:' + id }]
-          ]
-        }
+    await telegramApi('sendMessage', {
+      chat_id: chatId,
+      text: '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ':\\n\\n' + otp,
+      disable_web_page_preview: true,
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📋', copy_text: { text: otp } }]
+        ]
       }
-    );
+    });
     return;
   }
 
