@@ -858,6 +858,9 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     : 'تعذر حفظ المنتج.', {
       reply_markup: adminReplyKeyboard(orderCounts.newCount + orderCounts.shippedCount)
     });
+  if (result.insertedId && (data.colors || []).length) {
+    await showProductColorImagesMenu(db, chatId, result.insertedId.toHexString());
+  }
   return Boolean(result.insertedId);
 }
 
@@ -1251,9 +1254,14 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
         return;
       }
       if (session.workflow === 'edit_product' && session.step === 'edit_product_colors' && session.data.productId && isObjectId(session.data.productId)) {
+        const productId = new ObjectId(session.data.productId);
+        const existingProduct = await db.collection<StoredProduct>('products').findOne({ _id: productId });
+        const retainedColorImages = Object.fromEntries(
+          Object.entries(existingProduct?.colorImages || {}).filter(([color]) => savedColors.includes(color))
+        );
         const result = await db.collection<StoredProduct>('products').updateOne(
-          { _id: new ObjectId(session.data.productId) },
-          { $set: { colors: savedColors, updatedAt: new Date() }, $unset: { colorMask: '' } }
+          { _id: productId },
+          { $set: { colors: savedColors, colorImages: retainedColorImages, updatedAt: new Date() }, $unset: { colorMask: '' } }
         );
         await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
         if (!result.matchedCount) {
@@ -1295,7 +1303,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
         'ارفع الصورة كصورة في تيليجرام، وليس كملف. سيتم ربطها بهذا اللون فقط.',
         '',
         'يمكنك الضغط على «' + REMOVE_COLOR_IMAGE_TEXT + '» لحذف الصورة الحالية لهذا اللون.'
-      ].join('\\n'),
+      ].join(String.fromCharCode(10)),
       {
         keyboard: [[{ text: REMOVE_COLOR_IMAGE_TEXT }], [{ text: MAIN_MENU_TEXT }]],
         resize_keyboard: true,
@@ -2194,13 +2202,20 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     }
 
     if (value === REMOVE_COLOR_IMAGE_TEXT) {
-      const result = await db.collection<StoredProduct>('products').updateOne(
+      const existingProduct = await db.collection<StoredProduct>('products').findOne(
         { _id: new ObjectId(productId), deleted: { $ne: true } },
-        { $unset: { ['colorImages.' + color]: '' }, $set: { updatedAt: new Date() } }
+        { projection: { colorImages: 1 } }
       );
+      const hadImage = Boolean(existingProduct?.colorImages?.[color]);
+      if (hadImage) {
+        await db.collection<StoredProduct>('products').updateOne(
+          { _id: new ObjectId(productId), deleted: { $ne: true } },
+          { $unset: { ['colorImages.' + color]: '' }, $set: { updatedAt: new Date() } }
+        );
+      }
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
       await showProductColorImagesMenu(db, chatId, productId,
-        result.modifiedCount ? '🗑 تم حذف صورة اللون «' + color + '».' : 'لا توجد صورة محفوظة لهذا اللون.');
+        hadImage ? '🗑 تم حذف صورة اللون «' + color + '».' : 'لا توجد صورة محفوظة لهذا اللون.');
       return;
     }
 
