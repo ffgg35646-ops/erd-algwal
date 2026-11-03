@@ -762,7 +762,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
 
     const canPreviewColors = isPhoneCaseProduct(product.name, product.category, product.details) && Boolean(product.colors?.length);
     const colorMaskNote = canPreviewColors
-      ? '\\n🖌️ تم تحديث الصور. افتح تعديل المنتج واضغط «تحديد الكفر مجانًا» لإعادة تحديد صورة الغلاف.'
+      ? '\n🖌️ تم تحديث الصور. افتح تعديل المنتج واضغط «تحديد الكفر مجانًا» لإعادة تحديد صورة الغلاف.'
       : '';
 
     const result = await db.collection<StoredProduct>('products').updateOne(
@@ -807,7 +807,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
   });
   const canPreviewColors = isPhoneCaseProduct(data.name, section.name, data.details) && Boolean((data.colors || []).length);
   const colorMaskNote = result.insertedId && canPreviewColors
-    ? '\\n🖌️ لتفعيل تغيير الألوان مجانًا، افتح تعديل المنتج واضغط «تحديد الكفر مجانًا» وارسم فوق الكفر في صورة الغلاف.'
+    ? '\n🖌️ لتفعيل تغيير الألوان مجانًا، افتح تعديل المنتج واضغط «تحديد الكفر مجانًا» وارسم فوق الكفر في صورة الغلاف.'
     : '';
 
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
@@ -1212,7 +1212,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       if (session.workflow === 'edit_product' && session.step === 'edit_product_colors' && session.data.productId && isObjectId(session.data.productId)) {
         const result = await db.collection<StoredProduct>('products').updateOne(
           { _id: new ObjectId(session.data.productId) },
-          { $set: { colors: savedColors, updatedAt: new Date() } }
+          { $set: { colors: savedColors, updatedAt: new Date() }, $unset: { colorMask: '' } }
         );
         await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
         if (!result.matchedCount) {
