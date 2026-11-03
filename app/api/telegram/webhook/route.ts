@@ -507,7 +507,7 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
     'معاينة تغيير لون الجراب: ' + (product.colorMask ? 'جاهزة ✅' : 'غير مجهزة'),
     '',
     'اختر الخانة التي تريد تعديلها. زر الحذف موجود بالأسفل.'
-  ].join('\n');
+  ].join(String.fromCharCode(10));
   const canPreviewColors = isPhoneCaseProduct(product.name, product.category, product.details) && Boolean(product.colors?.length) && Boolean(product.images?.length);
   await sendTelegramMessage(chatId, message, { reply_markup: editProductKeyboard(id, product.categoryId, canPreviewColors, Boolean(product.colorMask)) });
 }
@@ -545,7 +545,7 @@ async function showProductColorImagesMenu(db: Db, chatId: number, id: string, no
     '',
     'اللون الذي لا تربط له صورة سيستخدم الصورة الأساسية أو معاينة تغيير اللون الحالية.'
   ];
-  await sendTelegramMessage(chatId, lines.join('\n'), { reply_markup: { inline_keyboard: keyboard } });
+  await sendTelegramMessage(chatId, lines.join(String.fromCharCode(10)), { reply_markup: { inline_keyboard: keyboard } });
 }
 
 async function ensureShortOrderNumbers(db: Db, orders: StoreOrder[]) {
@@ -1273,7 +1273,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     return;
   }
   if (action === 'product-color-image') {
-    if (!isObjectId(id || '') || !/^\d+$/.test(field || '')) {
+    if (!isObjectId(id || '') || !field || !Number.isInteger(Number(field)) || Number(field) < 0) {
       return void await sendTelegramMessage(chatId, 'اللون المحدد غير صالح.');
     }
     const product = await db.collection<StoredProduct>('products').findOne({
