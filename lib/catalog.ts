@@ -249,6 +249,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
   images: string[];
 } {
   const id = product._id.toHexString();
+  const colorImageVersion = product.updatedAt instanceof Date ? product.updatedAt.getTime() : 0;
   const images = Array.isArray(product.images) ? product.images : [];
   const storedImageUrls = images.map((_, index) => `/api/products/${id}/image?index=${index}`);
   const displayImages = storedImageUrls.length ? storedImageUrls : product.imageUrl ? [product.imageUrl] : [];
@@ -268,7 +269,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
           colorImages: Object.fromEntries(
             Object.keys(product.colorImages || {}).map((color) => [
               color,
-              `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${product.updatedAt.getTime()}`
+              `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
             ])
           )
         }
