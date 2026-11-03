@@ -441,7 +441,7 @@ function productColorKeyboard(selectedColors: string[] = []) {
 }
 
 function productColorPrompt(selectedColors: string[] = []) {
-  return '🎨 اختر الألوان المتوفرة للمنتج بالضغط على دوائر الألوان. يمكنك تحديد أكثر من لون، ثم اضغط «حفظ الألوان».\n\nمهم لمعاينة تغيير اللون: اجعل أول لون تختاره هو نفس لون الجراب الظاهر في الصورة الأولى.\n\nالألوان المختارة: ' + (selectedColors.join('، ') || 'لم يتم اختيار ألوان بعد.');
+  return '🎨 اختر الألوان المتوفرة للمنتج بالضغط على دوائر الألوان. يمكنك تحديد أكثر من لون، ثم اضغط «حفظ الألوان».\n\nمهم لمعاينة تغيير اللون: .\n\nالألوان المختارة: ' + (selectedColors.join('، ') || 'لم يتم اختيار ألوان بعد.');
 }
 
 async function refreshProductColorMessage(chatId: number, messageId: number | undefined, selectedColors: string[]) {
@@ -835,7 +835,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
   });
   const canPreviewColors = isPhoneCaseProduct(data.name, section.name, data.details) && Boolean((data.colors || []).length);
   const colorMaskNote = result.insertedId && canPreviewColors
-    ? '\n🖌️ لتفعيل تغيير الألوان مجانًا، افتح تعديل المنتج واضغط «تحديد الكفر مجانًا» وارسم فوق الكفر في صورة الغلاف.'
+    ? '\n🖌️ لتفعيل تغيير الألوان ، افتح تعديل المنتج واضغط «تحديد الكفر» وارسم فوق الكفر في صورة الغلاف.'
     : '';
 
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
@@ -871,7 +871,7 @@ async function handleImageStep(db: Db, session: AdminSession, message: TelegramM
     await saveProduct(db, session, chatId);
     return;
   }
-  await sendTelegramMessage(chatId, 'أرسل صورة المنتج. للجرابات، أرسل صورة الجراب الأساسية أولًا؛ هي التي ستحدد عليها مساحة الكفر يدويًا لتغيير الألوان. يمكنك إرسال صور أخرى بعدها، ثم اضغط «حفظ المنتج».');
+  await sendTelegramMessage(chatId, 'أرسل صورة المنتج.».');
 }
 
 async function saveEditedField(db: Db, session: AdminSession, value: string, chatId: number) {
@@ -1250,7 +1250,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       if (session.workflow === 'add_product' && session.step === 'product_colors') {
         session.step = 'product_storage';
         await saveSession(db, session);
-        await sendTelegramMessage(chatId, 'اكتب مساحات التخزين بالأسماء التي تريدها، ويمكنك إضافة أي عدد. أمثلة: 500GB، 1 تيرا، 2 تيرا. لتحديد سعر خاص لكل مساحة اكتب الاسم ثم = ثم السعر، مثل: 500GB=5799، 1 تيرا=6799، 2 تيرا=9299. وإذا كتبت الاسم فقط فسيُستخدم السعر الأساسي للمنتج. اكتب «تخطي» لعدم إضافة سعات.');
+        await sendTelegramMessage(chatId, 'اكتب مساحة المنتج   .امثلة  1 تيرا : . .');
         return;
       }
       if (session.workflow === 'edit_product' && session.step === 'edit_product_colors' && session.data.productId && isObjectId(session.data.productId)) {
@@ -1352,7 +1352,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     return;
   }
   if (action === 'slider-add') {
-    await startFlow(db, callback.from.id, chatId, 'slider', 'slider_image', {}, 'إضافة صورة للسلايدر\n\nأرسل صورة العرض أو الإعلان كصورة في تيليجرام. ستظهر بالموقع بعد حفظها. اكتب /cancel للإلغاء.');
+    await startFlow(db, callback.from.id, chatId, 'slider', 'slider_image', {}, 'إضافة صورة للسلايدر\n\nأرسل صورة العرض . اكتب /cancel للإلغاء.');
     return;
   }
   if (action === 'slider-delete') {
@@ -1459,7 +1459,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       'contact',
       'contact_whatsapp',
       {},
-      'الاتصال والدعم\n\nأرسل رقم واتساب مع مفتاح الدولة، مثال: 9665XXXXXXXX. يمكن تغييره لاحقًا من نفس الخيار.'
+      'الاتصال والدعم\n\nأرسل رقم الواتسا الجديد.'
     );
     return;
   }
@@ -1480,7 +1480,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       'footer_settings',
       'footer_barcode_image',
       { footerSettingKey: 'barcode' },
-      'أرسل صورة الباركود الجديدة كصورة في تيليجرام، وسيتم استبدال الصورة الحالية في الفوتر. اكتب /cancel للإلغاء.'
+      'أرسل صورة الباركود الجديد . اكتب /cancel للإلغاء.'
     );
     return;
   }
@@ -1490,7 +1490,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       { $unset: { barcodeFileId: '' }, $set: { barcodeRemoved: true, updatedAt: new Date(), updatedByTelegramId: callback.from.id } }
     );
     await sendTelegramMessage(chatId,
-      result.modifiedCount ? '✅ تم حذف الباركود من الفوتر.' : 'لا يوجد باركود محفوظ لحذفه.'
+      result.modifiedCount ? '✅ تم حذف الباركود .' : 'لا يوجد باركود محفوظ لحذفه.'
     );
     await showFooterSettings(db, chatId);
     return;
@@ -1509,7 +1509,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       'footer_content',
       'footer_edit_text',
       { footerKey: id },
-      'تعديل صفحة: ' + definition.title + '\n\nالمحتوى الحالي:\n' + preview + '\n\nأرسل النص الجديد بالكامل (حتى 3500 حرف). لن يتغير الموقع إلا بعد ضغط «حفظ النص».'
+      'تعديل صفحة: ' + definition.title + '\n\nالمحتوى الحالي:\n' + preview + '\n\nأرسل النص الجديد ».'
     );
     return;
   }
@@ -1565,7 +1565,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     // Clear any custom Telegram reply keyboard left over from the admin menu or an older search flow.
     await sendTelegramMessage(
       chatId,
-      'تم إخفاء أزرار البوت. اكتب اسم المنتج من كيبورد جهازك العادي؛ البحث يقبل العربي والإنجليزي وأي لغة.',
+      'تم إخفاء أزرار البوت. اكتب اسم المنتج من كيبورد جهازك العادي؛ا.',
       { reply_markup: { remove_keyboard: true } }
     );
     await sendTelegramMessage(
@@ -1700,13 +1700,13 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     });
     if (!product) return void await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج.');
     if (!isPhoneCaseProduct(product.name, product.category, product.details)) {
-      return void await sendTelegramMessage(chatId, 'تحديد اللون المجاني مخصص لمنتجات الجرابات والكفرات فقط.');
+      return void await sendTelegramMessage(chatId, 'تحديد اللون.');
     }
     if (!product.images?.[0]) {
-      return void await sendTelegramMessage(chatId, 'لا توجد صورة غلاف مرفوعة عبر البوت لهذا المنتج. أضف صورة الغلاف أولًا.');
+      return void await sendTelegramMessage(chatId, 'لا توجد صورة . أضف صورة الغلاف أولًا.');
     }
     if (!product.colors?.length) {
-      return void await sendTelegramMessage(chatId, 'أضف ألوان المنتج أولًا، واجعل أول لون هو اللون الظاهر في صورة الغلاف.');
+      return void await sendTelegramMessage(chatId, 'أضف ألوان المنتج أولًا صورة الغلاف.');
     }
 
     const token = randomBytes(32).toString('hex');
@@ -1746,7 +1746,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     editorUrl.searchParams.set('product', id);
     editorUrl.searchParams.set('token', token);
     await sendTelegramMessage(chatId,
-      'افتح أداة تحديد الكفر المجانية. لوّن الكفر نفسه بالفرشاة الخضراء فقط، واستخدم الممحاة لإزالة أي تحديد خارج الكفر. الرابط صالح لمدة 30 دقيقة.',
+      'هناك خطأ.',
       { reply_markup: { inline_keyboard: [[{ text: 'فتح أداة تحديد الكفر', url: editorUrl.toString() }]] } }
     );
     return;
@@ -1789,7 +1789,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     }
     if (step === 'edit_product_images') {
       await startFlow(db, callback.from.id, chatId, 'edit_product', step, { productId: id, images: [] },
-        'أرسل الصور الجديدة للمنتج. سيؤدي الحفظ إلى استبدال الصور القديمة. للجرابات، اجعل الصورة الأولى هي صورة الجراب الأساسية التي تريد تغيير لونها؛ أرسل صورة أو أكثر ثم اضغط «حفظ المنتج».',
+        'أرسل الصور الجديدة للمنتج. ثم اضغط «حفظ المنتج».',
         { keyboard: [[{ text: SAVE_PRODUCT_TEXT }], [{ text: MAIN_MENU_TEXT }]], resize_keyboard: true, one_time_keyboard: false });
       return;
     }
@@ -2003,7 +2003,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       'cancel_order',
       'cancel_reason',
       { orderId: id },
-      'إلغاء الطلب ' + (order.orderNumber || id) + '\n\nاكتب سبب الإلغاء (اختياري)، وسيظهر للعميل في إشعار المتصفح. أو اضغط «إلغاء بدون تعليق».',
+      'إلغاء الطلب ' + (order.orderNumber || id) + '\n\nاكتب سبب الإلغاء (اختياري)، . أو اضغط «إلغاء بدون تعليق».',
       {
         inline_keyboard: [
           [{ text: 'إلغاء بدون تعليق', callback_data: 'skip-cancel-reason:' + id }],
@@ -2048,7 +2048,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     }
     const bannerCount = await db.collection<StoreBannerRecord>('store_banners').countDocuments({});
     if (bannerCount >= 12) {
-      await sendTelegramMessage(chatId, 'السلايدر ممتلئ بـ12 صورة. احذف صورة قديمة من «السلايدر ← حذف صورة» ثم أضف صورة جديدة.');
+      await sendTelegramMessage(chatId, 'السلايدر ممتلئ بـ12 صورة. احذف صورة   ← حذف صورة» ثم أضف صورة جديدة.');
       return;
     }
     const photo = message.photo[message.photo.length - 1];
@@ -2059,7 +2059,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       createdByTelegramId: session.telegramUserId
     });
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-    await sendMainMenu(db, chatId, '✅ تمت إضافة صورة للسلايدر. ستظهر في واجهة المتجر عند تحديث الصور.');
+    await sendMainMenu(db, chatId, '.✅تمت إضافة صورة للسلايدر. .');
     return;
   }
 
@@ -2070,7 +2070,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
         { $set: { vatNumber: '', vatNumberRemoved: true, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId } }
       );
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-      await sendMainMenu(db, chatId, result.modifiedCount ? '✅ تم حذف الرقم الضريبي من الفوتر.' : 'لا يوجد رقم ضريبي محفوظ لحذفه.');
+      await sendMainMenu(db, chatId, result.modifiedCount ? '✅ تم حذف الرقم الضريبي .' : 'لا يوجد رقم ضريبي محفوظ لحذفه.');
       return;
     }
     const vatNumber = value
@@ -2321,7 +2321,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     }
     if (session.step === 'product_colors') {
       session.data.colors = value === 'تخطي' ? [] : parseList(value); session.step = 'product_storage'; await saveSession(db, session);
-      await sendTelegramMessage(chatId, 'اكتب مساحات التخزين، ويمكنك إضافة أي عدد. إذا كان لكل مساحة سعر مختلف، اكتب الاسم ثم = ثم السعر، مثال: 256GB=5799، 512GB=6799، 1TB=7799، 2TB=9299. وإذا كتبت الاسم فقط فسيُستخدم سعر المنتج الأساسي. اكتب «تخطي» لعدم إضافة سعات.');
+      await sendTelegramMessage(chatId, 'اكتب مساحات التخزين   «تخطي» .');
       return;
     }
     if (session.step === 'product_storage') {
@@ -2331,7 +2331,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       session.data.storagePrices = parsed.prices;
       session.step = 'product_price';
       await saveSession(db, session);
-      await sendTelegramMessage(chatId, 'اكتب السعر الأساسي للمنتج بالريال السعودي، مثال: 5799. ويُستخدم هذا السعر لأي مساحة لم تحدد لها سعرًا خاصًا.');
+      await sendTelegramMessage(chatId, 'اكتب السعر .');
       return;
     }
     if (session.step === 'product_price') {
@@ -2344,7 +2344,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     if (session.step === 'product_details') {
       if (value.length < 2 || value.length > 3000) return void await sendTelegramMessage(chatId, 'التفاصيل يجب أن تكون من حرفين إلى 3000 حرف.');
       session.data.details = value; session.step = 'product_images'; session.data.images = []; await saveSession(db, session);
-      await sendTelegramMessage(chatId, 'أرسل صورة المنتج. يمكنك إرسال حتى 10 صور، ثم اضغط «حفظ المنتج».', {
+      await sendTelegramMessage(chatId, 'أرسل صورة المنتج.، ثم اضغط «حفظ المنتج».', {
         reply_markup: { keyboard: [[{ text: SAVE_PRODUCT_TEXT }], [{ text: MAIN_MENU_TEXT }]], resize_keyboard: true, one_time_keyboard: false }
       });
     }
@@ -2417,7 +2417,7 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
     return;
   }
   if (value === MENU_CONTACT) {
-    await startFlow(db, from.id, chatId, 'contact', 'contact_whatsapp', {}, 'الاتصال والدعم\n\nأرسل رقم واتساب مع مفتاح الدولة، مثال: 9665XXXXXXXX. يمكن تغييره لاحقًا من نفس الزر.');
+    await startFlow(db, from.id, chatId, 'contact', 'contact_whatsapp', {}, 'الاتصال والدعم\n\nأرسل رقم واتساب مع مفتاح الدولة، مثال: . .');
     return;
   }
 
