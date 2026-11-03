@@ -8,7 +8,6 @@ import {
   customerOrdersSectionsKeyboard,
   ORDER_STATUS_LABELS,
   sendTelegramMessage,
-  statusInlineKeyboard,
   telegramApi,
   type OrderStatus,
   ensureTelegramIndexes
@@ -633,8 +632,8 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
   }
 }
 
-async function getOrderDocumentRows(db: Db, order: StoreOrder) {
-  if (order.source !== 'website') return [] as Array<Array<{ text: string; url: string }>>;
+async function getOrderDocumentUrl(db: Db, order: StoreOrder): Promise<string | null> {
+  if (order.source !== 'website') return null;
 
   const tokenUpdates: Partial<StoreOrder> = {};
   if (!order.adminOrderToken) tokenUpdates.adminOrderToken = randomBytes(24).toString('hex');
@@ -653,28 +652,27 @@ async function getOrderDocumentRows(db: Db, order: StoreOrder) {
 
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
-  if (!configuredOrigin || !order.adminOrderToken) return [] as Array<Array<{ text: string; url: string }>>;
+  if (!configuredOrigin || !order.adminOrderToken) return null;
 
-  let origin = '';
   try {
     const normalizedOrigin = configuredOrigin.startsWith('https://') || configuredOrigin.startsWith('http://')
       ? configuredOrigin
       : 'https://' + configuredOrigin;
-    origin = new URL(normalizedOrigin).origin;
+    const origin = new URL(normalizedOrigin).origin;
+    return new URL('/admin-order/' + order.adminOrderToken, origin).toString();
   } catch {
-    return [] as Array<Array<{ text: string; url: string }>>;
+    return null;
   }
+}
 
-  return [[{
-    text: '📋 فتح الطلب والمستندات',
-    url: new URL('/admin-order/' + order.adminOrderToken, origin).toString()
-  }]];
+function escapeTelegramHtml(value: string) {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 async function getCustomerInvoiceDocuments(db: Db, order: StoreOrder) {
   if (order.source !== 'website') return [] as Array<{ title: string; href: string }>;
 
-  await getOrderDocumentRows(db, order);
+  await getOrderDocumentUrl(db, order);
 
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL || '';
@@ -728,7 +726,7 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
   }>('orders').findOne({ _id: new ObjectId(id) });
   if (!order) return sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
   const closed = order.status === 'completed' || order.status === 'cancelled';
-  const documentRows = await getOrderDocumentRows(db, order);
+  const documentUrl = await getOrderDocumentUrl(db, order);
   const orderWithInvoiceState = order as typeof order & { customerInvoiceSentAt?: Date };
   const reviewRows = [
     [{ text: orderWithInvoiceState.customerInvoiceSentAt ? '✅ تم إرسال الفاتورة للعميل' : '1️⃣ إظهار الفاتورة للعميل', callback_data: 'send-order-documents:' + id }],
@@ -737,24 +735,22 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
     [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + id + ':card' }],
     [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + id }]
   ];
-  await sendTelegramMessage(
-    chatId,
-    'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
-      '\n\nرمز تأكيد الطلب: ' + (order.orderConfirmationOtpHash ? 'تم إنشاؤه' : 'لم يتم إنشاؤه بعد') +
-      (order.orderConfirmationVerifiedAt ? '\nتم التحقق من الرمز بنجاح.' : '') +
-      (closed ? '\n\nهذا الطلب مغلق.' : '\n\nاختر الإجراء التالي للطلب:'),
-    {
-      reply_markup: {
-        inline_keyboard: [
-          ...statusInlineKeyboard(id, order.status).inline_keyboard,
-          ...reviewRows,
-          ...documentRows,
-          [{ text: '↩ أقسام طلبات العملاء', callback_data: 'orders-menu' }],
-          [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
-        ]
-      }
-    }
-  );
+  const detailsText = 'تفاصيل الطلب\\n\\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
+    '\\n\\nرمز تأكيد الطلب: ' + (order.orderConfirmationOtpHash ? 'تم إنشاؤه' : 'لم يتم إنشاؤه بعد') +
+    (order.orderConfirmationVerifiedAt ? '\\nتم التحقق من الرمز بنجاح.' : '') +
+    (closed ? '\\n\\nهذا الطلب مغلق.' : '\\n\\nاختر الإجراء التالي للطلب:');
+  const orderText = escapeTelegramHtml(detailsText) +
+    (documentUrl ? '\\n\\n<a href="' + escapeTelegramHtml(documentUrl) + '">📋 فتح الطلب والمستندات</a>' : '');
+
+  // Keep only customer-notification and OTP actions here. Order status and navigation
+  // controls are intentionally omitted from the order details message.
+  await telegramApi('sendMessage', {
+    chat_id: chatId,
+    text: orderText,
+    parse_mode: 'HTML',
+    disable_web_page_preview: true,
+    reply_markup: { inline_keyboard: reviewRows }
+  });
 }
 
 async function saveCategory(db: Db, name: string) {
