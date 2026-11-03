@@ -1937,7 +1937,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     );
     await telegramApi('sendMessage', {
       chat_id: chatId,
-      text: '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ':\\n\\n' + otp,
+      text: '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ':\n\n' + otp,
       disable_web_page_preview: true,
       reply_markup: {
         inline_keyboard: [
