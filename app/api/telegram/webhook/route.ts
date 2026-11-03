@@ -573,7 +573,7 @@ async function ensureShortOrderNumbers(db: Db, orders: StoreOrder[]) {
 
 async function showCustomerOrders(db: Db, chatId: number) {
   const orders = await db.collection<StoreOrder>('orders')
-    .find({ source: 'website' })
+    .find({ source: 'website', status: { $in: ['new', 'confirmed', 'preparing', 'shipped'] } })
     .sort({ createdAt: -1 })
     .limit(50)
     .toArray();
