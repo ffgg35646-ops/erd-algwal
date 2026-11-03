@@ -202,7 +202,6 @@ try {
               [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + updatedOrder._id.toHexString() + ':otp' }],
               [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + updatedOrder._id.toHexString() + ':balance' }],
               [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + updatedOrder._id.toHexString() + ':card' }],
-              [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + updatedOrder._id.toHexString() }],
               [{ text: '6️⃣ ✅ طلب مكتمل', callback_data: 'status:' + updatedOrder._id.toHexString() + ':completed' }]
             ]
           }

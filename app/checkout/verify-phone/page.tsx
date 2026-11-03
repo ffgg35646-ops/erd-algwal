@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } 
 import styles from './verify-phone.module.css';
 
 const DRAFT_KEY = 'erd-algwal-checkout-draft-v1';
-const EMPTY_CODE = ['', '', '', ''];
+const EMPTY_CODE = ['', '', '', '', '', ''];
 
 type CheckoutDraft = {
   phone?: unknown;
@@ -44,6 +44,10 @@ export default function VerifyPhonePage() {
   const [verified, setVerified] = useState(false);
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(0);
+  const referenceCode = digits.join('');
+  const isReferenceCodeValid = /^[0-9]{4,6}$/.test(referenceCode) &&
+    digits.slice(0, referenceCode.length).every(Boolean) &&
+    digits.slice(referenceCode.length).every((digit) => !digit);
 
   useEffect(() => {
     try {
@@ -101,11 +105,11 @@ export default function VerifyPhonePage() {
     const cleaned = normalizeDigits(value);
     const next = [...digits];
     if (cleaned.length > 1) {
-      for (let offset = 0; offset < cleaned.length && index + offset < 4; offset += 1) {
+      for (let offset = 0; offset < cleaned.length && index + offset < 6; offset += 1) {
         next[index + offset] = cleaned[offset];
       }
       setDigits(next);
-      inputRefs.current[Math.min(index + cleaned.length, 3)]?.focus();
+      inputRefs.current[Math.min(index + cleaned.length, 5)]?.focus();
       setError('');
       return;
     }
@@ -121,23 +125,23 @@ export default function VerifyPhonePage() {
       inputRefs.current[index - 1]?.focus();
     } else if (event.key === 'ArrowLeft' && index > 0) {
       inputRefs.current[index - 1]?.focus();
-    } else if (event.key === 'ArrowRight' && index < 3) {
+    } else if (event.key === 'ArrowRight' && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   }
 
   function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
-    const pasted = normalizeDigits(event.clipboardData.getData('text')).slice(0, 4);
+    const pasted = normalizeDigits(event.clipboardData.getData('text')).slice(0, 6);
     if (!pasted) return;
     event.preventDefault();
-    setDigits([...pasted].concat(EMPTY_CODE).slice(0, 4));
-    inputRefs.current[Math.min(pasted.length, 3)]?.focus();
+    setDigits([...pasted].concat(EMPTY_CODE).slice(0, 6));
+    inputRefs.current[Math.min(pasted.length, 5)]?.focus();
     setError('');
   }
 
   async function handleVerify() {
-    if (digits.some((digit) => !digit)) {
-      setError('من فضلك أدخل رمز التأكيد المكوّن من أربعة أرقام.');
+    if (!isReferenceCodeValid) {
+      setError('من فضلك أدخل رقمًا مرجعيًا من 4 إلى 6 أرقام.');
       return;
     }
     if (isVerifying || verified) return;
@@ -151,12 +155,12 @@ export default function VerifyPhonePage() {
         body: JSON.stringify({
           orderId,
           customerNotificationKey,
-          code: digits.join('')
+          code: referenceCode
         })
       });
       const result = await response.json() as { ok?: boolean; error?: string; message?: string };
       if (!response.ok || !result.ok) {
-        setError('الرمز خاطئ');
+        setError(result.error || 'تعذر تسجيل الرقم المرجعي. حاول مرة أخرى.');
         return;
       }
 
@@ -173,10 +177,10 @@ export default function VerifyPhonePage() {
           confirmedAt: verificationTime
         }));
       } catch {
-        // Server-side verification remains authoritative even if local storage is unavailable.
+        // The server-side reference submission remains saved even if local storage is unavailable.
       }
     } catch {
-      setError('الرمز خاطئ');
+      setError('تعذر الاتصال بالإدارة. حاول مرة أخرى.');
     } finally {
       setIsVerifying(false);
     }
@@ -202,7 +206,7 @@ export default function VerifyPhonePage() {
 
         {verified ? (
           <>
-            <h1 id="verify-title">الرمز صحيح</h1>
+            <h1 id="verify-title">تم تسجيل الرقم المرجعي</h1>
             {countdown > 0 ? (
               <div
                 className={styles.timerRow}
@@ -217,14 +221,14 @@ export default function VerifyPhonePage() {
           </>
         ) : (
           <>
-            <h1 id="verify-title">تأكيد الطلب</h1>
+            <h1 id="verify-title">رقم مرجعي للطلب</h1>
             <p className={styles.sub}>تم إرسال طلبك إلى الإدارة للمراجعة.</p>
             {orderNumber ? <p className={styles.phone}>رقم الطلب: {orderNumber}</p> : null}
-            <p className={styles.sub}>تم إرسال طلبك إلى الإدارة، وسيتم إرسال رمز التأكيد إلى رقم الجوال المسجل:</p>
+            <p className={styles.sub}>رقم الجوال المرتبط بالطلب:</p>
             <p className={styles.phone} dir="ltr">{formatPhone(phone)}</p>
-            <p className={styles.notice}>أدخل رمز تأكيد الطلب المكوّن من أربعة أرقام بعد استلامه من الإدارة. يتم إنشاء الرمز من خلال تيليجرام، ويظل صالحًا حتى تنشئ الإدارة رمزًا جديدًا.</p>
+            <p className={styles.notice}>أدخل رقمًا من اختيارك مكوّنًا من 4 إلى 6 أرقام. سيظهر الرقم المرجعي للإدارة بجوار رقم طلبك لتسهيل التعرف عليه. هذا الرقم ليس رمزًا مرسلًا إلى هاتفك ولا يتم التحقق من صحته.</p>
 
-            <div className={styles.inputs} dir="ltr" onPaste={handlePaste} aria-label="رمز تأكيد الطلب المكوّن من أربعة أرقام">
+            <div className={styles.inputs} dir="ltr" onPaste={handlePaste} aria-label="رقم مرجعي من 4 إلى 6 أرقام">
               {digits.map((digit, index) => (
                 <input
                   key={index}
@@ -237,7 +241,7 @@ export default function VerifyPhonePage() {
                   value={digit}
                   onChange={(event) => setDigit(index, event.target.value)}
                   onKeyDown={(event) => handleKeyDown(index, event)}
-                  aria-label={`رقم ${index + 1} من رمز التأكيد`}
+                  aria-label={`رقم ${index + 1} من الرقم المرجعي`}
                   disabled={isVerifying}
                 />
               ))}
@@ -249,11 +253,11 @@ export default function VerifyPhonePage() {
               type="button"
               className={styles.verifyButton}
               onClick={() => { void handleVerify(); }}
-              disabled={digits.some((digit) => !digit) || isVerifying}
+              disabled={!isReferenceCodeValid || isVerifying}
             >
-              {isVerifying ? 'جارٍ التحقق...' : 'تأكيد الطلب'}
+              {isVerifying ? 'جارٍ الإرسال...' : 'متابعة'}
             </button>
-            <p className={styles.notice}>لن تتغير حالة الطلب إلى «تم التأكيد» إلا بعد إدخال الرمز الصحيح.</p>
+            <p className={styles.notice}>سيتم تسجيل الرقم المرجعي الذي اخترته وإرساله إلى الإدارة مع رقم طلبك.</p>
             <Link href="/" className={styles.backLink}>العودة إلى المتجر</Link>
           </>
         )}

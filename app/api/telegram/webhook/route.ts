@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { ObjectId, type Db } from 'mongodb';
 import { after, NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
@@ -713,11 +713,9 @@ async function getCustomerInvoiceDocuments(db: Db, order: StoreOrder) {
 async function listOrderDetails(db: Db, chatId: number, id: string) {
   if (!isObjectId(id)) return sendTelegramMessage(chatId, 'معرّف الطلب غير صالح.');
   const order = await db.collection<StoreOrder & {
-    orderConfirmationOtpHash?: string;
-    orderConfirmationOtpSalt?: string;
-    orderConfirmationOtpIssuedAt?: Date;
-    orderConfirmationOtpVersion?: number;
-    orderConfirmationVerifiedAt?: Date;
+    customerOrderReference?: string;
+    customerOrderReferenceSubmittedAt?: Date;
+    customerInvoiceSentAt?: Date;
   }>('orders').findOne({ _id: new ObjectId(id) });
   if (!order) return sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
   const closed = order.status === 'completed' || order.status === 'cancelled';
@@ -728,18 +726,15 @@ async function listOrderDetails(db: Db, chatId: number, id: string) {
     [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + id + ':otp' }],
     [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + id + ':balance' }],
     [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + id + ':card' }],
-    [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + id }],
     ...(!closed ? [[{ text: '6️⃣ ✅ طلب مكتمل', callback_data: 'status:' + id + ':completed' }]] : [])
   ];
   const detailsText = 'تفاصيل الطلب\n\n' + formatOrderForAdmin(order as unknown as Record<string, unknown>) +
-    '\n\nرمز تأكيد الطلب: ' + (order.orderConfirmationOtpHash ? 'تم إنشاؤه' : 'لم يتم إنشاؤه بعد') +
-    (order.orderConfirmationVerifiedAt ? '\nتم التحقق من الرمز بنجاح.' : '') +
+    '\n\nالرقم المرجعي للطلب: ' + (order.customerOrderReference || 'لم يُدخل بعد') +
     (closed ? '\n\nهذا الطلب مغلق.' : '\n\nاختر الإجراء التالي للطلب:');
   const orderText = escapeTelegramHtml(detailsText) +
     (documentUrl ? '\n\n<a href="' + escapeTelegramHtml(documentUrl) + '">📋 فتح الطلب والمستندات</a>' : '');
 
-  // Keep only customer-notification and OTP actions here. Order status and navigation
-  // controls are intentionally omitted from the order details message.
+  // Keep the order actions here; status and navigation controls remain outside this message.
   await telegramApi('sendMessage', {
     chat_id: chatId,
     text: orderText,
@@ -1940,53 +1935,6 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
         '). أصبح الطلب معتمدًا من الإدارة.'
     );
     await listOrderDetails(db, chatId, id);
-    return;
-  }
-
-  if (action === 'create-order-otp' && id && isObjectId(id)) {
-    const orderCollection = db.collection<StoreOrder & {
-      orderConfirmationOtpHash?: string;
-      orderConfirmationOtpSalt?: string;
-      orderConfirmationOtpIssuedAt?: Date;
-      orderConfirmationOtpVersion?: number;
-      orderConfirmationVerifiedAt?: Date;
-    }>('orders');
-    const order = await orderCollection.findOne({ _id: new ObjectId(id), source: 'website' });
-    if (!order) {
-      await sendTelegramMessage(chatId, 'لم يتم العثور على الطلب.');
-      return;
-    }
-    if (order.orderConfirmationVerifiedAt) {
-      await sendTelegramMessage(chatId, 'تم تأكيد هذا الطلب بالفعل، ولا يحتاج إلى رمز جديد.');
-      return;
-    }
-
-    const otp = String(randomInt(0, 10_000)).padStart(4, '0');
-    const salt = randomBytes(16).toString('hex');
-    const otpHash = createHash('sha256').update(salt + ':' + otp).digest('hex');
-    const now = new Date();
-    await orderCollection.updateOne(
-      { _id: order._id },
-      {
-        $set: {
-          orderConfirmationOtpHash: otpHash,
-          orderConfirmationOtpSalt: salt,
-          orderConfirmationOtpIssuedAt: now,
-          orderConfirmationOtpVersion: Number(order.orderConfirmationOtpVersion || 0) + 1,
-          updatedAt: now
-        }
-      }
-    );
-    await telegramApi('sendMessage', {
-      chat_id: chatId,
-      text: '🔐 رمز تأكيد الطلب ' + (order.orderNumber || id) + ':\n\n' + otp,
-      disable_web_page_preview: true,
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '📋', copy_text: { text: otp } }]
-        ]
-      }
-    });
     return;
   }
 
