@@ -1594,7 +1594,14 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     const token = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(token).digest('hex');
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-    await db.collection('case_mask_editor_sessions').insertOne({
+    const editorSessions = db.collection<{
+      _id: string;
+      productId: string;
+      telegramUserId: number;
+      createdAt: Date;
+      expiresAt: Date;
+    }>('case_mask_editor_sessions');
+    await editorSessions.insertOne({
       _id: tokenHash,
       productId: id,
       telegramUserId: callback.from.id,
@@ -1613,7 +1620,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       try { baseUrl = new URL(webhookUrl).origin; } catch { baseUrl = ''; }
     }
     if (!baseUrl) {
-      await db.collection('case_mask_editor_sessions').deleteOne({ _id: tokenHash });
+      await editorSessions.deleteOne({ _id: tokenHash });
       return void await sendTelegramMessage(chatId, 'تعذر إنشاء رابط الأداة. تأكد من إعداد رابط الموقع في Vercel ثم حاول مرة أخرى.');
     }
 
