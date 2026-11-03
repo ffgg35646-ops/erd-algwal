@@ -956,7 +956,7 @@ async function updateOrderStatus(
   const isOpenForShipping = ['new', 'confirmed', 'preparing'].includes(order.status);
   const isAwaitingFinalDecision = order.status === 'shipped';
   const canShip = isOpenForShipping && nextStatus === 'shipped';
-  const canComplete = isAwaitingFinalDecision && nextStatus === 'completed';
+  const canComplete = (isOpenForShipping || isAwaitingFinalDecision) && nextStatus === 'completed';
   const canCancel = (isOpenForShipping || isAwaitingFinalDecision) && nextStatus === 'cancelled';
 
   if (!canShip && !canComplete && !canCancel) {
