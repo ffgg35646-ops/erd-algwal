@@ -23,6 +23,7 @@ export type StoredProduct = Document & {
   category: string;
   name: string;
   colors: string[];
+  colorImages?: Record<string, string>;
   storageOptions: string[];
   storagePrices?: Record<string, number>;
   price: number;
@@ -262,6 +263,16 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
     ...(product.oldPrice !== undefined ? { oldPrice: product.oldPrice } : {}),
     ...(product.badge ? { badge: product.badge } : {}),
     colors: product.colors || [],
+    ...(Object.keys(product.colorImages || {}).length
+      ? {
+          colorImages: Object.fromEntries(
+            Object.keys(product.colorImages || {}).map((color) => [
+              color,
+              `/api/products/${id}/image?color=${encodeURIComponent(color)}`
+            ])
+          )
+        }
+      : {}),
     storageOptions: product.storageOptions || [],
     storagePrices: product.storagePrices || {},
     shortDescription: product.shortDescription || product.details,
