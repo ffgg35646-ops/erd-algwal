@@ -14,7 +14,7 @@ import {
   ensureTelegramIndexes
 } from '@/lib/telegram';
 import { formatOrderForAdmin, getRecentOrders, makeOrderNumber, type StoreOrder } from '@/lib/orders';
-import { isPhoneCaseProduct } from '@/lib/case-color-preview';
+import { isPhoneCaseProduct } from '@/lib/phone-case';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -761,27 +761,15 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     }
 
     const canPreviewColors = isPhoneCaseProduct(product.name, product.category, product.details) && Boolean(product.colors?.length);
-    let colorMaskNote = '';
-    let colorMask: Awaited<ReturnType<typeof generatePhoneCaseColorMask>> | undefined;
-
-    if (canPreviewColors && process.env.MODEL_API_KEY) {
-      await sendTelegramMessage(chatId, '✅ تم استلام الصور الجديدة. جاري عزل الجراب في الصورة الأولى وتجهيز تغيير الألوان...');
-      try {
-        colorMask = await generatePhoneCaseColorMask(data.images[0], product.colors[0]);
-        colorMaskNote = '\n✅ تم تجهيز معاينة تغيير الألوان للصورة الأولى.';
-      } catch (error) {
-        console.error('Phone-case mask generation failed after image replacement:', error instanceof Error ? error.message : 'Unknown error');
-        colorMaskNote = '\n⚠️ تم تحديث الصور، لكن تعذر تجهيز عزل الجراب تلقائيًا. يمكنك المحاولة مرة أخرى من زر تجهيز معاينة الألوان.';
-      }
-    } else if (canPreviewColors) {
-      colorMaskNote = '\n⚠️ تم تحديث الصور. أضف MODEL_API_KEY لإعداد معاينة تغيير الألوان.';
-    }
+    const colorMaskNote = canPreviewColors
+      ? '\\n🖌️ تم تحديث الصور. افتح تعديل المنتج واضغط «تحديد الكفر مجانًا» لإعادة تحديد صورة الغلاف.'
+      : '';
 
     const result = await db.collection<StoredProduct>('products').updateOne(
       { _id: productId },
       {
-        $set: { images: data.images.slice(0, 10), updatedAt: now, ...(colorMask ? { colorMask } : {}) },
-        ...(!colorMask ? { $unset: { colorMask: '' } } : {})
+        $set: { images: data.images.slice(0, 10), updatedAt: now },
+        $unset: { colorMask: '' }
       }
     );
 
@@ -817,25 +805,10 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     createdAt: now,
     updatedAt: now
   });
-  let colorMaskNote = '';
-  if (result.insertedId && isPhoneCaseProduct(data.name, section.name, data.details) && (data.colors || []).length) {
-    if (!process.env.MODEL_API_KEY) {
-      colorMaskNote = '\n⚠️ تم حفظ المنتج، لكن معاينة تغيير الألوان تحتاج إضافة MODEL_API_KEY في إعدادات البيئة.';
-    } else {
-      await sendTelegramMessage(chatId, '✅ تم حفظ المنتج. جاري عزل الجراب في الصورة الأولى وتجهيز معاينة تغيير الألوان...');
-      try {
-        const colorMask = await generatePhoneCaseColorMask(data.images[0], data.colors?.[0] || '');
-        await db.collection<StoredProduct>('products').updateOne(
-          { _id: result.insertedId },
-          { $set: { colorMask, updatedAt: new Date() } }
-        );
-        colorMaskNote = '\n✅ تم تجهيز معاينة تغيير الألوان بنجاح. لا تحتاج إلى رفع صور إضافية للألوان.';
-      } catch (error) {
-        console.error('Phone-case mask generation failed after product creation:', error instanceof Error ? error.message : 'Unknown error');
-        colorMaskNote = '\n⚠️ تم حفظ المنتج، لكن تعذر عزل الجراب تلقائيًا من الصورة الأولى. افتح تعديل المنتج وحاول تجهيز المعاينة مرة أخرى.';
-      }
-    }
-  }
+  const canPreviewColors = isPhoneCaseProduct(data.name, section.name, data.details) && Boolean((data.colors || []).length);
+  const colorMaskNote = result.insertedId && canPreviewColors
+    ? '\\n🖌️ لتفعيل تغيير الألوان مجانًا، افتح تعديل المنتج واضغط «تحديد الكفر مجانًا» وارسم فوق الكفر في صورة الغلاف.'
+    : '';
 
   await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
   const orderCounts = await getOrderSectionCounts(db);
@@ -867,7 +840,7 @@ async function handleImageStep(db: Db, session: AdminSession, message: TelegramM
     await saveProduct(db, session, chatId);
     return;
   }
-  await sendTelegramMessage(chatId, 'أرسل صورة المنتج. للجرابات، أرسل صورة الجراب الأساسية أولًا؛ هي التي سيجهّز النظام منها معاينة تغيير الألوان. يمكنك إرسال صور أخرى بعدها، ثم اضغط «حفظ المنتج».');
+  await sendTelegramMessage(chatId, 'أرسل صورة المنتج. للجرابات، أرسل صورة الجراب الأساسية أولًا؛ هي التي ستحدد عليها مساحة الكفر يدويًا لتغيير الألوان. يمكنك إرسال صور أخرى بعدها، ثم اضغط «حفظ المنتج».');
 }
 
 async function saveEditedField(db: Db, session: AdminSession, value: string, chatId: number) {
