@@ -163,6 +163,35 @@ async function initializeDefaultProducts(db: Db) {
   });
   if (operations.length) await collection.bulkWrite(operations, { ordered: false });
 
+  // One-time migration: populate missing/empty color options on already-seeded
+  // products. Preserve any colors explicitly managed by the Telegram admin bot.
+  const colorsMigration = await settings.findOne({ _id: 'default-product-colors-v1' });
+  if (!colorsMigration) {
+    const colorUpdates = defaultStoreProducts.flatMap((product) => {
+      const colors = (product.colors || []).filter((color) => typeof color === 'string' && color.trim());
+      if (!colors.length) return [];
+      return [{
+        updateOne: {
+          filter: {
+            seedId: product.id,
+            $or: [
+              { colors: { $exists: false } },
+              { colors: null },
+              { colors: { $size: 0 } }
+            ]
+          },
+          update: { $set: { colors, updatedAt: now } }
+        }
+      }];
+    });
+    if (colorUpdates.length) await collection.bulkWrite(colorUpdates, { ordered: false });
+    await settings.updateOne(
+      { _id: 'default-product-colors-v1' },
+      { $setOnInsert: { completedAt: now, productIds: defaultStoreProducts.map((product) => product.id) } },
+      { upsert: true }
+    );
+  }
+
   if (!migration) {
     const defaultIds = defaultStoreProducts.map((product) => product.id);
     const legacySeedIds = seedProducts
