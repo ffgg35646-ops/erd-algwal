@@ -42,12 +42,13 @@
 .sub { margin: 0 0 4px; color: #6b6478; font-size: 14px; line-height: 1.7; }
 .phone { display: inline-block; color: #1f1a2e; direction: ltr; font-weight: 700; letter-spacing: .3px; }
 
-.inputs { display: flex; justify-content: center; gap: 7px; margin: 24px 0 8px; }
+.inputs { display: flex; justify-content: center; margin: 24px 0 8px; }
 .inputs input {
   box-sizing: border-box;
-  width: 42px;
-  height: 50px;
-  padding: 0;
+  width: 100%;
+  max-width: 320px;
+  height: 52px;
+  padding: 0 16px;
   border: 1.5px solid #e3def4;
   border-radius: 10px;
   outline: none;
@@ -55,6 +56,8 @@
   color: #1f1a2e;
   font-family: inherit;
   font-size: 20px;
+  letter-spacing: .25em;
+  font-variant-numeric: tabular-nums;
   text-align: center;
   transition: border-color .15s, box-shadow .15s;
 }

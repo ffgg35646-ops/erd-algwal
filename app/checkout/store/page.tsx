@@ -339,8 +339,8 @@ export default function StoreCheckoutPage() {
         stage: 'phone-verification'
       };
 
-      // Save the idempotency draft first, then create and notify the order using
-      // the existing order endpoint. No card/payment fields are sent here.
+      // Save the checkout draft and create the order. The admin notification is
+      // intentionally sent only after the customer completes the payment step.
       window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(checkoutDraft));
       const response = await fetch('/api/orders', {
         method: 'POST',
@@ -363,15 +363,10 @@ export default function StoreCheckoutPage() {
       if (!response.ok || !result.ok || !result.orderId) {
         throw new Error(result.error || 'تعذر إرسال الطلب للإدارة. حاول مرة أخرى.');
       }
-      if (result.notificationSent !== true) {
-        throw new Error(result.message || 'تم حفظ الطلب، لكن تعذر إشعار الإدارة. أعد المحاولة.');
-      }
-
       window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify({
         ...checkoutDraft,
         orderId: result.orderId,
         orderNumber: result.orderNumber || '',
-        adminNotificationSent: true
       }));
       router.push('/checkout/payment');
     } catch (error) {
