@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { findStoredProduct, type StoredProduct } from '@/lib/catalog';
-import { isPhoneCaseProduct } from '@/lib/case-color-preview';
+import { isPhoneCaseProduct } from '@/lib/phone-case';
 import type { ProductColorMask } from '@/lib/products';
 
 export const runtime = 'nodejs';
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
 
     const colorMask: ProductColorMask = {
       version: 1,
-      sourceColor: result.product.colorMask?.sourceColor || result.product.colors[0],
+      sourceColor: result.product.colorMask?.sourceColor || result.product.colors?.[0] || '',
       encoding: 'bit-packed-msb',
       width,
       height,
