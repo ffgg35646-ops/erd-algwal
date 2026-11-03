@@ -592,7 +592,7 @@ async function showCustomerOrders(db: Db, chatId: number) {
     const customerName = order.customer?.name || 'بدون اسم';
     const customerPhone = order.customer?.phone || (order as StoreOrder & { phone?: string }).phone || 'رقم الهاتف غير مسجل';
     return `${index + 1}. ${order.orderNumber || 'طلب'} — ${customerName} — ${customerPhone}`;
-  }).join('\\n');
+  }).join('\n');
 
   // Replace the old section reply keyboard with the main admin menu.
   await sendTelegramMessage(chatId, '🧾 طلبات العملاء (' + orders.length + ')', {
@@ -612,7 +612,7 @@ async function showCustomerOrders(db: Db, chatId: number) {
 
   await sendTelegramMessage(
     chatId,
-    summary + '\\n\\nاضغط على رقم الطلب لفتح التفاصيل والإجراءات.',
+    summary + '\n\nاضغط على رقم الطلب لفتح التفاصيل والإجراءات.',
     { reply_markup: keyboard }
   );
 
