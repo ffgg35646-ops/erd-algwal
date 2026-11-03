@@ -561,7 +561,8 @@ async function showCustomerOrders(db: Db, chatId: number, section: 'new' | 'ship
 
   const summary = orders.map((order, index) => {
     const customerName = order.customer?.name || 'بدون اسم';
-    return `${index + 1}. ${order.orderNumber || 'طلب'} — ${customerName}`;
+    const customerPhone = order.customer?.phone || (order as StoreOrder & { phone?: string }).phone || 'رقم الهاتف غير مسجل';
+    return `${index + 1}. ${order.orderNumber || 'طلب'} — ${customerName} — ${customerPhone}`;
   }).join('\n');
 
   const keyboard = {
