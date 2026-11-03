@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 
 type EditorInfo = {
   productName: string;
@@ -298,7 +298,7 @@ export default function CaseMaskEditor({ productId, token }: { productId: string
   );
 }
 
-function toolButton(active: boolean): React.CSSProperties {
+function toolButton(active: boolean): CSSProperties {
   return {
     border: '1px solid ' + (active ? '#168a57' : '#ccc'),
     borderRadius: 10,
