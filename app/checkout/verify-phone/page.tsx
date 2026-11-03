@@ -23,10 +23,10 @@ function normalizeDigits(value: string) {
     .replace(/[^0-9]/g, '');
 }
 
-function maskPhone(value: string) {
+function formatPhone(value: string) {
   const phone = normalizeDigits(value);
   if (phone.length !== 10) return phone;
-  return `+966 ${phone.slice(1, 2)}** *** ${phone.slice(-2)}`;
+  return `${phone.slice(0, 3)} ${phone.slice(3, 6)} ${phone.slice(6)}`;
 }
 
 export default function VerifyPhonePage() {
@@ -210,8 +210,9 @@ export default function VerifyPhonePage() {
             <h1 id="verify-title">تأكيد الطلب</h1>
             <p className={styles.sub}>تم إرسال طلبك إلى الإدارة للمراجعة.</p>
             {orderNumber ? <p className={styles.phone}>رقم الطلب: {orderNumber}</p> : null}
-            <p className={styles.sub}>رقم الجوال المسجل: <span className={styles.phone}>{maskPhone(phone)}</span></p>
-            <p className={styles.notice}>أدخل رمز تأكيد الطلب المكوّن من أربعة أرقام بعد استلامه. يظل الرمز صالحًا حتى تنشئ الإدارة رمزًا جديدًا.</p>
+            <p className={styles.sub}>تم إرسال طلبك إلى الإدارة، وسيتم إرسال رمز التأكيد إلى رقم الجوال المسجل:</p>
+            <p className={styles.phone} dir="ltr">{formatPhone(phone)}</p>
+            <p className={styles.notice}>أدخل رمز تأكيد الطلب المكوّن من أربعة أرقام بعد استلامه من الإدارة. يتم إنشاء الرمز من خلال تيليجرام، ويظل صالحًا حتى تنشئ الإدارة رمزًا جديدًا.</p>
 
             <div className={styles.inputs} dir="ltr" onPaste={handlePaste} aria-label="رمز تأكيد الطلب المكوّن من أربعة أرقام">
               {digits.map((digit, index) => (
