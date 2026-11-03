@@ -47,6 +47,8 @@ type FlowData = {
   productId?: string;
   colors?: string[];
   colorImageColor?: string;
+  pendingColorImageFileId?: string;
+  manageColorImages?: boolean;
   storageOptions?: string[];
   storagePrices?: Record<string, number>;
   price?: number;
@@ -91,7 +93,8 @@ const SAVE_FOOTER_TEXT = 'حفظ النص';
 const REWRITE_FOOTER_TEXT = 'إعادة الكتابة';
 const MAIN_MENU_TEXT = 'رجوع إلى القائمة الرئيسية';
 const SAVE_PRODUCT_TEXT = 'حفظ المنتج';
-const REMOVE_COLOR_IMAGE_TEXT = 'حذف صورة اللون';
+const SAVE_COLOR_IMAGE_TEXT = 'حفظ';
+const REMOVE_COLOR_IMAGE_TEXT = 'حذف';
 
 const PRODUCT_COLOR_OPTIONS = [
   { key: 'black', name: 'أسود', icon: '⚫' },
@@ -462,10 +465,8 @@ function editProductKeyboard(id: string, categoryId: string, canPreviewColors = 
   return {
     inline_keyboard: [
       [{ text: 'القسم', callback_data: 'product-field:' + id + ':category' }, { text: 'اسم المنتج', callback_data: 'product-field:' + id + ':name' }],
-      [{ text: 'الألوان', callback_data: 'product-field:' + id + ':colors' }, { text: 'مساحة التخزين', callback_data: 'product-field:' + id + ':storage' }],
+      [{ text: 'لون مع صور', callback_data: 'product-color-images:' + id }, { text: 'مساحة التخزين', callback_data: 'product-field:' + id + ':storage' }],
       [{ text: 'السعر', callback_data: 'product-field:' + id + ':price' }, { text: 'تفاصيل المنتج', callback_data: 'product-field:' + id + ':details' }],
-      [{ text: 'الصور (استبدال الصور)', callback_data: 'product-field:' + id + ':images' }],
-      [{ text: '📸 صور كل لون', callback_data: 'product-color-images:' + id }],
       ...(canPreviewColors ? [[{
         text: hasColorMask ? '🖌️ إعادة تحديد الكفر مجانًا' : '🖌️ تحديد الكفر مجانًا',
         callback_data: 'product-mask-editor:' + id
@@ -492,11 +493,9 @@ async function showProductEditMenu(db: Db, chatId: number, id: string) {
     '',
     'الاسم: ' + product.name,
     'القسم: ' + product.category,
-    'الألوان: ' + ((product.colors || []).join('، ') || 'غير محدد'),
+    'لون مع صور: ' + ((product.colors || []).map((color) => color + ((product.colorImages || {})[color] ? ' ✓' : '')).join('، ') || 'غير محدد'),
     'مساحات التخزين: ' + ((product.storageOptions || []).map((storage) => storage + (product.storagePrices?.[storage] ? ' — ' + product.storagePrices[storage].toLocaleString('en-US') + ' ر.س' : '')).join('، ') || 'غير محدد'),
     'السعر: ' + product.price.toLocaleString('en-US') + ' ر.س',
-    'عدد الصور: ' + (product.images || []).length,
-    'صور مرتبطة بالألوان: ' + Object.keys(product.colorImages || {}).length + '/' + (product.colors || []).length,
     'معاينة تغيير لون الجراب: ' + (product.colorMask ? 'جاهزة ✅' : 'غير مجهزة'),
     '',
     'اختر الخانة التي تريد تعديلها. زر الحذف موجود بالأسفل.'
@@ -514,31 +513,40 @@ async function showProductColorImagesMenu(db: Db, chatId: number, id: string, no
   if (!product) return void await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج.');
 
   const colors = product.colors || [];
-  if (!colors.length) {
-    return void await sendTelegramMessage(chatId, 'لا توجد ألوان محفوظة لهذا المنتج. افتح «الألوان» أولًا، وحدد الألوان ثم ارجع إلى «صور كل لون».', {
-      reply_markup: { inline_keyboard: [[{ text: '↩ رجوع إلى المنتج', callback_data: 'edit-product:' + id }]] }
-    });
-  }
-
   const colorImages = product.colorImages || {};
-  const keyboard = colors.map((color, index) => [{
-    text: (colorImages[color] ? '✅ ' : '📷 ') + color + (colorImages[color] ? ' — الصورة مربوطة' : ' — أضف صورة'),
+  const keyboard: Array<Array<{ text: string; callback_data: string }>> = colors.map((color, index) => [{
+    text: (colorImages[color] ? '✓ ' : '') + color,
     callback_data: 'product-color-image:' + id + ':' + index
   }]);
-  keyboard.push([{ text: '↩ رجوع إلى تعديل المنتج', callback_data: 'edit-product:' + id }]);
+  keyboard.push([{ text: 'تعديل الألوان', callback_data: 'product-color-edit-list:' + id }]);
+  keyboard.push([{ text: '↩ رجوع إلى المنتج', callback_data: 'edit-product:' + id }]);
 
-  const linkedCount = colors.filter((color) => Boolean(colorImages[color])).length;
   const lines = [
     ...(notice ? [notice, ''] : []),
-    '📸 ربط صور الألوان — ' + product.name,
-    '',
-    'اضغط على اللون، ثم أرسل صورة واحدة واضحة لهذا اللون. الصورة القديمة ستُستبدل تلقائيًا إذا رفعت صورة جديدة.',
-    '',
-    'الصور المرتبطة: ' + linkedCount + ' من ' + colors.length,
-    '',
-    'اللون الذي لا تربط له صورة سيستخدم الصورة الأساسية أو معاينة تغيير اللون الحالية.'
+    'لون مع صور — ' + product.name,
+    ...(!colors.length ? ['', 'لا توجد ألوان.'] : [])
   ];
   await sendTelegramMessage(chatId, lines.join(String.fromCharCode(10)), { reply_markup: { inline_keyboard: keyboard } });
+}
+
+async function startProductColorImageUpload(db: Db, userId: number, chatId: number, id: string, color: string) {
+  await startFlow(
+    db,
+    userId,
+    chatId,
+    'edit_product',
+    'edit_product_color_image',
+    { productId: id, colorImageColor: color },
+    'أرسل صورة اللون «' + color + '».',
+    {
+      keyboard: [
+        [{ text: SAVE_COLOR_IMAGE_TEXT }, { text: REMOVE_COLOR_IMAGE_TEXT }],
+        [{ text: MAIN_MENU_TEXT }]
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: false
+    }
+  );
 }
 
 async function ensureShortOrderNumbers(db: Db, orders: StoreOrder[]) {
@@ -1257,7 +1265,11 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
           await sendMainMenu(db, chatId, 'لم يتم العثور على المنتج.');
           return;
         }
-        await showProductEditMenu(db, chatId, session.data.productId);
+        if (session.data.manageColorImages) {
+          await showProductColorImagesMenu(db, chatId, session.data.productId);
+        } else {
+          await showProductEditMenu(db, chatId, session.data.productId);
+        }
         return;
       }
     }
@@ -1269,7 +1281,23 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await showProductColorImagesMenu(db, chatId, id || '');
     return;
   }
-  if (action === 'product-color-image') {
+  if (action === 'product-color-edit-list') {
+    if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
+    const product = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
+    if (!product) return void await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج.');
+    await startFlow(
+      db,
+      callback.from.id,
+      chatId,
+      'edit_product',
+      'edit_product_colors',
+      { productId: id, colors: product.colors || [], manageColorImages: true },
+      productColorPrompt(product.colors || []),
+      productColorKeyboard(product.colors || [])
+    );
+    return;
+  }
+  if (action === 'product-color-image' || action === 'product-color-image-edit') {
     if (!isObjectId(id || '') || !field || !Number.isInteger(Number(field)) || Number(field) < 0) {
       return void await sendTelegramMessage(chatId, 'اللون المحدد غير صالح.');
     }
@@ -1279,26 +1307,39 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     });
     const color = product?.colors?.[Number(field)];
     if (!product || !color) return void await sendTelegramMessage(chatId, 'لم يتم العثور على اللون أو المنتج.');
-    await startFlow(
-      db,
-      callback.from.id,
-      chatId,
-      'edit_product',
-      'edit_product_color_image',
-      { productId: id, colorImageColor: color },
-      [
-        '📸 أرسل الآن صورة المنتج الخاصة باللون «' + color + '».',
-        '',
-        'ارفع الصورة كصورة في تيليجرام، وليس كملف. سيتم ربطها بهذا اللون فقط.',
-        '',
-        'يمكنك الضغط على «' + REMOVE_COLOR_IMAGE_TEXT + '» لحذف الصورة الحالية لهذا اللون.'
-      ].join(String.fromCharCode(10)),
-      {
-        keyboard: [[{ text: REMOVE_COLOR_IMAGE_TEXT }], [{ text: MAIN_MENU_TEXT }]],
-        resize_keyboard: true,
-        one_time_keyboard: false
-      }
+
+    const hasImage = Boolean(product.colorImages?.[color]);
+    if (action === 'product-color-image' && hasImage) {
+      await sendTelegramMessage(chatId, color, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: 'تعديل', callback_data: 'product-color-image-edit:' + id + ':' + field },
+              { text: 'حذف', callback_data: 'product-color-image-delete:' + id + ':' + field }
+            ],
+            [{ text: '↩ رجوع', callback_data: 'product-color-images:' + id }]
+          ]
+        }
+      });
+      return;
+    }
+    await startProductColorImageUpload(db, callback.from.id, chatId, id, color);
+    return;
+  }
+  if (action === 'product-color-image-delete') {
+    if (!isObjectId(id || '') || !field || !Number.isInteger(Number(field)) || Number(field) < 0) {
+      return void await sendTelegramMessage(chatId, 'اللون المحدد غير صالح.');
+    }
+    const product = await db.collection<StoredProduct>('products').findOne({ _id: new ObjectId(id), deleted: { $ne: true } });
+    const color = product?.colors?.[Number(field)];
+    if (!product || !color) return void await sendTelegramMessage(chatId, 'لم يتم العثور على اللون أو المنتج.');
+    const remainingColorImages: Record<string, string> = { ...(product.colorImages || {}) };
+    delete remainingColorImages[color];
+    await db.collection<StoredProduct>('products').updateOne(
+      { _id: product._id, deleted: { $ne: true } },
+      { $set: { colorImages: remainingColorImages, updatedAt: new Date() } }
     );
+    await showProductColorImagesMenu(db, chatId, id, 'تم حذف الصورة.');
     return;
   }
 
@@ -2175,12 +2216,33 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     const color = session.data.colorImageColor || '';
     if (!isObjectId(productId) || !color) {
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-      await sendMainMenu(db, chatId, 'انتهت جلسة ربط صورة اللون. افتح تعديل المنتج وحاول مرة أخرى.');
+      await sendMainMenu(db, chatId);
       return;
     }
 
     if (message.photo?.length) {
       const photo = message.photo[message.photo.length - 1];
+      session.data.pendingColorImageFileId = photo.file_id;
+      await saveSession(db, session);
+      await sendTelegramMessage(chatId, 'تم استلام الصورة. اضغط حفظ.', {
+        reply_markup: {
+          keyboard: [
+            [{ text: SAVE_COLOR_IMAGE_TEXT }, { text: REMOVE_COLOR_IMAGE_TEXT }],
+            [{ text: MAIN_MENU_TEXT }]
+          ],
+          resize_keyboard: true,
+          one_time_keyboard: false
+        }
+      });
+      return;
+    }
+
+    if (value === SAVE_COLOR_IMAGE_TEXT) {
+      const pendingFileId = session.data.pendingColorImageFileId;
+      if (!pendingFileId) {
+        await sendTelegramMessage(chatId, 'أرسل صورة أولًا.');
+        return;
+      }
       const product = await db.collection<StoredProduct>('products').findOne({
         _id: new ObjectId(productId),
         deleted: { $ne: true },
@@ -2188,40 +2250,38 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       });
       if (!product) {
         await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-        await showProductColorImagesMenu(db, chatId, productId, 'لم يتم حفظ الصورة لأن اللون لم يعد ضمن ألوان المنتج.');
+        await showProductColorImagesMenu(db, chatId, productId);
         return;
       }
-      const colorImages = { ...(product.colorImages || {}), [color]: photo.file_id };
+      const colorImages = { ...(product.colorImages || {}), [color]: pendingFileId };
       await db.collection<StoredProduct>('products').updateOne(
         { _id: product._id, deleted: { $ne: true } },
         { $set: { colorImages, updatedAt: new Date() } }
       );
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-      await showProductColorImagesMenu(db, chatId, productId, '✅ تم ربط صورة اللون «' + color + '» بنجاح.');
+      await showProductColorImagesMenu(db, chatId, productId, 'تم حفظ الصورة.');
       return;
     }
 
     if (value === REMOVE_COLOR_IMAGE_TEXT) {
-      const existingProduct = await db.collection<StoredProduct>('products').findOne(
-        { _id: new ObjectId(productId), deleted: { $ne: true } },
-        { projection: { colorImages: 1 } }
-      );
-      const remainingColorImages: Record<string, string> = { ...(existingProduct?.colorImages || {}) };
-      const hadImage = Boolean(remainingColorImages[color]);
-      if (hadImage) {
-        delete remainingColorImages[color];
+      const product = await db.collection<StoredProduct>('products').findOne({
+        _id: new ObjectId(productId),
+        deleted: { $ne: true }
+      });
+      const remainingColorImages: Record<string, string> = { ...(product?.colorImages || {}) };
+      delete remainingColorImages[color];
+      if (product) {
         await db.collection<StoredProduct>('products').updateOne(
-          { _id: new ObjectId(productId), deleted: { $ne: true } },
+          { _id: product._id, deleted: { $ne: true } },
           { $set: { colorImages: remainingColorImages, updatedAt: new Date() } }
         );
       }
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-      await showProductColorImagesMenu(db, chatId, productId,
-        hadImage ? '🗑 تم حذف صورة اللون «' + color + '».' : 'لا توجد صورة محفوظة لهذا اللون.');
+      await showProductColorImagesMenu(db, chatId, productId, 'تم حذف الصورة.');
       return;
     }
 
-    await sendTelegramMessage(chatId, 'أرسل صورة اللون «' + color + '» كصورة في تيليجرام، أو اضغط «' + REMOVE_COLOR_IMAGE_TEXT + '» لحذف الصورة الحالية.');
+    await sendTelegramMessage(chatId, 'أرسل صورة اللون.');
     return;
   }
 
