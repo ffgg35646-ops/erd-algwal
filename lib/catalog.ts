@@ -1,4 +1,4 @@
-import { ObjectId, type Db, type Document } from 'mongodb';
+import { ObjectId, type Db, type Document, type Filter } from 'mongodb';
 import { categories as seedCategories, defaultStoreProducts, products as seedProducts, type Product, type ProductColorMask } from '@/lib/products';
 
 export type StoreCategory = Document & {
@@ -179,7 +179,7 @@ async function initializeDefaultProducts(db: Db) {
               { colors: null },
               { colors: { $size: 0 } }
             ]
-          },
+          } as Filter<StoredProduct>,
           update: { $set: { colors, updatedAt: now } }
         }
       }];
