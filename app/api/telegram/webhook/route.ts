@@ -14,7 +14,7 @@ import {
   ensureTelegramIndexes
 } from '@/lib/telegram';
 import { formatOrderForAdmin, getRecentOrders, makeOrderNumber, type StoreOrder } from '@/lib/orders';
-import { generatePhoneCaseColorMask, isPhoneCaseProduct } from '@/lib/case-color-preview';
+import { isPhoneCaseProduct } from '@/lib/case-color-preview';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -471,8 +471,8 @@ function editProductKeyboard(id: string, categoryId: string, canPreviewColors = 
       [{ text: 'السعر', callback_data: 'product-field:' + id + ':price' }, { text: 'تفاصيل المنتج', callback_data: 'product-field:' + id + ':details' }],
       [{ text: 'الصور (استبدال الصور)', callback_data: 'product-field:' + id + ':images' }],
       ...(canPreviewColors ? [[{
-        text: hasColorMask ? '🔁 إعادة تجهيز معاينة الألوان' : '🎨 تجهيز معاينة تغيير الألوان',
-        callback_data: 'product-mask:' + id
+        text: hasColorMask ? '🖌️ إعادة تحديد الكفر مجانًا' : '🖌️ تحديد الكفر مجانًا',
+        callback_data: 'product-mask-editor:' + id
       }]] : []),
       [{ text: '🗑 حذف المنتج', callback_data: 'delete-product:' + id }],
       [{ text: '↩ رجوع لمنتجات القسم', callback_data: 'back-to-category-products:' + categoryId }],
@@ -1600,7 +1600,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await showProductEditMenu(db, chatId, id || '');
     return;
   }
-  if (action === 'product-mask') {
+  if (action === 'product-mask-editor') {
     if (!isObjectId(id || '')) return void await sendTelegramMessage(chatId, 'معرّف المنتج غير صالح.');
     const product = await db.collection<StoredProduct>('products').findOne({
       _id: new ObjectId(id),
@@ -1608,34 +1608,48 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     });
     if (!product) return void await sendTelegramMessage(chatId, 'لم يتم العثور على المنتج.');
     if (!isPhoneCaseProduct(product.name, product.category, product.details)) {
-      return void await sendTelegramMessage(chatId, 'معاينة تغيير الألوان مخصصة لمنتجات الجرابات والكفرات فقط.');
+      return void await sendTelegramMessage(chatId, 'تحديد اللون المجاني مخصص لمنتجات الجرابات والكفرات فقط.');
     }
     if (!product.images?.[0]) {
-      return void await sendTelegramMessage(chatId, 'لا توجد صورة مرفوعة عبر البوت لهذا المنتج. استبدل الصور أولًا ثم أعد المحاولة.');
+      return void await sendTelegramMessage(chatId, 'لا توجد صورة غلاف مرفوعة عبر البوت لهذا المنتج. أضف صورة الغلاف أولًا.');
     }
     if (!product.colors?.length) {
-      return void await sendTelegramMessage(chatId, 'أضف ألوان المنتج أولًا، واجعل أول لون هو اللون الظاهر في الصورة الأولى.');
-    }
-    if (!process.env.MODEL_API_KEY) {
-      return void await sendTelegramMessage(chatId, 'خدمة عزل الجراب تحتاج إضافة MODEL_API_KEY في إعدادات البيئة أولًا.');
+      return void await sendTelegramMessage(chatId, 'أضف ألوان المنتج أولًا، واجعل أول لون هو اللون الظاهر في صورة الغلاف.');
     }
 
-    await sendTelegramMessage(chatId, 'جاري عزل الجراب من الصورة الأولى وتجهيز معاينة تغيير الألوان...');
-    try {
-      const colorMask = await generatePhoneCaseColorMask(
-        product.images[0],
-        product.colorMask?.sourceColor || product.colors[0]
-      );
-      await db.collection<StoredProduct>('products').updateOne(
-        { _id: product._id },
-        { $set: { colorMask, updatedAt: new Date() } }
-      );
-      await sendTelegramMessage(chatId, '✅ تم تجهيز عزل الجراب. ستتغير ألوان الجراب فقط في الصورة الأولى، وستبقى الخلفية وباقي الصور كما هي.');
-    } catch (error) {
-      console.error('Manual phone-case mask generation failed:', error instanceof Error ? error.message : 'Unknown error');
-      await sendTelegramMessage(chatId, '⚠️ تعذر عزل الجراب من الصورة الحالية. تأكد أن الصورة واضحة وتظهر جرابًا واحدًا، ثم جرّب مرة أخرى.');
+    const token = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+    await db.collection('case_mask_editor_sessions').insertOne({
+      _id: tokenHash,
+      productId: id,
+      telegramUserId: callback.from.id,
+      createdAt: new Date(),
+      expiresAt
+    });
+
+    const configuredBaseUrl = process.env.NEXT_PUBLIC_SITE_URL
+      || process.env.VERCEL_PROJECT_PRODUCTION_URL
+      || process.env.VERCEL_URL;
+    const webhookUrl = process.env.TELEGRAM_WEBHOOK_URL;
+    let baseUrl = configuredBaseUrl
+      ? (configuredBaseUrl.startsWith('http') ? configuredBaseUrl : 'https://' + configuredBaseUrl)
+      : '';
+    if (!baseUrl && webhookUrl) {
+      try { baseUrl = new URL(webhookUrl).origin; } catch { baseUrl = ''; }
     }
-    await showProductEditMenu(db, chatId, id);
+    if (!baseUrl) {
+      await db.collection('case_mask_editor_sessions').deleteOne({ _id: tokenHash });
+      return void await sendTelegramMessage(chatId, 'تعذر إنشاء رابط الأداة. تأكد من إعداد رابط الموقع في Vercel ثم حاول مرة أخرى.');
+    }
+
+    const editorUrl = new URL('/admin/case-mask', baseUrl);
+    editorUrl.searchParams.set('product', id);
+    editorUrl.searchParams.set('token', token);
+    await sendTelegramMessage(chatId,
+      'افتح أداة تحديد الكفر المجانية. لوّن الكفر نفسه بالفرشاة الخضراء فقط، واستخدم الممحاة لإزالة أي تحديد خارج الكفر. الرابط صالح لمدة 30 دقيقة.',
+      { reply_markup: { inline_keyboard: [[{ text: 'فتح أداة تحديد الكفر', url: editorUrl.toString() }]] } }
+    );
     return;
   }
   if (action === 'product-field') {
