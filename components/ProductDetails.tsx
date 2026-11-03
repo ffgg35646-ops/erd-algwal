@@ -60,7 +60,11 @@ export default function ProductDetails({ product }: { product: Product }) {
   const initialColor = availableColors.includes(imageSourceColor) ? imageSourceColor : (availableColors[0] || '');
   const [selectedColor, setSelectedColor] = useState(initialColor);
   const [selectedStorage, setSelectedStorage] = useState(availableStorage[0] || '');
-  const gallery = product.images?.length ? product.images : [product.image];
+  const baseGallery = product.images?.length ? product.images : [product.image];
+  const selectedColorImage = selectedColor ? product.colorImages?.[selectedColor] || '' : '';
+  const gallery = selectedColorImage
+    ? [selectedColorImage, ...baseGallery.slice(1)]
+    : baseGallery;
   const safeImageIndex = Math.min(activeImageIndex, gallery.length - 1);
   const activeImage = gallery[safeImageIndex] || product.image;
   const colorsSignature = availableColors.join('|');
@@ -77,12 +81,12 @@ export default function ProductDetails({ product }: { product: Product }) {
   useEffect(() => {
     // A generated case mask belongs to the main photo only; do not rotate
     // automatically to an unmasked gallery image after the customer picks a color.
-    if (product.colorMask || gallery.length < 2) return;
+    if (selectedColorImage || product.colorMask || gallery.length < 2) return;
     const timer = window.setTimeout(() => {
       setActiveImageIndex((current) => (current + 1) % gallery.length);
     }, 10_000);
     return () => window.clearTimeout(timer);
-  }, [gallery.length, activeImageIndex, product.colorMask]);
+  }, [gallery.length, activeImageIndex, product.colorMask, selectedColorImage]);
 
   function handleAdd() {
     addToCart(product.id, quantity, selectedColor || undefined, selectedStorage || undefined);
@@ -97,7 +101,7 @@ export default function ProductDetails({ product }: { product: Product }) {
         <div className="product-detail-hero">
           {product.badge ? <span className="product-detail-badge">{product.badge}</span> : null}
           {activeImage ? (
-            safeImageIndex === 0 && product.colorMask ? (
+            safeImageIndex === 0 && product.colorMask && !selectedColorImage ? (
               <CaseColorImage
                 key={activeImage}
                 src={activeImage}
@@ -133,7 +137,7 @@ export default function ProductDetails({ product }: { product: Product }) {
           <div className="product-detail-thumbnails" aria-label="صور المنتج">
             {gallery.map((image, index) => (
               <button type="button" className={index === safeImageIndex ? 'is-active' : ''} key={image + index} onClick={() => setActiveImageIndex(index)} aria-label={'عرض الصورة ' + (index + 1)} aria-pressed={index === safeImageIndex}>
-                {index === 0 && product.colorMask ? (
+                {index === 0 && product.colorMask && !selectedColorImage ? (
                   <CaseColorImage
                     key={image}
                     src={image}
@@ -166,7 +170,7 @@ export default function ProductDetails({ product }: { product: Product }) {
               </div>
               <div className="product-detail-colors">
                 {availableColors.map((color) => (
-                  <button type="button" key={color} className={'product-detail-color' + (selectedColor === color ? ' is-selected' : '')} onClick={() => setSelectedColor(color)} aria-label={'اختيار اللون ' + color} aria-pressed={selectedColor === color} title={color}>
+                  <button type="button" key={color} className={'product-detail-color' + (selectedColor === color ? ' is-selected' : '')} onClick={() => { setSelectedColor(color); setActiveImageIndex(0); }} aria-label={'اختيار اللون ' + color} aria-pressed={selectedColor === color} title={color}>
                     <span className="product-detail-color-dot" style={{ backgroundColor: getColorHex(color) }} />
                     <span>{color}</span>
                   </button>
