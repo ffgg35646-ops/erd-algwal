@@ -10,9 +10,13 @@ type TelegramFile = { file_path?: string };
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
+  const color = request.nextUrl.searchParams.get('color');
   const index = Number(request.nextUrl.searchParams.get('index') || '0');
-  if (!Number.isInteger(index) || index < 0 || index > 10) {
+  if (color === null && (!Number.isInteger(index) || index < 0 || index > 10)) {
     return NextResponse.json({ error: 'Invalid image index' }, { status: 400 });
+  }
+  if (color !== null && (!color.trim() || color.length > 80)) {
+    return NextResponse.json({ error: 'Invalid product color' }, { status: 400 });
   }
   if (!process.env.MONGODB_URI || !process.env.TELEGRAM_BOT_TOKEN) {
     return new NextResponse('Product image service not configured', { status: 503 });
@@ -21,7 +25,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   try {
     const db = await getDb();
     const product = await findStoredProduct(db, id);
-    const fileId = product?.images?.[index];
+    const fileId = color !== null ? product?.colorImages?.[color] : product?.images?.[index];
     if (!fileId) return new NextResponse('Image not found', { status: 404 });
 
     const file = await telegramApi<TelegramFile>('getFile', { file_id: fileId });
