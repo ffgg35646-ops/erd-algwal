@@ -192,7 +192,7 @@ try {
     : '';
       await sendTelegramMessage(
         adminId,
-        '🛍️ تم إكمال طلب جديد — أرض الجوال\\n\\n' +
+        '🛍️ تم إكمال طلب جديد — أرض الجوال\n\n' +
           formatOrderForAdmin(updatedOrder as unknown as Record<string, unknown>) +
           orderLinkText
       );
