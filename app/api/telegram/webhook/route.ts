@@ -1219,7 +1219,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     }
     const options = Array.isArray(session.data.storageOptions) ? session.data.storageOptions : [];
     if (!options.length) {
-      await sendTelegramMessage(chatId, 'أرسل مساحة التخزين، مثال: 1 تيرا قبل إدخال الأسعار.');
+      await sendTelegramMessage(chatId, 'أرسل مساحة التخزين، مثال: 1 تيرا');
       return;
     }
     if (action === 'product-storage-more') {
@@ -1281,7 +1281,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
         delete session.data.storagePriceIndex;
         session.step = 'product_storage';
         await saveSession(db, session);
-        await sendTelegramMessage(chatId, 'أرسل مساحة التخزين، مثال: 1 تيرا، مثال: 1 تيرا. أو اكتب «تخطي» إذا لم توجد مساحة تخزين.');
+        await sendTelegramMessage(chatId, 'أرسل مساحة التخزين، مثال: 1 تيرا');
         return;
       }
       if (session.workflow === 'edit_product' && session.step === 'edit_product_colors' && session.data.productId && isObjectId(session.data.productId)) {
@@ -2363,7 +2363,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       delete session.data.storagePriceIndex;
       session.step = 'product_storage';
       await saveSession(db, session);
-      await sendTelegramMessage(chatId, 'أرسل مساحة التخزين، مثال: 1 تيرا، مثال: 1 تيرا. أو اكتب «تخطي» إذا لم توجد مساحة تخزين.');
+      await sendTelegramMessage(chatId, 'أرسل مساحة التخزين، مثال: 1 تيرا');
       return;
     }
     if (session.step === 'product_storage') {
