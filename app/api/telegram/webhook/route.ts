@@ -47,7 +47,6 @@ type FlowData = {
   productId?: string;
   colors?: string[];
   colorImageColor?: string;
-  pendingColorImageFileId?: string;
   manageColorImages?: boolean;
   storageOptions?: string[];
   storagePrices?: Record<string, number>;
@@ -94,9 +93,6 @@ const SAVE_FOOTER_TEXT = 'حفظ النص';
 const REWRITE_FOOTER_TEXT = 'إعادة الكتابة';
 const MAIN_MENU_TEXT = 'رجوع إلى القائمة الرئيسية';
 const SAVE_PRODUCT_TEXT = 'حفظ المنتج';
-const SAVE_COLOR_IMAGE_TEXT = 'حفظ';
-const REMOVE_COLOR_IMAGE_TEXT = 'حذف';
-
 const PRODUCT_COLOR_OPTIONS = [
   { key: 'black', name: 'أسود', icon: '⚫' },
   { key: 'white', name: 'أبيض', icon: '⚪' },
@@ -538,15 +534,7 @@ async function startProductColorImageUpload(db: Db, userId: number, chatId: numb
     'edit_product',
     'edit_product_color_image',
     { productId: id, colorImageColor: color },
-    'أرسل صورة اللون «' + color + '».',
-    {
-      keyboard: [
-        [{ text: SAVE_COLOR_IMAGE_TEXT }, { text: REMOVE_COLOR_IMAGE_TEXT }],
-        [{ text: MAIN_MENU_TEXT }]
-      ],
-      resize_keyboard: true,
-      one_time_keyboard: false
-    }
+    'أرسل صورة اللون «' + color + '» مباشرة.'
   );
 }
 
@@ -2207,74 +2195,36 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       return;
     }
 
-    if (message.photo?.length) {
-      const photo = message.photo[message.photo.length - 1];
-      session.data.pendingColorImageFileId = photo.file_id;
-      await saveSession(db, session);
-      await sendTelegramMessage(chatId, 'تم استلام الصورة. اضغط حفظ.', {
-        reply_markup: {
-          keyboard: [
-            [{ text: SAVE_COLOR_IMAGE_TEXT }, { text: REMOVE_COLOR_IMAGE_TEXT }],
-            [{ text: MAIN_MENU_TEXT }]
-          ],
-          resize_keyboard: true,
-          one_time_keyboard: false
-        }
-      });
+    if (!message.photo?.length) {
+      await sendTelegramMessage(chatId, 'أرسل صورة اللون «' + color + '» مباشرة.');
       return;
     }
 
-    if (value === SAVE_COLOR_IMAGE_TEXT) {
-      const pendingFileId = session.data.pendingColorImageFileId;
-      if (!pendingFileId) {
-        await sendTelegramMessage(chatId, 'أرسل صورة أولًا.');
-        return;
-      }
-      const product = await db.collection<StoredProduct>('products').findOne({
-        _id: new ObjectId(productId),
-        deleted: { $ne: true },
-        colors: color
-      });
-      if (!product) {
-        await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-        await showProductColorImagesMenu(db, chatId, productId);
-        return;
-      }
-      const colorImages = { ...(product.colorImages || {}), [color]: pendingFileId };
-      await db.collection<StoredProduct>('products').updateOne(
-        { _id: product._id, deleted: { $ne: true } },
-        {
-          $set: {
-            colorImages,
-            ...(!product.images?.length ? { images: [pendingFileId] } : {}),
-            updatedAt: new Date()
-          }
-        }
-      );
+    const photo = message.photo[message.photo.length - 1];
+    const product = await db.collection<StoredProduct>('products').findOne({
+      _id: new ObjectId(productId),
+      deleted: { $ne: true },
+      colors: color
+    });
+    if (!product) {
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-      await showProductColorImagesMenu(db, chatId, productId, 'تم حفظ الصورة.');
+      await showProductColorImagesMenu(db, chatId, productId);
       return;
     }
 
-    if (value === REMOVE_COLOR_IMAGE_TEXT) {
-      const product = await db.collection<StoredProduct>('products').findOne({
-        _id: new ObjectId(productId),
-        deleted: { $ne: true }
-      });
-      const remainingColorImages: Record<string, string> = { ...(product?.colorImages || {}) };
-      delete remainingColorImages[color];
-      if (product) {
-        await db.collection<StoredProduct>('products').updateOne(
-          { _id: product._id, deleted: { $ne: true } },
-          { $set: { colorImages: remainingColorImages, updatedAt: new Date() } }
-        );
+    const colorImages = { ...(product.colorImages || {}), [color]: photo.file_id };
+    await db.collection<StoredProduct>('products').updateOne(
+      { _id: product._id, deleted: { $ne: true } },
+      {
+        $set: {
+          colorImages,
+          ...(!product.images?.length ? { images: [photo.file_id] } : {}),
+          updatedAt: new Date()
+        }
       }
-      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-      await showProductColorImagesMenu(db, chatId, productId, 'تم حذف الصورة.');
-      return;
-    }
-
-    await sendTelegramMessage(chatId, 'أرسل صورة اللون.');
+    );
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await showProductColorImagesMenu(db, chatId, productId, '✅ تم حفظ صورة اللون «' + color + '». اختر اللون التالي لإرسال صورته.');
     return;
   }
 
