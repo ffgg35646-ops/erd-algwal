@@ -91,7 +91,7 @@ export default function SiteHeader() {
             <span>جميع الأقسام</span>
           </button>
 
-          <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><Image src={siteLogo} alt="أرض الجوال" width={500} height={500} priority style={{ width: 64, height: 64, objectFit: 'contain', filter: 'url(#remove-logo-black)' }} /></Link>
+          <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><Image src={siteLogo} alt="أرض الجوال" width={500} height={500} priority style={{ width: 128, height: 128, objectFit: 'contain', filter: 'url(#remove-logo-black)' }} /></Link>
 
           <form className={"header-search" + (searchOpen ? " is-open" : "")} role="search" onSubmit={submitSearch}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
