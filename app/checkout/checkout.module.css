@@ -2545,3 +2545,51 @@
     margin-top: 24px !important;
   }
 }
+
+
+/* Payment page: remove the Visa/Mada choice buttons visually and refine field icons. */
+.paymentMethods {
+  display: none !important;
+}
+
+/* Enlarge the payment-page brand mark without changing its source or behavior. */
+.paymentCard img {
+  transform: scale(2);
+  transform-origin: center;
+}
+
+/* Keep the small decorative field icon fully inside its input. */
+.paymentFieldIcon {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+.paymentFieldIcon::after {
+  top: 50%;
+  left: 18px;
+  right: auto;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  font-size: 14px;
+  text-align: center;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 2;
+}
+.paymentFieldIcon .paymentInput {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding-left: 48px;
+}
+
+@media (max-width: 420px) {
+  .paymentFieldIcon::after {
+    left: 16px;
+  }
+  .paymentFieldIcon .paymentInput {
+    padding-left: 44px;
+  }
+}
