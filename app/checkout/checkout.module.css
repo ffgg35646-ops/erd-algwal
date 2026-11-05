@@ -525,13 +525,13 @@
 .checkoutShell.checkoutShell input,
 .checkoutShell.checkoutShell select,
 .checkoutShell.checkoutShell textarea {
-  min-height: 104px;
+  min-height: 144px;
   padding: 6px 9px;
   font-size: 12px;
 }
 .checkoutShell.checkoutShell :global(.checkout-field textarea),
 .checkoutShell.checkoutShell textarea {
-  min-height: 88px;
+  min-height: 108px;
 }
 .checkoutShell.checkoutShell :global(.saudi-phone-input) {
   position: relative;
