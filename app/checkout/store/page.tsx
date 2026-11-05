@@ -396,7 +396,7 @@ export default function StoreCheckoutPage() {
       ) : (
         <div className="checkout-layout">
           <form className="checkout-form-card" onSubmit={handleSubmit}>
-            <section className="checkout-form-section">
+            <section className="checkout-form-section checkout-contact-fields">
               <div className="checkout-section-heading"><div><h2>بيانات التواصل</h2></div></div>
               <div className="checkout-fields-grid">
                 <label className="checkout-field checkout-field-full">
@@ -418,7 +418,7 @@ export default function StoreCheckoutPage() {
               </div>
             </section>
 
-            <section className="checkout-form-section">
+            <section className="checkout-form-section checkout-contact-fields">
               <div className="checkout-fields-grid">
                 <div className="checkout-field checkout-field-full city-combobox">
                   <input
