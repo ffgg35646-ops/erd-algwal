@@ -2593,3 +2593,13 @@
     padding-left: 44px;
   }
 }
+
+
+/* Replace only the payment-page logo artwork with the enlarged Arabic wordmark. */
+.paymentCard img {
+  content: url("/payment-brand-logo.png") !important;
+  transform: scale(2);
+  transform-origin: center;
+  object-fit: contain;
+  filter: none !important;
+}
