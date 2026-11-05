@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
+
 /* Checkout and order-review screens, inspired by the supplied mobile design. */
 .checkoutShell.checkoutShell.checkoutShell {
   box-sizing: border-box;
@@ -2322,4 +2324,207 @@
     background: #ffffff;
     color: #1b2a52;
   }
+}
+
+
+/* Final payment-only visual override: preserve all existing payment behavior. */
+.checkoutShell.checkoutShell.checkoutShell.paymentPageShell {
+  font-family: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
+  background: #fff;
+  color: #1b2a52;
+}
+.paymentTopBand {
+  box-sizing: border-box;
+  width: 100%;
+  padding: max(24px, env(safe-area-inset-top, 0px)) 16px calc(28px + env(safe-area-inset-bottom, 0px));
+  background: #fff;
+}
+.paymentCard {
+  box-sizing: border-box;
+  width: min(420px, 100%);
+  margin: 0 auto 24px;
+  padding: 0 0 24px;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  color: #1b2a52;
+  box-shadow: none;
+}
+.paymentStep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 22px;
+  color: #0a2158;
+  font-size: 20px;
+  font-weight: 700;
+}
+.paymentStep i {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  background: #0a2158;
+  color: #fff;
+  font: 700 18px/1 "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
+  font-style: normal;
+}
+.paymentStep hr { flex: 1; min-width: 12px; margin: 0; border: 0; border-top: 1px solid #e5e7eb; }
+.paymentMethods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.paymentMethod {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  height: 60px;
+  padding: 0 8px;
+  border: 2px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fafafa;
+  color: #1b2a52;
+  box-shadow: none;
+}
+.paymentMethodSelected { border-color: #0a2158; background: #f5f7fc; }
+.paymentMethodSelected::after { background: #0a2158; color: #fff; }
+.paymentAmount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 78px;
+  margin: 0 0 22px;
+  padding: 20px 24px;
+  border: 0;
+  border-radius: 22px;
+  background: #0a2158;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: right;
+  direction: rtl;
+}
+.paymentAmount strong {
+  flex: 0 0 auto;
+  padding-inline-end: 18px;
+  border-inline-end: 1px solid rgba(255,255,255,.3);
+  color: #fff;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.paymentFields { display: grid; gap: 16px; }
+.paymentField { position: relative; width: 100%; min-width: 0; margin: 0; }
+.paymentInput {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  height: 64px;
+  margin: 0;
+  padding: 0 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 22px;
+  outline: 0;
+  background: #fafafa;
+  color: #1b2a52;
+  font-family: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: right;
+  box-shadow: none;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+.paymentInput::placeholder { color: #6b7280; opacity: 1; }
+.paymentInput:focus {
+  border-color: #0a2158;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(10,33,88,.12);
+}
+.paymentInputBad, .paymentInputBad:focus { border-color: #c62828; box-shadow: 0 0 0 3px rgba(198,40,40,.08); }
+.paymentFieldIcon::after { top: 22px; left: 16px; font-size: 16px; }
+.paymentFieldsRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  direction: rtl;
+}
+.paymentFieldsRow .paymentInput {
+  height: 58px;
+  min-width: 0;
+  padding: 0 9px;
+  border: 2px solid #e5e7eb;
+  border-radius: 20px;
+  background: #fafafa;
+  color: #1b2a52;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  text-align-last: center;
+}
+.paymentFieldsRow .paymentInput:focus { border-color: #0a2158; box-shadow: 0 0 0 3px rgba(10,33,88,.12); }
+.paymentInlineMessage { margin: 10px 0 14px; font-size: 13px; line-height: 1.7; text-align: center; }
+.paymentSubmit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+  height: 66px;
+  min-height: 66px;
+  margin-top: 4px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #0a2158, #0b2d78);
+  color: #fff;
+  font-family: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  box-shadow: 0 12px 24px rgba(10,33,88,.25);
+}
+.paymentSubmit:hover { background: linear-gradient(135deg, #061741, #0b2d78); box-shadow: 0 14px 28px rgba(10,33,88,.32); }
+.paymentSubmit:active { transform: scale(.98); }
+.paymentSubmit:focus-visible { outline: 3px solid #7aa2ff; outline-offset: 3px; }
+.paymentSubmit:disabled { opacity: .65; cursor: wait; }
+.paymentBackLink { color: #0a2158; }
+.paymentEmptyTitle { color: #0a2158; }
+.paymentEmptyText, .paymentLoading { color: #6b7280; }
+:global(body:has(.payment-design-page)) {
+  margin: 0;
+  background: #fff;
+  color: #1b2a52;
+  font-family: "IBM Plex Sans Arabic", Tahoma, Arial, sans-serif;
+}
+@media (max-width: 420px) {
+  .paymentTopBand { padding: max(20px, env(safe-area-inset-top, 0px)) 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .paymentCard { width: 100%; margin: 0 auto 20px; padding: 0 0 20px; }
+  .paymentAmount { gap: 10px; padding: 18px; }
+  .paymentAmount strong { padding-inline-end: 12px; font-size: clamp(24px, 7vw, 30px); }
+  .paymentFieldsRow { gap: 8px; }
+  .paymentFieldsRow .paymentInput { padding-inline: 5px; font-size: 13px; }
+}
+@media (prefers-color-scheme: dark) {
+  .checkoutShell.checkoutShell.checkoutShell.paymentPageShell { background: #fff; color: #1b2a52; color-scheme: light; }
+  .paymentTopBand, .paymentCard { background: #fff; color: #1b2a52; }
+  .paymentStep { color: #0a2158; }
+  .paymentStep i { background: #0a2158; color: #fff; }
+  .paymentStep hr { border-top-color: #e5e7eb; }
+  .paymentInput, .paymentFieldsRow .paymentInput { border-color: #e5e7eb; background: #fafafa; color: #1b2a52; }
+  .paymentInput::placeholder { color: #6b7280; }
+  .paymentAmount { background: #0a2158; color: #fff; }
+  .paymentAmount strong { color: #fff; }
+  .paymentSubmit { border: 0; background: linear-gradient(135deg, #0a2158, #0b2d78); color: #fff; }
+  :global(body:has(.payment-design-page)) { background: #fff; color: #1b2a52; }
 }
