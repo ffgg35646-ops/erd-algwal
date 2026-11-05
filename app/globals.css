@@ -4398,7 +4398,7 @@ body {
     grid-template-areas:
       "menu brand actions"
       "search search search";
-    grid-template-rows: 78px auto;
+    grid-template-rows: 132px auto;
     align-items: center;
     justify-content: initial;
     gap: 0 10px;
