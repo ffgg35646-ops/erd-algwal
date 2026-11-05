@@ -2528,3 +2528,20 @@
   .paymentSubmit { border: 0; background: linear-gradient(135deg, #0a2158, #0b2d78); color: #fff; }
   :global(body:has(.payment-design-page)) { background: #fff; color: #1b2a52; }
 }
+
+
+/* Payment page visual-only tweaks: hide card-brand marks and separate submit action. */
+.paymentMethods .visaLogo,
+.paymentMethods .madaLogo {
+  visibility: hidden !important;
+}
+
+.paymentSubmit {
+  margin-top: 24px !important;
+}
+
+@media (max-width: 420px) {
+  .paymentSubmit {
+    margin-top: 24px !important;
+  }
+}
