@@ -525,7 +525,7 @@
 .checkoutShell.checkoutShell input,
 .checkoutShell.checkoutShell select,
 .checkoutShell.checkoutShell textarea {
-  min-height: 34px;
+  min-height: 74px;
   padding: 6px 9px;
   font-size: 12px;
 }
