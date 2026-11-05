@@ -2552,11 +2552,6 @@
   display: none !important;
 }
 
-/* Enlarge the payment-page brand mark without changing its source or behavior. */
-.paymentCard img {
-  transform: scale(2);
-  transform-origin: center;
-}
 
 /* Keep the small decorative field icon fully inside its input. */
 .paymentFieldIcon {
@@ -2595,11 +2590,3 @@
 }
 
 
-/* Replace only the payment-page logo artwork with the enlarged Arabic wordmark. */
-.paymentCard img {
-  content: url("/payment-brand-logo.png") !important;
-  transform: scale(2);
-  transform-origin: center;
-  object-fit: contain;
-  filter: none !important;
-}
