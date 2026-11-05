@@ -107,14 +107,14 @@ export default function StoreCheckoutPage() {
 
   useEffect(() => {
     let alive = true;
-    fetch('/data/saudi-cities.json', { cache: 'force-cache' })
+    fetch('/data/saudi-cities.json?v=saudi-regions-13', { cache: 'no-store' })
       .then((response) => {
         if (!response.ok) throw new Error('تعذر تحميل قائمة مدن السعودية.');
         return response.json() as Promise<SaudiCity[]>;
       })
       .then((cities) => {
         if (alive) {
-          setSaudiCities(cities.slice().sort((a, b) => a.name_ar.localeCompare(b.name_ar, 'ar')));
+          setSaudiCities(cities);
           setCitiesLoadError('');
         }
       })
