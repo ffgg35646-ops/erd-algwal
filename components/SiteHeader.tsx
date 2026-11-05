@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import siteLogo from '@/wrwerwe.jpg';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useCart } from '@/components/CartProvider';
 import CustomerNotifications from '@/components/CustomerNotifications';
@@ -60,6 +61,13 @@ export default function SiteHeader() {
 
   return (
     <>
+      <svg aria-hidden="true" focusable="false" width="0" height="0" style={{ position: 'absolute' }}>
+        <defs>
+          <filter id="remove-logo-black" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 10 0 -0.06" />
+          </filter>
+        </defs>
+      </svg>
       <div className="store-utility-bar">
         <div className="container store-utility-inner">
           <span>أرض الجوال • الجوالات والأجهزة وملحقاتها</span>
@@ -83,7 +91,7 @@ export default function SiteHeader() {
             <span>جميع الأقسام</span>
           </button>
 
-          <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><Image src="/logo-transparent.svg" alt="أرض الجوال" width={500} height={500} priority style={{ width: 64, height: 64, objectFit: 'contain' }} /></Link>
+          <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><Image src={siteLogo} alt="أرض الجوال" width={500} height={500} priority style={{ width: 64, height: 64, objectFit: 'contain', filter: 'url(#remove-logo-black)' }} /></Link>
 
           <form className={"header-search" + (searchOpen ? " is-open" : "")} role="search" onSubmit={submitSearch}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
