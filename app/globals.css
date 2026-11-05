@@ -5949,3 +5949,19 @@ button.strip-go-cart-button:focus-visible { outline: 2px solid #92702f; outline-
   grid-column: 1;
   margin-top: 2px;
 }
+
+
+/* Make only the checkout contact fields easier to tap and read. */
+.checkout-contact-fields .checkout-field input,
+.checkout-contact-fields .city-combobox input {
+  min-height: 56px;
+  padding: 14px 15px;
+  font-size: 14px;
+  cursor: text;
+}
+.checkout-contact-fields .city-options button {
+  min-height: 46px;
+  padding: 10px 13px;
+  font-size: 13px;
+  cursor: pointer;
+}
