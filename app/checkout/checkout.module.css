@@ -531,7 +531,7 @@
 }
 .checkoutShell.checkoutShell :global(.checkout-field textarea),
 .checkoutShell.checkoutShell textarea {
-  min-height: 108px;
+  min-height: 138px;
 }
 .checkoutShell.checkoutShell :global(.saudi-phone-input) {
   position: relative;
