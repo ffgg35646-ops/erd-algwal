@@ -275,7 +275,7 @@ export default function VerifyPhonePage() {
     return (
       <main className="erd-retry-page">
         <style jsx global>{'
-          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+          @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");
           .erd-retry-page,
           .erd-retry-page * {
             box-sizing: border-box;
