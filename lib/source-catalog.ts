@@ -33,12 +33,18 @@ const images = {
   iphone16ProMax: 'https://bbpcdn.pstatic.gr/bpimg44/2maNQ0/1SNW8Q_SX946Y946/1725956548/apple-iphone-16-pro-max-256gb.jpg',
   iphone16Pro: 'https://cdn.cimri.io/image/1200x1200/apple-iphone-16-pro-128gb_917069349.jpg',
   iphone15ProMax: 'https://cdn.vatanbilgisayar.com/Upload/PRODUCT/apple/thumb/141050-1-2_large.jpg',
+  iphone15Pro: 'https://i5.walmartimages.com/asr/d6348e37-1d85-4bc4-bb28-fd073b237c65.a88d6a966b7b3cd3d029ab25538945f3.jpeg',
+  iphone15Plus: 'https://maxmobiles.ru/images/thumbnails/2000/2000/detailed/67/1_vu8f-a2.jpg',
+  iphone14: 'https://www.pbtech.co.nz/imgprod/M/P/MPHAPP814001.jpg?h=2939260435',
+  iphone13: 'https://api.priceinkenya.com/media/124616/conversions/iphone13d-original.webp',
   iphone14ProMax: 'https://media.ldlc.com/r1600/ld/products/00/05/97/77/LD0005977700_0005977729_0005977763.jpg',
   iphone13ProMax: 'https://store.gorecell.ca/cdn/shop/files/fc29e37dc7da4925b6d68993054e63ab.jpg?v=1726081893',
   samsungS26: 'https://images.samsung.com/africa_fr/smartphones/galaxy-s26/buy/kv_group_PC_noText.jpg?imbypass=true',
   samsungS25: 'https://media.solotodo.com/media/products/2012218_picture_1790294146.jpg',
   samsungS24: 'https://becextech.com.au/media/catalog/product/cache/87bf6cc783e51bde4c0e5a7b582a0719/N/B/NBXTGalS24UltVar_1_3.jpg',
-  samsungS23: 'https://cdn.mos.cms.futurecdn.net/YULbqEwZiUFSPNddqiPicT.jpg',
+  samsungS21: 'https://i5.walmartimages.com/seo/Samsung-Galaxy-S21-5G-6-2-inch-SM-G991U-Unlocked-128GB-Phantom-Violet-Used_0dd3bcfa-4808-4ba8-9ad5-a2e34e12d48f.e5941573e3dcaa007adaa18dbc0cd0e1.jpeg',
+  samsungS22: 'https://www.jyes.com.tw/data/goods/gallery/202202/1644894098842193033.jpg',
+  samsungS23: 'https://www.phoneu.ca/cdn/shop/products/10_4000_416f46a2-5d6e-4699-a0f4-63df39e3d7d9.jpg?v=1682658873&width=1445',
   playstation: 'https://store.sony.co.nz/dw/image/v2/ABBC_PRD/on/demandware.static/-/Sites-sony-master-catalog/default/dw1b537bbb/images/PLAYSTATION5W/PLAYSTATION5W.png',
   nintendo: 'https://switch-cn.gtgres.com/global-image/fee172f0-6a18-11ec-abbd-e1aeab85f975.jpg',
   tonyHawk: 'https://www.gamekings.co.uk/cdn/shop/files/71fEahS3YUL._AC_SL1500.jpg?v=1690827360&width=1200',
@@ -143,7 +149,7 @@ const iphone15Rows = [
   ['iphone-15-pro-max-1tb', 'آيفون 15 برو ماكس 1 تيرابايت', 5299]
 ] as const;
 for (const [id, name, price] of iphone15Rows) {
-  add('qauara-' + id, name, 'سلسلة آيفون 15', price, images.iphone15ProMax,
+  add('qauara-' + id, name, 'سلسلة آيفون 15', price, images.iphone15Pro,
     'نسخة iPhone 15 Pro بسعة التخزين المحددة في اسم المنتج.',
     'هاتف iPhone 15 Pro أو Pro Max بهيكل تيتانيوم وشاشة Super Retina XDR ونظام كاميرات Pro. السعة التخزينية والسعر مطابقان للعنصر المعروض في قائمة المصدر.',
     ['شاشة Super Retina XDR مع ProMotion', 'شريحة Apple A17 Pro', 'نظام كاميرات Pro', 'منفذ USB‑C']);
@@ -153,7 +159,7 @@ const iphone15PlusRows = [
   ['128', 3300], ['256', 3500], ['512', 4799]
 ] as const;
 for (const [storage, price] of iphone15PlusRows) {
-  add('qauara-iphone-15-plus-' + storage, 'آيفون 15 بلس ' + storage + ' جيجابايت', 'سلسلة آيفون 15 بلس', price, images.iphone15ProMax,
+  add('qauara-iphone-15-plus-' + storage, 'آيفون 15 بلس ' + storage + ' جيجابايت', 'سلسلة آيفون 15 بلس', price, images.iphone15Plus,
     'نسخة iPhone 15 Plus بسعة ' + storage + ' جيجابايت.',
     'هاتف iPhone 15 Plus بشاشة Super Retina XDR كبيرة وشريحة A16 Bionic وكاميرا رئيسية 48MP. السعة والسعر مطابقان لقائمة المصدر.',
     ['شاشة Super Retina XDR', 'شريحة Apple A16 Bionic', 'كاميرا رئيسية 48MP', 'منفذ USB‑C']);
@@ -173,7 +179,7 @@ const iphone14Rows = [
   ['pro-512', 'آيفون 14 برو 512 جيجابايت', 4400]
 ] as const;
 for (const [id, name, price] of iphone14Rows) {
-  add('qauara-iphone-14-' + id, name, 'سلسلة آيفون 14', price, images.iphone14ProMax,
+  add('qauara-iphone-14-' + id, name, 'سلسلة آيفون 14', price, images.iphone14,
     'نسخة iPhone 14 بسعة التخزين المحددة في اسم المنتج.',
     'هاتف iPhone 14 من الجيل الرابع عشر، بشاشة Super Retina XDR وكاميرات متقدمة واتصال 5G. السعة والسعر مطابقان للعنصر المعروض في قائمة المصدر.',
     ['شاشة Super Retina XDR', 'اتصال 5G', 'كاميرات متعددة الاستخدامات', 'دعم MagSafe']);
@@ -189,18 +195,19 @@ const iphone13Rows = [
   ['pro-max-512', 'آيفون 13 برو ماكس 512 جيجابايت', 3699]
 ] as const;
 for (const [id, name, price] of iphone13Rows) {
-  add('qauara-iphone-13-' + id, name, 'سلسلة آيفون 13', price, images.iphone13ProMax,
+  const image = id.includes('pro') ? images.iphone13ProMax : images.iphone13;
+  add('qauara-iphone-13-' + id, name, 'سلسلة آيفون 13', price, image,
     'نسخة iPhone 13 بسعة التخزين المحددة في اسم المنتج.',
     'هاتف iPhone 13 بشاشة Super Retina XDR وشريحة A15 Bionic واتصال 5G. إصدارات Pro تضيف شاشة ProMotion ونظام كاميرات Pro. السعة والسعر مطابقان لقائمة المصدر.',
     ['شاشة Super Retina XDR', 'شريحة Apple A15 Bionic', 'اتصال 5G', 'كاميرات متقدمة']);
 }
 
 // Samsung Ultra older models
-add('qauara-galaxy-s21', 'سامسونج هاتف جالاكسي S21', 'سلسلة سامسونج ألترا', 2800, images.samsungS23,
+add('qauara-galaxy-s21', 'سامسونج هاتف جالاكسي S21', 'سلسلة سامسونج ألترا', 2800, images.samsungS21,
   'هاتف من سلسلة Galaxy S21.',
   'هاتف Samsung Galaxy S21 من الفئة الرائدة، بشاشة AMOLED وأداء سريع وكاميرات متعددة. السعر مطابق لقائمة المصدر.',
   ['شاشة Dynamic AMOLED 2X', 'اتصال 5G', 'كاميرات متعددة', 'نظام Android']);
-add('qauara-galaxy-s22', 'سامسونج هاتف جالاكسي S22', 'سلسلة سامسونج ألترا', 3300, images.samsungS23,
+add('qauara-galaxy-s22', 'سامسونج هاتف جالاكسي S22', 'سلسلة سامسونج ألترا', 3300, images.samsungS22,
   'هاتف من سلسلة Galaxy S22.',
   'هاتف Samsung Galaxy S22 بتصميم مدمج وشاشة Dynamic AMOLED 2X وأداء رائد وكاميرات متقدمة. السعر مطابق لقائمة المصدر.',
   ['شاشة Dynamic AMOLED 2X', 'اتصال 5G', 'كاميرات متعددة', 'نظام Android']);
