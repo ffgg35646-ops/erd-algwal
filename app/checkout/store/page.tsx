@@ -186,10 +186,6 @@ export default function StoreCheckoutPage() {
       setFormError('اختر الدفعة المقدمة ومدة التقسيط.');
       return;
     }
-    if (form.installment === 'yes' && Number(form.installmentDownPayment) >= total) {
-      setFormError('الدفعة المقدمة يجب أن تكون أقل من إجمالي الطلب.');
-      return;
-    }
     const cleanPhone = normalizeSaudiPhoneDigits(form.phone);
     if (!/^05[0-9]{8}$/.test(cleanPhone)) {
       setFormError('اكتب رقم جوال سعودي من 10 أرقام يبدأ بـ 05، مثل 05XXXXXXXX.');
