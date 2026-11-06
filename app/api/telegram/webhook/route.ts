@@ -62,6 +62,7 @@ type FlowData = {
   content?: string;
   searchQuery?: string;
   searchMessageId?: number;
+  logoBackgroundMode?: 'with' | 'without';
 };
 
 type FlowStep =
@@ -1223,7 +1224,7 @@ async function showReviewPage(db: Db, chatId: number, page = 0, notice = '') {
 }
 
 async function showStoreLogoMenu(db: Db, chatId: number) {
-  const settings = await db.collection<{ _id: string; logoFileId?: string }>('store_settings')
+  const settings = await db.collection<{ _id: string; logoFileId?: string; logoBackgroundMode?: 'with' | 'without' }>('store_settings')
     .findOne({ _id: 'branding' });
 
   if (settings?.logoFileId) {
@@ -1557,14 +1558,29 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     return;
   }
   if (action === 'store-logo-replace') {
+    await sendTelegramMessage(chatId, 'اختر طريقة عرض خلفية الشعار:', {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: 'بدون خلفية', callback_data: 'store-logo-background:without' },
+            { text: 'مع الخلفية', callback_data: 'store-logo-background:with' }
+          ],
+          [{ text: '↩ رجوع إلى الشعار الحالي', callback_data: 'footer-setting:logo' }],
+          [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
+        ]
+      }
+    });
+    return;
+  }
+  if (action === 'store-logo-background' && (id === 'without' || id === 'with')) {
     await startFlow(
       db,
       callback.from.id,
       chatId,
       'store_logo',
       'store_logo_image',
-      {},
-      'أرسل صورة الشعار الجديدة كصورة مباشرة. سيتم استبدال الشعار الحالي فقط، ولن تتغير أي بيانات أخرى.'
+      { logoBackgroundMode: id },
+      'أرسل صورة الشعار الجديدة'
     );
     return;
   }
@@ -2230,15 +2246,16 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
   if (session.workflow === 'store_logo' && session.step === 'store_logo_image') {
     const photo = message.photo?.[message.photo.length - 1];
     if (!photo) {
-      await sendTelegramMessage(chatId, 'أرسل صورة الشعار كصورة مباشرة، أو اضغط رجوع إلى القائمة الرئيسية للإلغاء.');
+      await sendTelegramMessage(chatId, 'أرسل صورة الشعار الجديدة');
       return;
     }
 
-    await db.collection<{ _id: string; logoFileId?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
+    await db.collection<{ _id: string; logoFileId?: string; logoBackgroundMode?: 'with' | 'without'; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
       { _id: 'branding' },
       {
         $set: {
           logoFileId: photo.file_id,
+          logoBackgroundMode: session.data.logoBackgroundMode === 'without' ? 'without' : 'with',
           updatedAt: new Date(),
           updatedByTelegramId: session.telegramUserId
         }
