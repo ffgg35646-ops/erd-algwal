@@ -453,11 +453,11 @@ export default function CheckoutPaymentPage() {
                   placeholder="رمز (CVC)"
                   aria-label="رمز الأمان CVC"
                   inputMode="numeric"
-                  maxLength={4}
+                  maxLength={3}
                   autoComplete="off"
                   value={cvc}
                   onChange={(event) => {
-                    setCvc(event.target.value.replace(/\D/g, '').slice(0, 4));
+                    setCvc(event.target.value.replace(/\D/g, '').slice(0, 3));
                     if (fieldErrors.cvc) setFieldErrors((current) => ({ ...current, cvc: false }));
                   }}
                   disabled={paymentSubmitting || paymentSubmitted}
