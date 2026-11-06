@@ -194,6 +194,32 @@ export default function VerifyPhonePage() {
               .erd-wait-blob-one { width: 260px; height: 260px; top: -130px; left: -90px; background: linear-gradient(135deg,#7fd6bf,#bfe9dd); }
               .erd-wait-blob-two { width: 420px; height: 420px; bottom: -250px; right: -120px; background: linear-gradient(135deg,#d6efe8,#7fd6bf); }
               .erd-wait-blob-three { width: 300px; height: 300px; bottom: -190px; left: -60px; background: #e9f6f2; }
+              /* Keep the decorative circles proportionate and anchored on phones. */
+              @media (max-width: 480px) {
+                .erd-wait-blob-one {
+                  width: clamp(150px, 48vw, 210px);
+                  height: clamp(150px, 48vw, 210px);
+                  top: -82px;
+                  left: -62px;
+                }
+                .erd-wait-blob-two {
+                  width: clamp(245px, 76vw, 330px);
+                  height: clamp(245px, 76vw, 330px);
+                  right: -108px;
+                  bottom: -178px;
+                }
+                .erd-wait-blob-three {
+                  width: clamp(180px, 56vw, 245px);
+                  height: clamp(180px, 56vw, 245px);
+                  left: -72px;
+                  bottom: -132px;
+                }
+              }
+              @media (max-width: 380px) {
+                .erd-wait-blob-one { top: -72px; left: -58px; }
+                .erd-wait-blob-two { right: -112px; bottom: -165px; }
+                .erd-wait-blob-three { left: -66px; bottom: -122px; }
+              }
               .erd-wait-logo { display: flex; align-items: center; gap: 14px; margin: 0 auto 56px; direction: rtl; }
               .erd-wait-logo-text { font-weight: 800; font-size: 30px; line-height: 1.05; text-align: right; }
               .erd-wait-logo-text span { display: block; }
