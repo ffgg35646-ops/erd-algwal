@@ -13,6 +13,7 @@ import {
 } from '@/lib/telegram';
 import { formatOrderForAdmin, getRecentOrders, makeOrderNumber, type StoreOrder } from '@/lib/orders';
 import { isPhoneCaseProduct } from '@/lib/phone-case';
+import siteLogo from '@/wrwerwe.jpg';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1227,22 +1228,37 @@ async function showStoreLogoMenu(db: Db, chatId: number) {
   const settings = await db.collection<{ _id: string; logoFileId?: string; logoBackgroundMode?: 'with' | 'without' }>('store_settings')
     .findOne({ _id: 'branding' });
 
-  if (settings?.logoFileId) {
-    try {
-      await telegramApi('sendPhoto', {
-        chat_id: chatId,
-        photo: settings.logoFileId,
-        caption: 'هذا هو الشعار الحالي المستخدم في الموقع.'
-      });
-    } catch (error) {
-      console.warn('Could not preview current store logo:', error instanceof Error ? error.message : 'Unknown error');
-      await sendTelegramMessage(chatId, 'تعذر عرض معاينة الشعار الحالي، لكن يمكنك استبداله بصورة جديدة.');
+  const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || 'erd-algwal-djl8.vercel.app';
+  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
+  const siteOrigin = configuredOrigin || (productionHost.startsWith('http') ? productionHost : 'https://' + productionHost);
+  const defaultLogoUrl = siteOrigin + siteLogo.src;
+
+  try {
+    await telegramApi('sendPhoto', {
+      chat_id: chatId,
+      photo: settings?.logoFileId || defaultLogoUrl,
+      caption: 'الشعار الحالي'
+    });
+  } catch (error) {
+    console.warn('Could not preview current store logo:', error instanceof Error ? error.message : 'Unknown error');
+
+    if (settings?.logoFileId) {
+      try {
+        await telegramApi('sendPhoto', {
+          chat_id: chatId,
+          photo: siteOrigin + '/api/store/logo',
+          caption: 'الشعار الحالي'
+        });
+      } catch (fallbackError) {
+        console.warn('Could not preview current store logo from site:', fallbackError instanceof Error ? fallbackError.message : 'Unknown error');
+        await sendTelegramMessage(chatId, 'تعذر عرض الشعار الحالي.');
+      }
+    } else {
+      await sendTelegramMessage(chatId, 'تعذر عرض الشعار الحالي.');
     }
-  } else {
-    await sendTelegramMessage(chatId, 'الشعار الحالي هو الصورة الافتراضية المستخدمة في الموقع.');
   }
 
-  await sendTelegramMessage(chatId, 'لتعديل الشعار الحالي، أرسل صورة جديدة من خلال الزر التالي:', {
+  await sendTelegramMessage(chatId, 'تعديل الشعار', {
     reply_markup: {
       inline_keyboard: [
         [{ text: '📷 تعديل الشعار', callback_data: 'store-logo-replace' }],
