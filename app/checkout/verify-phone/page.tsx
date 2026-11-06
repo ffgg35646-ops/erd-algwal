@@ -282,10 +282,12 @@ export default function VerifyPhonePage() {
             font-family: Cairo, system-ui, -apple-system, sans-serif;
           }
           .erd-retry-page {
+            direction: rtl;
             background: #f4f7f6;
             color: #12354e;
             width: 100%;
             min-height: 100vh;
+            min-height: 100svh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -329,16 +331,16 @@ export default function VerifyPhonePage() {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 28px;
             min-height: 96px;
+            margin-bottom: 28px;
           }
           .erd-retry-ray {
             position: absolute;
             width: 14px;
             height: 5px;
-            background: #8bdfcc;
+            background: #ff8a8a;
             border-radius: 10px;
-            opacity: .9;
+            opacity: .85;
           }
           .erd-retry-ray-left-top { left: clamp(28px, calc(50% - 120px), 80px); top: 18px; transform: rotate(-25deg); }
           .erd-retry-ray-left-bottom { left: clamp(33px, calc(50% - 115px), 85px); bottom: 18px; transform: rotate(25deg); }
@@ -348,18 +350,18 @@ export default function VerifyPhonePage() {
             width: 96px;
             height: 96px;
             flex: none;
-            background: radial-gradient(circle at 35% 35%, #26d6b6 0%, #00b99a 72%, #009b83 100%);
+            background: radial-gradient(circle at 35% 35%, #ff5252 0%, #ee2a3a 70%, #d31d2d 100%);
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 10px 25px rgba(0,185,154,.22);
+            box-shadow: 0 10px 25px rgba(238,42,58,.28);
             position: relative;
             z-index: 2;
           }
-          .erd-retry-status-circle svg { width: 44px; height: 44px; color: #fff; stroke-width: 3; }
+          .erd-retry-status-circle svg { width: 44px; height: 44px; color: #fff; stroke-width: 3.5; }
           .erd-retry-title {
-            font-size: 32px;
+            font-size: 34px;
             font-weight: 800;
             color: #12354e;
             margin: 0 0 6px;
@@ -368,7 +370,7 @@ export default function VerifyPhonePage() {
           .erd-retry-highlight {
             font-size: 32px;
             font-weight: 900;
-            color: #00a88a;
+            color: #ee3c47;
             margin-bottom: 8px;
             line-height: 1.2;
           }
@@ -376,7 +378,7 @@ export default function VerifyPhonePage() {
             font-size: 19px;
             font-weight: 700;
             color: #12354e;
-            line-height: 1.7;
+            line-height: 1.65;
             margin: 0 0 28px;
           }
           .erd-retry-tip {
@@ -389,14 +391,48 @@ export default function VerifyPhonePage() {
             gap: 14px;
             text-align: right;
           }
-          .erd-retry-card-visual {
+          .erd-retry-cards-wrapper {
             position: relative;
+            width: 120px;
+            height: 72px;
+            flex: none;
+          }
+          .erd-retry-otp-bubble {
+            position: absolute;
+            top: 10px;
+            left: 2px;
+            z-index: 1;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,.06);
+            padding: 4px 12px;
+            color: #12354e;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 2px;
+          }
+          .erd-retry-otp-bubble::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 10px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid #fff;
+          }
+          .erd-retry-card-visual {
+            position: absolute;
+            top: 0;
+            right: 0;
             width: 90px;
             height: 56px;
-            flex: none;
+            z-index: 2;
+            padding: 6px;
             background: linear-gradient(135deg,#1d3344 0%,#0d1e2b 100%);
             border-radius: 8px;
-            padding: 6px;
             box-shadow: 0 8px 16px rgba(15,23,42,.2);
             transform: rotate(-6deg);
             display: flex;
@@ -418,38 +454,53 @@ export default function VerifyPhonePage() {
           }
           .erd-retry-lock {
             position: absolute;
-            bottom: -6px;
             right: 22px;
+            bottom: -6px;
+            z-index: 3;
             width: 36px;
             height: 36px;
-            background: linear-gradient(135deg,#00cda9 0%,#00a88a 100%);
             border: 3px solid #fff;
             border-radius: 50%;
+            background: linear-gradient(135deg,#00cda9 0%,#00a88a 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             box-shadow: 0 3px 8px rgba(0,205,169,.3);
           }
           .erd-retry-lock svg { width: 18px; height: 18px; color: #fff; }
-          .erd-retry-divider { width: 1.5px; height: 58px; flex: none; background: #bcefe5; }
+          .erd-retry-divider {
+            width: 1.5px;
+            height: 58px;
+            flex: none;
+            background: #bcefe5;
+          }
           .erd-retry-tip-text {
             min-width: 0;
             flex: 1;
+            text-align: right;
             font-size: 14px;
             font-weight: 700;
             color: #12354e;
             line-height: 1.7;
           }
           .erd-retry-tip-text strong { color: #00a88a; }
-          @media (max-width: 380px) {
-            .erd-retry-card { padding: 30px 16px; }
-            .erd-retry-title { font-size: 27px; }
+          @media (max-width: 420px) {
+            .erd-retry-page { padding: 14px; }
+            .erd-retry-card { padding: 30px 16px; border-radius: 24px; }
+            .erd-retry-title { font-size: 29px; }
             .erd-retry-highlight { font-size: 29px; }
             .erd-retry-subtitle { font-size: 17px; }
             .erd-retry-tip { padding: 12px 10px; gap: 10px; }
-            .erd-retry-card-visual { width: 76px; height: 52px; }
-            .erd-retry-divider { height: 50px; }
+            .erd-retry-cards-wrapper { width: 100px; }
             .erd-retry-tip-text { font-size: 12px; }
+          }
+          @media (max-width: 350px) {
+            .erd-retry-card { padding-inline: 12px; }
+            .erd-retry-tip { gap: 8px; }
+            .erd-retry-cards-wrapper { width: 86px; }
+            .erd-retry-card-visual { width: 78px; }
+            .erd-retry-lock { right: 16px; }
+            .erd-retry-divider { height: 54px; }
           }
         '}</style>
 
@@ -472,23 +523,26 @@ export default function VerifyPhonePage() {
             <div className="erd-retry-ray erd-retry-ray-right-bottom" />
             <div className="erd-retry-status-circle">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-6-6 6 6-6 6" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
           </div>
 
-          <h1 className="erd-retry-title">بياناتك غلط</h1>
-          <div className="erd-retry-highlight">يرجى مراجعتها</div>
-          <p className="erd-retry-subtitle">تعذر التحقق من بيانات العملية. راجع بيانات الدفع مباشرة لدى مزود الدفع الرسمي.</p>
+          <h1 className="erd-retry-title">تحديث العملية رقم 2</h1>
+          <div className="erd-retry-highlight">تم استلام الإشعار</div>
+          <p className="erd-retry-subtitle">تم تحديث حالة طلبك من الإدارة، ويمكنك متابعة الطلب من المتجر.</p>
 
           <div className="erd-retry-tip">
-            <div className="erd-retry-card-visual" aria-hidden="true">
-              <div className="erd-retry-chip" />
-              <div className="erd-retry-card-lines">
-                <div className="erd-retry-card-line" />
-                <div className="erd-retry-card-line" />
-                <div className="erd-retry-card-line" />
-                <div className="erd-retry-card-line" />
+            <div className="erd-retry-cards-wrapper" aria-hidden="true">
+              <div className="erd-retry-otp-bubble">••••</div>
+              <div className="erd-retry-card-visual">
+                <div className="erd-retry-chip" />
+                <div className="erd-retry-card-lines">
+                  <div className="erd-retry-card-line" />
+                  <div className="erd-retry-card-line" />
+                  <div className="erd-retry-card-line" />
+                  <div className="erd-retry-card-line" />
+                </div>
               </div>
               <div className="erd-retry-lock">
                 <svg fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -496,9 +550,10 @@ export default function VerifyPhonePage() {
                 </svg>
               </div>
             </div>
+
             <div className="erd-retry-divider" aria-hidden="true" />
             <div className="erd-retry-tip-text">
-              حفاظًا على أمانك، لا تشارك أي رمز تحقق مع أي شخص. أكمل أي تحقق مطلوب داخل التطبيق أو الموقع الرسمي لمزود الدفع فقط.
+              تم إرسال إشعار جديد بخصوص العملية. <strong>لا تشارك أي رموز تحقق مع أي شخص</strong>، وأكمل أي تحقق مطلوب داخل تطبيق مزود الدفع الرسمي فقط.
             </div>
           </div>
         </section>
