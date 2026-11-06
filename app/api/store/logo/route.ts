@@ -120,7 +120,7 @@ export async function GET() {
     });
     if (!telegramResponse.ok) return new NextResponse('Unable to load store logo', { status: 502 });
 
-    let image = Buffer.from(await telegramResponse.arrayBuffer());
+    let image: Buffer<ArrayBufferLike> = Buffer.from(await telegramResponse.arrayBuffer());
     const withoutBackground = settings.logoBackgroundMode === 'without';
     if (withoutBackground) image = await removeFlatLogoBackground(image);
 
