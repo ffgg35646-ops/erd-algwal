@@ -85,6 +85,7 @@ export async function ensureDefaultCategories(db: Db) {
 // Link the existing visible demo catalogue to the same MongoDB records the bot edits.
 // Upsert only missing seed identities: never overwrite an existing admin edit.
 const DEFAULT_PRODUCTS_MIGRATION_ID = 'default-products-10-v1';
+const SOURCE_CATALOG_MIGRATION_ID = 'source-catalog-replacement-qauara-v1';
 
 async function initializeDefaultProducts(db: Db) {
   await ensureDefaultCategories(db);
@@ -126,11 +127,30 @@ async function initializeDefaultProducts(db: Db) {
     }
   }
 
+  const now = new Date();
+  const sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
+
+  if (!sourceCatalogMigration) {
+    // Keep order history and user settings intact: archive only the currently
+    // visible catalogue records, then activate the new source categories.
+    await collection.updateMany(
+      { deleted: { $ne: true } },
+      { $set: { deleted: true, updatedAt: now } }
+    );
+    await categoryCollection.updateMany(
+      { deleted: { $ne: true } },
+      { $set: { deleted: true, updatedAt: now } }
+    );
+    await categoryCollection.updateMany(
+      { seedName: { $in: seedCategories.map((category) => category.name) } },
+      { $unset: { deleted: '' }, $set: { updatedAt: now } }
+    );
+  }
+
   const sections = await categoryCollection
     .find({ seedName: { $exists: true }, deleted: { $ne: true } })
     .toArray();
   const bySeedName = new Map(sections.map((section) => [String(section.seedName), section]));
-  const now = new Date();
   const operations = defaultStoreProducts.flatMap((product) => {
     const section = bySeedName.get(product.category);
     if (!section) return [];
@@ -163,6 +183,22 @@ async function initializeDefaultProducts(db: Db) {
     }];
   });
   if (operations.length) await collection.bulkWrite(operations, { ordered: false });
+
+  // Save the replacement marker only after the complete source product upsert.
+  // Repeated catalogue reads then preserve later admin edits and deletions.
+  if (!sourceCatalogMigration) {
+    await settings.updateOne(
+      { _id: SOURCE_CATALOG_MIGRATION_ID },
+      {
+        $setOnInsert: {
+          completedAt: now,
+          productIds: defaultStoreProducts.map((product) => product.id),
+          categories: seedCategories.map((category) => category.name)
+        }
+      },
+      { upsert: true }
+    );
+  }
 
   // One-time migration: populate missing/empty color options on already-seeded
   // products. Preserve any colors explicitly managed by the Telegram admin bot.
