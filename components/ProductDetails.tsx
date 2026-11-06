@@ -195,7 +195,7 @@ export default function ProductDetails({ product }: { product: Product }) {
             <div className="product-detail-quantity" aria-label="الكمية">
               <button type="button" onClick={() => setQuantity((current) => Math.max(1, current - 1))} aria-label="تقليل الكمية">−</button>
               <span aria-live="polite">{quantity}</span>
-              <button type="button" onClick={() => setQuantity((current) => current + 1)} aria-label="زيادة الكمية">+</button>
+              <button type="button" onClick={() => setQuantity((current) => Math.min(2, current + 1))} disabled={quantity >= 2} aria-label="زيادة الكمية">+</button>
             </div>
           </section>
 
