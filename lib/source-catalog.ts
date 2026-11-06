@@ -309,4 +309,51 @@ add('qauara-galaxy-s24-ultra', 'سامسونج جالكسي S24 Ultra', 'سام�
   ['شاشة Dynamic AMOLED 2X مقاس 6.8 بوصة', 'قلم S Pen', 'كاميرا رئيسية 200MP', 'خيارات 256GB و512GB و1TB'],
   { colors: ['تيتانيوم بنفسجي', 'تيتانيوم أخضر', 'تيتانيوم أسود', 'تيتانيوم أصفر', 'تيتانيوم رمادي'], storageOptions: ['256GB', '512GB', '1TB'], storagePrices: { '512GB': 5899, '1TB': 6899 } });
 
-export const sourceCatalogProducts = items;
+// The source lists these colours and storage capacities as separate product cards.
+// Expand only the combinations explicitly shown in the source catalogue so every
+// card can be independently edited or removed from the admin catalogue.
+const colourCardProducts = new Set([
+  'qauara-iphone-18-pro-max',
+  'qauara-iphone-18-pro',
+  'qauara-iphone-18-duo'
+]);
+
+function variantSlug(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') ||
+    Array.from(value).map((character) => character.codePointAt(0)?.toString(16) || '').join('-');
+}
+
+export const sourceCatalogProducts: Product[] = items.flatMap((product) => {
+  if (colourCardProducts.has(product.id)) {
+    const { colors, storageOptions: _storageOptions, storagePrices: _storagePrices, ...base } = product;
+    return (colors || []).map((color) => ({
+      ...base,
+      id: product.id + '-' + variantSlug(color),
+      name: product.name + ' - ' + color,
+      specifications: [...product.specifications, 'اللون: ' + color]
+    }));
+  }
+
+  if (product.id.startsWith('qauara-galaxy-s26') ||
+      product.id.startsWith('qauara-galaxy-s25') ||
+      product.id === 'qauara-galaxy-s24-ultra') {
+    const { colors, storageOptions, storagePrices, ...base } = product;
+    const capacities = storageOptions || [];
+    const availableColors = colors || [];
+    return capacities.flatMap((storage) => {
+      const capacityColors = product.id === 'qauara-galaxy-s26-ultra' && storage === '1TB'
+        ? availableColors.filter((color) => color !== 'ذهبي وردي')
+        : availableColors;
+      const price = storagePrices?.[storage] ?? product.price;
+      return capacityColors.map((color) => ({
+        ...base,
+        id: product.id + '-' + variantSlug(storage) + '-' + variantSlug(color),
+        name: product.name + ' ' + storage + ' - ' + color,
+        price,
+        specifications: [...product.specifications, 'السعة: ' + storage, 'اللون: ' + color]
+      }));
+    });
+  }
+
+  return [product];
+});
