@@ -210,7 +210,7 @@ export default function CheckoutPaymentPage() {
     const errors: FieldErrors = {
       name: cardholderName.trim().length <= 2,
       number: digitsOnly.length !== 16 || !passesLuhn(digitsOnly),
-      cvc: !/^\d{3,4}$/.test(cvc),
+      cvc: !/^\d{3}$/.test(cvc),
       month: !expiryMonth,
       year: !expiryYear || !selectedExpiry || selectedExpiry < now
     };
