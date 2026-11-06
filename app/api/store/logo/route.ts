@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 type StoreBrandingSettings = {
   _id: string;
   logoFileId?: string;
+  logoBackgroundMode?: 'with' | 'without';
 };
 
 type TelegramFile = { file_path?: string };
@@ -40,6 +41,7 @@ export async function GET() {
 
     const headers = new Headers();
     headers.set('content-type', telegramResponse.headers.get('content-type') || 'image/jpeg');
+    headers.set('x-store-logo-background', settings.logoBackgroundMode === 'without' ? 'without' : settings.logoBackgroundMode === 'with' ? 'with' : 'legacy');
     headers.set('cache-control', 'no-store, max-age=0');
     headers.set('x-content-type-options', 'nosniff');
     return new NextResponse(telegramResponse.body, { status: 200, headers });
