@@ -236,9 +236,6 @@ export async function POST(request: NextRequest) {
     if (!Number.isFinite(total) || total <= 0) {
       return NextResponse.json({ ok: false, error: 'تعذر حساب إجمالي الطلب.' }, { status: 400 });
     }
-    if (installment && (!Number.isFinite(installmentDownPayment) || installmentDownPayment <= 0 || installmentDownPayment >= total)) {
-      return NextResponse.json({ ok: false, error: 'الدفعة المقدمة يجب أن تكون أقل من إجمالي الطلب.' }, { status: 400 });
-    }
 
     const now = new Date();
     const _id = new ObjectId();
