@@ -43,6 +43,7 @@ export type StoreOrder = Document & {
   installment: boolean;
   installmentDownPayment?: number;
   installmentMonths?: number;
+  installmentModel?: 'fixed-payment';
   acceptedPoliciesAt?: Date;
   acceptedWarrantyPolicyAt?: Date;
   acceptedWarrantyPolicyUpdatedAt?: string;
