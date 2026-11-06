@@ -119,8 +119,7 @@ add('qauara-iphone-17', 'آيفون 17', 'سلسلة آيفون 17', 3300, image
 add('qauara-iphone-17-air', 'آيفون Air', 'سلسلة آيفون 17 Air', 3400, images.iphoneAir,
   'تصميم فائق النحافة مع شاشة 6.5 بوصة.',
   'هاتف iPhone Air بتصميم نحيف وخفيف، وشاشة Super Retina XDR مقاس 6.5 بوصة، وشريحة A19 Pro، وكاميرا Fusion بدقة 48MP.',
-  ['شاشة Super Retina XDR مقاس 6.5 بوصة', 'شريحة Apple A19 Pro', 'كاميرا Fusion بدقة 48MP', 'السماكة 5.64 مم تقريبًا'],
-  { colors: ['أسود فلكي', 'أبيض سحابي', 'ذهبي فاتح', 'أزرق سماوي'], storageOptions: ['256GB', '512GB', '1TB'] });
+  ['شاشة Super Retina XDR مقاس 6.5 بوصة', 'شريحة Apple A19 Pro', 'كاميرا Fusion بدقة 48MP', 'السماكة 5.64 مم تقريبًا']);
 
 // iPhone 16
 add('qauara-iphone-16-pro-max', 'آيفون 16 برو ماكس', 'سلسلة آيفون 16', 3800, images.iphone16ProMax,
@@ -136,8 +135,11 @@ add('qauara-iphone-16-pro', 'آيفون 16 برو', 'سلسلة آيفون 16 ب
 add('qauara-iphone-16-plus', 'آيفون 16 بلس', 'سلسلة آيفون 16 بلس', 3300, images.iphone16ProMax,
   'شاشة كبيرة وبطارية للاستخدام اليومي.',
   'هاتف iPhone 16 Plus بشاشة Super Retina XDR كبيرة، وشريحة A18، وكاميرا Fusion مزدوجة. خيارات السعة والأسعار المتاحة تظهر في قائمة المنتج.',
-  ['شاشة Super Retina XDR كبيرة', 'شريحة Apple A18', 'كاميرا Fusion مزدوجة', 'اتصال USB‑C'],
-  { storageOptions: ['128GB', '256GB'], storagePrices: { '256GB': 3800 } });
+  ['شاشة Super Retina XDR كبيرة', 'شريحة Apple A18', 'كاميرا Fusion مزدوجة', 'اتصال USB‑C']);
+add('qauara-iphone-16-plus-alt-price', 'آيفون 16 بلس', 'سلسلة آيفون 16 بلس', 3800, images.iphone16ProMax,
+  'شاشة كبيرة وبطارية للاستخدام اليومي.',
+  'هاتف iPhone 16 Plus بشاشة Super Retina XDR كبيرة، وشريحة A18، وكاميرا Fusion مزدوجة. يعرض المصدر هذا السعر في إدراج منفصل للمنتج.',
+  ['شاشة Super Retina XDR كبيرة', 'شريحة Apple A18', 'كاميرا Fusion مزدوجة', 'اتصال USB‑C']);
 
 // iPhone 15
 const iphone15Rows = [
