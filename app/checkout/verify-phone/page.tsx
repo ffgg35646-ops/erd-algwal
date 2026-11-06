@@ -220,7 +220,7 @@ export default function VerifyPhonePage() {
   if (invoiceSent) {
     return (
       <main className="erd-invoice-page">
-        <style jsx global>{\`
+        <style jsx global>{`
           @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
           .erd-invoice-page,
           .erd-invoice-page * {
@@ -431,7 +431,7 @@ export default function VerifyPhonePage() {
             .erd-invoice-status-label { font-size: 14px; }
             .erd-invoice-status-pill { font-size: 12px; padding: 4px 9px; }
           }
-        \`}</style>
+        `}</style>
 
         <section className="erd-invoice-card" aria-live="polite">
           <div className="erd-invoice-logo">
@@ -483,19 +483,6 @@ export default function VerifyPhonePage() {
             </div>
           </div>
         </section>
-      </main>
-    );
-  }
-
-  return (
-    return (
-      <main style={{ backgroundColor: '#ffffff', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ color: '#555', fontSize: '16px', marginBottom: '15px' }}>لا توجد بيانات طلب جاهزة للتأكيد.</p>
-          <Link href="/checkout/store" style={{ color: '#1646a7', textDecoration: 'none' }}>
-            العودة لإدخال بيانات الطلب
-          </Link>
-        </div>
       </main>
     );
   }
