@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
   if (!city || !addressDetails) return NextResponse.json({ ok: false, error: 'أكمل تفاصيل عنوان التوصيل.' }, { status: 400 });
   if (installment && (
     ![500, 750, 1000, 1500, 2000].includes(installmentDownPayment) ||
-    ![3, 6, 12, 24].includes(installmentMonths)
+    ![3, 6, 10, 12, 24].includes(installmentMonths)
   )) return NextResponse.json({ ok: false, error: 'اختر الدفعة المقدمة ومدة التقسيط.' }, { status: 400 });
   if (!acceptedPolicies) return NextResponse.json({ ok: false, error: 'الموافقة على سياسة المتجر مطلوبة.' }, { status: 400 });
   if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) {
