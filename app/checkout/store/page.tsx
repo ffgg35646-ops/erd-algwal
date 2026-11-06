@@ -186,6 +186,16 @@ export default function StoreCheckoutPage() {
       setFormError('اختر الدفعة المقدمة ومدة التقسيط.');
       return;
     }
+    if (form.installment === 'yes') {
+      const selectedInstallment = Number(form.installmentDownPayment);
+      const selectedMonths = Number(form.installmentMonths);
+      const totalCents = Math.round(total * 100);
+      const coveredCents = Math.round(selectedInstallment * 100) * selectedMonths;
+      if (selectedInstallment >= total || coveredCents < totalCents) {
+        setFormError('صحح القسط من فضلك.');
+        return;
+      }
+    }
     const cleanPhone = normalizeSaudiPhoneDigits(form.phone);
     if (!/^05[0-9]{8}$/.test(cleanPhone)) {
       setFormError('اكتب رقم جوال سعودي من 10 أرقام يبدأ بـ 05، مثل 05XXXXXXXX.');
