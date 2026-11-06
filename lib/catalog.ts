@@ -92,10 +92,44 @@ async function initializeDefaultProducts(db: Db) {
 
   const collection = db.collection<StoredProduct>('products');
   const categoryCollection = db.collection<StoreCategory>('categories');
-  const settings = db.collection<{ _id: string; completedAt?: Date; productIds?: string[] }>('store_settings');
+  const settings = db.collection<{ _id: string; startedAt?: Date; archivedAt?: Date; completedAt?: Date; productIds?: string[]; categories?: string[] }>('store_settings');
   await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
 
   const migration = await settings.findOne({ _id: DEFAULT_PRODUCTS_MIGRATION_ID });
+  const replacementNow = new Date();
+  let sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
+
+  if (!sourceCatalogMigration) {
+    await settings.updateOne(
+      { _id: SOURCE_CATALOG_MIGRATION_ID },
+      { $setOnInsert: { startedAt: replacementNow } },
+      { upsert: true }
+    );
+    sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
+  }
+
+  if (!sourceCatalogMigration?.archivedAt) {
+    // Archive only the live catalogue once. Keep the documents themselves so
+    // historical orders and references are not broken.
+    await collection.updateMany(
+      { deleted: { $ne: true } },
+      { $set: { deleted: true, updatedAt: replacementNow } }
+    );
+    await categoryCollection.updateMany(
+      { deleted: { $ne: true } },
+      { $set: { deleted: true, updatedAt: replacementNow } }
+    );
+    await categoryCollection.updateMany(
+      { seedName: { $in: seedCategories.map((category) => category.name) } },
+      { $unset: { deleted: '' }, $set: { updatedAt: replacementNow } }
+    );
+    await settings.updateOne(
+      { _id: SOURCE_CATALOG_MIGRATION_ID },
+      { $set: { archivedAt: new Date() } }
+    );
+    sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
+  }
+
   if (!migration) {
     // Ensure the category needed by the initial ten products is active once.
     const defaultCategoryNames = [...new Set(defaultStoreProducts.map((product) => product.category))];
@@ -184,19 +218,18 @@ async function initializeDefaultProducts(db: Db) {
   });
   if (operations.length) await collection.bulkWrite(operations, { ordered: false });
 
-  // Save the replacement marker only after the complete source product upsert.
-  // Repeated catalogue reads then preserve later admin edits and deletions.
-  if (!sourceCatalogMigration) {
+  // Mark the one-time replacement complete after all product records exist.
+  // Subsequent reads preserve admin edits and deletions.
+  if (!sourceCatalogMigration?.completedAt) {
     await settings.updateOne(
       { _id: SOURCE_CATALOG_MIGRATION_ID },
       {
-        $setOnInsert: {
-          completedAt: now,
+        $set: {
+          completedAt: new Date(),
           productIds: defaultStoreProducts.map((product) => product.id),
           categories: seedCategories.map((category) => category.name)
         }
-      },
-      { upsert: true }
+      }
     );
   }
 
