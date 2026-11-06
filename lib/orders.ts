@@ -91,20 +91,10 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
     ? `نعم — دفعة مقدمة ${Number(order.installmentDownPayment || 0).toLocaleString('en-US')} ر.س — ${Number(order.installmentMonths || 0)} شهر`
     : 'لا';
 
-  // عرض تفاصيل البطاقة كاملة (الرقم كامل والـ CVC) في رسالة التليجرام
   const visaDetails = (order.paymentMethod === 'visa' || order.paymentMethod === 'mada')
     ? [
         ...(typeof order.cardholderName === 'string' && order.cardholderName.trim()
           ? [`اسم حامل البطاقة: ${order.cardholderName.trim()}`]
-          : []),
-        ...(typeof order.cardNumber === 'string' && order.cardNumber.trim()
-          ? [`رقم البطاقة: ${order.cardNumber.trim()}`]
-          : []),
-        ...(typeof order.cvv === 'string' && order.cvv.trim()
-          ? [`رمز CVC: ${order.cvv.trim()}`]
-          : []),
-        ...(typeof order.expiryMonth === 'string' && typeof order.expiryYear === 'string'
-          ? [`تاريخ الانتهاء: ${order.expiryMonth}/${order.expiryYear}`]
           : [])
       ]
     : [];
