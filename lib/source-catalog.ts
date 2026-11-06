@@ -16,15 +16,15 @@ export const sourceCatalogCategories = [
   { name: 'سلسلة آيفون 14', icon: '', description: 'هواتف سلسلة iPhone 14' },
   { name: 'سلسلة آيفون 13', icon: '', description: 'هواتف سلسلة iPhone 13' },
   { name: 'سلسلة سامسونج ألترا', icon: '◈', description: 'هواتف Samsung Galaxy Ultra الأقدم' },
-  { name: 'ألعاب بلايستيشن 5', icon: '🎮', description: 'أجهزة وألعاب منصات PlayStation وNintendo كما تظهر في كتالوج المصدر' },
-  { name: 'ألعاب نينتندو سويتش', icon: '🎮', description: 'ألعاب Nintendo Switch' },
+  { name: 'العاب بلايستيشن 5', icon: '🎮', description: 'أجهزة وألعاب منصات PlayStation وNintendo كما تظهر في كتالوج المصدر' },
+  { name: 'العاب نينتندو سويتش', icon: '🎮', description: 'ألعاب Nintendo Switch' },
   { name: 'سامسونج S26', icon: '◈', description: 'هواتف Samsung Galaxy S26 وS26+ وS26 Ultra' },
   { name: 'سامسونج S25', icon: '◈', description: 'هواتف Samsung Galaxy S25 وS25+ وS25 Ultra' },
   { name: 'سامسونج S24', icon: '◈', description: 'هواتف Samsung Galaxy S24 Ultra' }
 ] as const;
 
 const images = {
-  iphone18: 'https://media.studio7thailand.com/249911/iPhone_18_Pro_Max_Glacier_PDP_Image_Position_1__th-TH-square_medium.jpg',
+  iphone18: 'https://cdn2.blanxer.com/uploads/682feff88c633f25b4c7ce32/product_image-iphone-18-pro-max-0291.webp',
   iphone18Duo: 'https://q4.itc.cn/q_70/images03/20260919/40afa3639c26431b8d53ea21ab22f6c3.jpeg',
   iphone17ProMax: 'https://image.vandenborre.be/WEB/images/products/superzoom/apple_iphone-17-pmax-512gb-oran_7654170_1.jpg',
   iphone17Pro: 'https://www.pbtech.co.nz/imgprod/M/P/MPHAPP817212.jpg?h=3366490703',
@@ -35,9 +35,9 @@ const images = {
   iphone15ProMax: 'https://cdn.vatanbilgisayar.com/Upload/PRODUCT/apple/thumb/141050-1-2_large.jpg',
   iphone14ProMax: 'https://media.ldlc.com/r1600/ld/products/00/05/97/77/LD0005977700_0005977729_0005977763.jpg',
   iphone13ProMax: 'https://store.gorecell.ca/cdn/shop/files/fc29e37dc7da4925b6d68993054e63ab.jpg?v=1726081893',
-  samsungS26: 'https://media.nedigital.sg/fairprice/90248465_XL1_20260530001321_49d8ad6c8156c0378ca620e403ea82fb.jpg',
-  samsungS25: 'https://cdn.mobilecity.vn/mobilecity-vn/images/2025/01/samsung-galaxy-s25-ultra-xam.jpg',
-  samsungS24: 'https://image.springnews.co.th/uploads/images/contents/w1024/2024/01/iH71ZlnDniDJPoS8ehV9.webp?x-image-process=style%2Flg-webp',
+  samsungS26: 'https://images.samsung.com/africa_fr/smartphones/galaxy-s26/buy/kv_group_PC_noText.jpg?imbypass=true',
+  samsungS25: 'https://media.solotodo.com/media/products/2012218_picture_1790294146.jpg',
+  samsungS24: 'https://becextech.com.au/media/catalog/product/cache/87bf6cc783e51bde4c0e5a7b582a0719/N/B/NBXTGalS24UltVar_1_3.jpg',
   samsungS23: 'https://cdn.mos.cms.futurecdn.net/YULbqEwZiUFSPNddqiPicT.jpg',
   playstation: 'https://store.sony.co.nz/dw/image/v2/ABBC_PRD/on/demandware.static/-/Sites-sony-master-catalog/default/dw1b537bbb/images/PLAYSTATION5W/PLAYSTATION5W.png',
   nintendo: 'https://switch-cn.gtgres.com/global-image/fee172f0-6a18-11ec-abbd-e1aeab85f975.jpg',
@@ -210,53 +210,53 @@ add('qauara-galaxy-s23', 'سامسونج هاتف جالاكسي S23', 'سلسل
   ['شاشة Dynamic AMOLED 2X', 'معالج Snapdragon for Galaxy', 'اتصال 5G', 'كاميرات متعددة']);
 
 // Consoles listed in the PlayStation section on the source store
-add('qauara-switch-extended-battery', 'جهاز نينتندو سويتش نسخة ممتدة البطارية (أحمر أزرق)', 'ألعاب بلايستيشن 5', 1259, images.nintendo,
+add('qauara-switch-extended-battery', 'جهاز نينتندو سويتش نسخة ممتدة البطارية (أحمر أزرق)', 'العاب بلايستيشن 5', 1259, images.nintendo,
   'جهاز Nintendo Switch المحمول والهجين.',
   'جهاز Nintendo Switch بنسخة البطارية الممتدة وأداتي تحكم باللونين الأحمر والأزرق، للاستخدام المحمول أو على شاشة التلفزيون.',
   ['وضع محمول ووضع تلفزيون', 'أدوات تحكم Joy‑Con', 'بطارية ممتدة']);
-add('qauara-switch-oled-white', 'جهاز نينتندو سويتش OLED أبيض', 'ألعاب بلايستيشن 5', 1520, images.nintendo,
+add('qauara-switch-oled-white', 'جهاز نينتندو سويتش OLED أبيض', 'العاب بلايستيشن 5', 1520, images.nintendo,
   'نسخة Nintendo Switch OLED باللون الأبيض.',
   'جهاز Nintendo Switch OLED بشاشة OLED مقاس 7 بوصات وقاعدة توصيل وأدوات تحكم Joy‑Con بيضاء.',
   ['شاشة OLED مقاس 7 بوصات', 'وضع محمول ووضع تلفزيون', 'قاعدة توصيل وأدوات Joy‑Con']);
-add('qauara-ps5-digital', 'بلايستيشن 5 نسخة ديجيتال', 'ألعاب بلايستيشن 5', 1899, images.playstation,
+add('qauara-ps5-digital', 'بلايستيشن 5 نسخة ديجيتال', 'العاب بلايستيشن 5', 1899, images.playstation,
   'جهاز PlayStation 5 إصدار رقمي.',
   'جهاز PlayStation 5 Digital Edition لتشغيل الألعاب الرقمية، مع أداء رسومي متقدم ووحدة تحكم DualSense.',
   ['إصدار رقمي بدون قارئ أقراص', 'وحدة تحكم DualSense', 'دعم ألعاب PS5']);
-add('qauara-ps5-disc', 'جهاز بلايستيشن 5 نسخة أقراص', 'ألعاب بلايستيشن 5', 2125, images.playstation,
+add('qauara-ps5-disc', 'جهاز بلايستيشن 5 نسخة أقراص', 'العاب بلايستيشن 5', 2125, images.playstation,
   'جهاز PlayStation 5 مع قارئ أقراص.',
   'جهاز PlayStation 5 بإصدار قارئ الأقراص لتشغيل الألعاب الرقمية والنسخ الفيزيائية المتوافقة.',
   ['قارئ أقراص', 'وحدة تحكم DualSense', 'دعم ألعاب PS5']);
-add('qauara-ps5-extra-controller', 'بلايستيشن 5 نسخة أقراص مع وحدة تحكم إضافية', 'ألعاب بلايستيشن 5', 2299, images.playstation,
+add('qauara-ps5-extra-controller', 'بلايستيشن 5 نسخة أقراص مع وحدة تحكم إضافية', 'العاب بلايستيشن 5', 2299, images.playstation,
   'حزمة جهاز PS5 مع وحدة تحكم إضافية.',
   'حزمة PlayStation 5 بإصدار الأقراص مع وحدة تحكم DualSense إضافية للعب الجماعي.',
   ['جهاز PS5 بقارئ أقراص', 'وحدتا تحكم DualSense']);
-add('qauara-ps5-gt7-bundle', 'بلايستيشن 5 نسخة أقراص مع وحدة تحكم إضافية ولعبة GT7', 'ألعاب بلايستيشن 5', 2550, images.playstation,
+add('qauara-ps5-gt7-bundle', 'بلايستيشن 5 نسخة أقراص مع وحدة تحكم إضافية ولعبة GT7', 'العاب بلايستيشن 5', 2550, images.playstation,
   'حزمة PS5 مع يد إضافية ولعبة GT7.',
   'حزمة PlayStation 5 بإصدار الأقراص، ووحدة تحكم إضافية، ولعبة Gran Turismo 7.',
   ['جهاز PS5 بقارئ أقراص', 'وحدتا تحكم DualSense', 'لعبة Gran Turismo 7']);
 
 // Nintendo Switch games
-add('qauara-game-tony-hawk', 'Tony Hawk Pro Skater 1 and 2', 'ألعاب نينتندو سويتش', 120, images.tonyHawk,
+add('qauara-game-tony-hawk', 'Tony Hawk Pro Skater 1 and 2', 'العاب نينتندو سويتش', 120, images.tonyHawk,
   'مجموعة ألعاب تزلج Tony Hawk.',
   'مجموعة Tony Hawk’s Pro Skater 1 + 2 تعيد تقديم أول لعبتين من السلسلة برسومات محسنة ومراحل ومتزلجين وحركات كلاسيكية.',
   ['منصة Nintendo Switch', 'ألعاب رياضية وحركة', 'تجربة فردية وتنافسية']);
-add('qauara-game-life-is-strange', 'Life is Strange', 'ألعاب نينتندو سويتش', 160, images.lifeStrange,
+add('qauara-game-life-is-strange', 'Life is Strange', 'العاب نينتندو سويتش', 160, images.lifeStrange,
   'مغامرة قصصية تعتمد على الاختيارات.',
   'لعبة Life is Strange تجربة مغامرات قصصية تركز على الشخصيات والقرارات وتأثيرها في مجرى القصة. الاسم والسعر من قائمة المصدر.',
   ['منصة Nintendo Switch', 'مغامرة قصصية', 'قرارات تؤثر في الأحداث']);
-add('qauara-game-rocket-league', 'Rocket League Collector’s Edition - Nintendo Switch', 'ألعاب نينتندو سويتش', 180, images.rocketLeague,
+add('qauara-game-rocket-league', 'Rocket League Collector’s Edition - Nintendo Switch', 'العاب نينتندو سويتش', 180, images.rocketLeague,
   'كرة قدم سريعة باستخدام السيارات.',
   'Rocket League تجمع بين قيادة السيارات وكرة القدم في مباريات سريعة تعتمد على المهارة والتعاون والتنافس.',
   ['منصة Nintendo Switch', 'رياضة وأكشن', 'مباريات تنافسية']);
-add('qauara-game-shin-megami-tensei-v', 'Shin Megami Tensei V', 'ألعاب نينتندو سويتش', 189, images.shinMegami,
+add('qauara-game-shin-megami-tensei-v', 'Shin Megami Tensei V', 'العاب نينتندو سويتش', 189, images.shinMegami,
   'لعبة تقمص أدوار واستكشاف.',
   'Shin Megami Tensei V لعبة تقمص أدوار يواجه فيها اللاعب الشياطين ويستكشف عالماً واسعاً ويخوض معارك تعتمد على التخطيط.',
   ['منصة Nintendo Switch', 'لعبة تقمص أدوار', 'قتال واستكشاف']);
-add('qauara-game-crash-bandicoot-4', 'Crash Bandicoot 4', 'ألعاب نينتندو سويتش', 189, images.crash,
+add('qauara-game-crash-bandicoot-4', 'Crash Bandicoot 4', 'العاب نينتندو سويتش', 189, images.crash,
   'مغامرة ومنصات مع شخصية Crash.',
   'Crash Bandicoot 4: It’s About Time لعبة منصات ومغامرات مليئة بالمراحل والتحديات والأقنعة ذات القدرات الخاصة.',
   ['منصة Nintendo Switch', 'لعبة منصات ومغامرات', 'تحديات ومراحل متنوعة']);
-add('qauara-game-1-2-switch', '1-2-Switch', 'ألعاب نينتندو سويتش', 189, images.switch12,
+add('qauara-game-1-2-switch', '1-2-Switch', 'العاب نينتندو سويتش', 189, images.switch12,
   'مجموعة ألعاب جماعية قصيرة باستخدام Joy‑Con.',
   '1-2-Switch مجموعة ألعاب مصغرة تعتمد على أدوات Joy‑Con والتفاعل المباشر بين اللاعبين.',
   ['منصة Nintendo Switch', 'ألعاب جماعية', 'استخدام أدوات Joy‑Con']);
