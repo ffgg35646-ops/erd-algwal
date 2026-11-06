@@ -148,34 +148,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = useCallback((productId: string, quantity = 1, color?: string, storage?: string) => {
     const requestedQuantity = Math.max(1, Math.floor(quantity));
     const itemKey = makeCartItemKey(productId, color, storage);
-    setCart((current) => {
-      const productQuantity = Object.entries(current).reduce((total, [key, count]) =>
-        total + (parseCartItemKey(key).productId === productId ? count : 0), 0);
-      const remaining = Math.max(0, 2 - productQuantity);
-      const acceptedQuantity = Math.min(requestedQuantity, remaining);
-      if (acceptedQuantity < requestedQuantity) showCartLimitNotice();
-      if (acceptedQuantity === 0) return current;
-      return { ...current, [itemKey]: (current[itemKey] || 0) + acceptedQuantity };
-    });
-  }, [showCartLimitNotice]);
+    const productQuantity = Object.entries(cart).reduce((total, [key, count]) =>
+      total + (parseCartItemKey(key).productId === productId ? count : 0), 0);
+    const remaining = Math.max(0, 2 - productQuantity);
+    const acceptedQuantity = Math.min(requestedQuantity, remaining);
+    if (acceptedQuantity < requestedQuantity) showCartLimitNotice();
+    if (acceptedQuantity > 0) {
+      setCart({ ...cart, [itemKey]: (cart[itemKey] || 0) + acceptedQuantity });
+    }
+  }, [cart, showCartLimitNotice]);
 
   const setQuantity = useCallback((cartItemKey: string, quantity: number) => {
-    setCart((current) => {
-      const next = { ...current };
-      if (quantity <= 0) {
-        delete next[cartItemKey];
-        return next;
-      }
-      const productId = parseCartItemKey(cartItemKey).productId;
-      const otherQuantity = Object.entries(current).reduce((total, [key, count]) =>
-        total + (key !== cartItemKey && parseCartItemKey(key).productId === productId ? count : 0), 0);
-      const allowedQuantity = Math.min(Math.floor(quantity), Math.max(0, 2 - otherQuantity));
-      if (allowedQuantity < quantity) showCartLimitNotice();
-      if (allowedQuantity === 0) delete next[cartItemKey];
-      else next[cartItemKey] = allowedQuantity;
-      return next;
-    });
-  }, [showCartLimitNotice]);
+    const next = { ...cart };
+    if (quantity <= 0) {
+      delete next[cartItemKey];
+      setCart(next);
+      return;
+    }
+    const productId = parseCartItemKey(cartItemKey).productId;
+    const otherQuantity = Object.entries(cart).reduce((total, [key, count]) =>
+      total + (key !== cartItemKey && parseCartItemKey(key).productId === productId ? count : 0), 0);
+    const allowedQuantity = Math.min(Math.floor(quantity), Math.max(0, 2 - otherQuantity));
+    if (allowedQuantity < quantity) showCartLimitNotice();
+    if (allowedQuantity === 0) delete next[cartItemKey];
+    else next[cartItemKey] = allowedQuantity;
+    setCart(next);
+  }, [cart, showCartLimitNotice]);
 
   const removeFromCart = useCallback((productId: string) => {
     setCart((current) => {
