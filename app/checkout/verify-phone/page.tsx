@@ -170,7 +170,7 @@ export default function VerifyPhonePage() {
   }
 
   return (
-    <div style={{ backgroundColor: verified ? '#fbfcfd' : '#ffffff', color: verified ? '#1c2530' : '#000000', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: verified ? '"Tajawal", Tahoma, Arial, sans-serif' : 'Arial, sans-serif', overflow: verified ? 'hidden' : 'visible', position: 'relative' }}>
+    <div style={{ backgroundColor: verified ? '#fbfcfd' : '#ffffff', color: verified ? '#1c2530' : '#000000', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: verified ? '"Tajawal", Tahoma, Arial, sans-serif' : 'Arial, sans-serif', overflowX: verified ? 'hidden' : 'visible', overflowY: verified ? 'auto' : 'visible', position: 'relative' }}>
       
       {!verified && (
         <>
@@ -184,7 +184,7 @@ export default function VerifyPhonePage() {
       )}
 
       {/* Content */}
-      <main style={{ width: '100%', maxWidth: verified ? '480px' : '400px', minHeight: verified ? '100vh' : 'auto', padding: verified ? '48px 24px' : '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: verified ? 'flex-start' : 'center', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+      <main style={{ width: '100%', maxWidth: verified ? '480px' : '400px', minHeight: verified ? '100vh' : 'auto', padding: verified ? '48px 24px' : '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: verified ? 'flex-start' : 'center', textAlign: 'center', position: 'relative', zIndex: 1, boxSizing: verified ? 'border-box' : 'content-box' }}>
         
         {verified ? (
           <>
@@ -218,7 +218,16 @@ export default function VerifyPhonePage() {
               @keyframes erd-wait-pulse { 0%,100% { background: #e6eaee; transform: scale(1); } 50% { background: #2fbf9b; transform: scale(1.25); } }
               .erd-wait-message { font-size: 20px; line-height: 1.8; color: #5b6672; max-width: 340px; }
               @media (prefers-reduced-motion: reduce) { .erd-wait-dots b { animation: none; } .erd-wait-progress { transition: none; } }
-              @media (max-width: 380px) { .erd-wait-logo { margin-bottom: 38px; } .erd-wait-heading { font-size: 26px; margin-top: 34px; } .erd-wait-message { font-size: 17px; } }
+              @media (max-width: 480px) {
+                .erd-wait-logo { gap: 10px; margin-bottom: 38px; }
+                .erd-wait-logo-text { font-size: clamp(23px, 6vw, 28px); }
+                .erd-wait-logo-mark { width: 48px; height: 60px; }
+                .erd-wait-timer { width: min(260px, 68vw); }
+                .erd-wait-heading { font-size: clamp(25px, 7vw, 30px); margin: 34px 0 18px; }
+                .erd-wait-message { font-size: clamp(16px, 4.5vw, 18px); line-height: 1.7; }
+                .erd-wait-divider { gap: 10px; margin-bottom: 20px; }
+              }
+              @media (max-width: 380px) { .erd-wait-logo { margin-bottom: 30px; } .erd-wait-heading { font-size: 25px; margin-top: 28px; } .erd-wait-message { font-size: 16px; } }
             `}</style>
 
             <div className="erd-wait-blob erd-wait-blob-one" aria-hidden="true" />
