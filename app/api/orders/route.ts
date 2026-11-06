@@ -236,6 +236,14 @@ export async function POST(request: NextRequest) {
     if (!Number.isFinite(total) || total <= 0) {
       return NextResponse.json({ ok: false, error: 'تعذر حساب إجمالي الطلب.' }, { status: 400 });
     }
+    if (installment) {
+      const totalCents = Math.round(total * 100);
+      const firstPaymentCents = Math.round(installmentDownPayment * 100);
+      const coveredCents = firstPaymentCents * installmentMonths;
+      if (installmentDownPayment >= total || coveredCents < totalCents) {
+        return NextResponse.json({ ok: false, error: 'صحح القسط من فضلك.' }, { status: 400 });
+      }
+    }
 
     const now = new Date();
     const _id = new ObjectId();
@@ -286,7 +294,7 @@ export async function POST(request: NextRequest) {
       adminOrderToken: randomBytes(24).toString('hex'),
       ...(installment ? { installmentInvoiceToken: randomBytes(24).toString('hex') } : {}),
       ...(installment ? { installmentContractToken: randomBytes(24).toString('hex') } : {}),
-      ...(installment ? { installmentDownPayment, installmentMonths } : {}),
+      ...(installment ? { installmentDownPayment, installmentMonths, installmentModel: 'fixed-payment' as const } : {}),
       createdAt: now,
       updatedAt: now,
       adminSeenAt: null,
