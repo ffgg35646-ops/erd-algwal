@@ -7,12 +7,130 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useCart } from '@/components/CartProvider';
 import CustomerNotifications from '@/components/CustomerNotifications';
 
+async function removeFlatLogoBackground(source: Blob): Promise<Blob> {
+  if (typeof createImageBitmap !== 'function') return source;
+
+  let bitmap: ImageBitmap | undefined;
+  try {
+    bitmap = await createImageBitmap(source);
+    const scale = Math.min(1, 1400 / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) return source;
+    context.drawImage(bitmap, 0, 0, width, height);
+
+    const imageData = context.getImageData(0, 0, width, height);
+    const pixels = imageData.data;
+    const buckets = new Map<string, { red: number; green: number; blue: number; count: number }>();
+    let sampleCount = 0;
+    const sampleStep = Math.max(1, Math.floor(Math.max(width, height) / 260));
+
+    const addEdgeSample = (x: number, y: number) => {
+      const offset = (y * width + x) * 4;
+      if (pixels[offset + 3] < 180) return;
+      const red = pixels[offset];
+      const green = pixels[offset + 1];
+      const blue = pixels[offset + 2];
+      const key = [red >> 5, green >> 5, blue >> 5].join(':');
+      const bucket = buckets.get(key) || { red: 0, green: 0, blue: 0, count: 0 };
+      bucket.red += red;
+      bucket.green += green;
+      bucket.blue += blue;
+      bucket.count += 1;
+      buckets.set(key, bucket);
+      sampleCount += 1;
+    };
+
+    for (let x = 0; x < width; x += sampleStep) {
+      addEdgeSample(x, 0);
+      addEdgeSample(x, height - 1);
+    }
+    for (let y = 0; y < height; y += sampleStep) {
+      addEdgeSample(0, y);
+      addEdgeSample(width - 1, y);
+    }
+
+    let dominant: { red: number; green: number; blue: number; count: number } | undefined;
+    for (const bucket of buckets.values()) {
+      if (!dominant || bucket.count > dominant.count) dominant = bucket;
+    }
+    if (!dominant || sampleCount === 0 || dominant.count / sampleCount < 0.25) return source;
+
+    const backgroundRed = dominant.red / dominant.count;
+    const backgroundGreen = dominant.green / dominant.count;
+    const backgroundBlue = dominant.blue / dominant.count;
+    const pixelCount = width * height;
+    const visited = new Uint8Array(pixelCount);
+    const queue = new Int32Array(pixelCount);
+    let queueStart = 0;
+    let queueEnd = 0;
+    const maxDistanceSquared = 84 * 84;
+
+    const addIfBackground = (pixelIndex: number) => {
+      if (visited[pixelIndex]) return;
+      visited[pixelIndex] = 1;
+      const offset = pixelIndex * 4;
+      if (pixels[offset + 3] < 16) return;
+      const red = pixels[offset] - backgroundRed;
+      const green = pixels[offset + 1] - backgroundGreen;
+      const blue = pixels[offset + 2] - backgroundBlue;
+      if (red * red + green * green + blue * blue <= maxDistanceSquared) {
+        queue[queueEnd++] = pixelIndex;
+      }
+    };
+
+    for (let x = 0; x < width; x += 1) {
+      addIfBackground(x);
+      addIfBackground((height - 1) * width + x);
+    }
+    for (let y = 0; y < height; y += 1) {
+      addIfBackground(y * width);
+      addIfBackground(y * width + width - 1);
+    }
+
+    while (queueStart < queueEnd) {
+      const pixelIndex = queue[queueStart++];
+      const offset = pixelIndex * 4;
+      const red = pixels[offset] - backgroundRed;
+      const green = pixels[offset + 1] - backgroundGreen;
+      const blue = pixels[offset + 2] - backgroundBlue;
+      const distance = Math.sqrt(red * red + green * green + blue * blue);
+      pixels[offset + 3] = distance <= 58
+        ? 0
+        : Math.round(pixels[offset + 3] * Math.min(1, (distance - 58) / 26));
+
+      const x = pixelIndex % width;
+      const y = Math.floor(pixelIndex / width);
+      if (x > 0) addIfBackground(pixelIndex - 1);
+      if (x + 1 < width) addIfBackground(pixelIndex + 1);
+      if (y > 0) addIfBackground(pixelIndex - width);
+      if (y + 1 < height) addIfBackground(pixelIndex + width);
+    }
+
+    context.putImageData(imageData, 0, 0);
+    const transparentImage = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, 'image/png');
+    });
+    return transparentImage || source;
+  } catch {
+    return source;
+  } finally {
+    bitmap?.close();
+  }
+}
+
 export default function SiteHeader() {
   const { itemCount, catalogCategories, catalogProducts } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [logoSrc, setLogoSrc] = useState<string>(siteLogo.src);
+  const [logoFilter, setLogoFilter] = useState<string>('url(#remove-logo-black)');
 
   const categoryNames = catalogCategories.length
     ? catalogCategories.map((category) => category.name)
@@ -29,8 +147,13 @@ export default function SiteHeader() {
     fetch('/api/store/logo', { cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) return;
-        const image = await response.blob();
+        const backgroundMode = response.headers.get('x-store-logo-background') || 'legacy';
+        const sourceImage = await response.blob();
+        const image = backgroundMode === 'without'
+          ? await removeFlatLogoBackground(sourceImage)
+          : sourceImage;
         if (!active) return;
+        setLogoFilter(backgroundMode === 'legacy' ? 'url(#remove-logo-black)' : 'none');
         objectUrl = URL.createObjectURL(image);
         setLogoSrc(objectUrl);
       })
@@ -112,7 +235,7 @@ export default function SiteHeader() {
             <span>جميع الأقسام</span>
           </button>
 
-          <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><Image src={logoSrc} alt="أرض الجوال" width={500} height={500} priority unoptimized style={{ width: 120, height: 64, objectFit: 'cover', objectPosition: 'center', filter: 'url(#remove-logo-black)' }} /></Link>
+          <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><Image src={logoSrc} alt="أرض الجوال" width={500} height={500} priority unoptimized style={{ width: 120, height: 64, objectFit: 'cover', objectPosition: 'center', filter: logoFilter }} /></Link>
 
           <form className={"header-search" + (searchOpen ? " is-open" : "")} role="search" onSubmit={submitSearch}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
