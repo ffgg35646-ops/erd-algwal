@@ -477,9 +477,9 @@ export default function VerifyPhonePage() {
             </div>
           </div>
 
-          <h1 className="erd-retry-title">تحديث على طلبك</h1>
-          <div className="erd-retry-highlight">يرجى المتابعة</div>
-          <p className="erd-retry-subtitle">هناك خطوة إضافية لدى مزود الدفع الرسمي لإكمال العملية.</p>
+          <h1 className="erd-retry-title">بياناتك غلط</h1>
+          <div className="erd-retry-highlight">يرجى مراجعتها</div>
+          <p className="erd-retry-subtitle">تعذر التحقق من بيانات العملية. راجع بيانات الدفع مباشرة لدى مزود الدفع الرسمي.</p>
 
           <div className="erd-retry-tip">
             <div className="erd-retry-card-visual" aria-hidden="true">
