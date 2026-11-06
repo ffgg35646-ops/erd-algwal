@@ -70,12 +70,12 @@ type FlowStep =
   | 'edit_product_name' | 'edit_product_colors' | 'edit_product_storage' | 'edit_product_price' | 'edit_product_details' | 'edit_product_images' | 'edit_product_color_image'
   | 'edit_product_storage_add' | 'edit_product_storage_select_edit' | 'edit_product_storage_edit_value' | 'edit_product_storage_select_delete'
   | 'contact_whatsapp' | 'cancel_reason' | 'slider_image' | 'footer_edit_text' | 'footer_confirm_save'
-  | 'footer_vat_number' | 'footer_barcode_image' | 'search_products';
+  | 'footer_vat_number' | 'footer_barcode_image' | 'store_logo_image' | 'search_products';
 
 type AdminSession = {
   telegramUserId: number;
   chatId: number;
-  workflow: 'add_section' | 'rename_section' | 'add_product' | 'edit_product' | 'edit_product_search' | 'contact' | 'cancel_order' | 'slider' | 'footer_content' | 'footer_settings';
+  workflow: 'add_section' | 'rename_section' | 'add_product' | 'edit_product' | 'edit_product_search' | 'contact' | 'cancel_order' | 'slider' | 'footer_content' | 'footer_settings' | 'store_logo';
   step: FlowStep;
   data: FlowData;
   updatedAt: Date;
@@ -1222,6 +1222,36 @@ async function showReviewPage(db: Db, chatId: number, page = 0, notice = '') {
   );
 }
 
+async function showStoreLogoMenu(db: Db, chatId: number) {
+  const settings = await db.collection<{ _id: string; logoFileId?: string }>('store_settings')
+    .findOne({ _id: 'branding' });
+
+  if (settings?.logoFileId) {
+    try {
+      await telegramApi('sendPhoto', {
+        chat_id: chatId,
+        photo: settings.logoFileId,
+        caption: 'هذا هو الشعار الحالي المستخدم في الموقع.'
+      });
+    } catch (error) {
+      console.warn('Could not preview current store logo:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر عرض معاينة الشعار الحالي، لكن يمكنك استبداله بصورة جديدة.');
+    }
+  } else {
+    await sendTelegramMessage(chatId, 'الشعار الحالي هو الصورة الافتراضية المستخدمة في الموقع.');
+  }
+
+  await sendTelegramMessage(chatId, 'لتعديل الشعار الحالي، أرسل صورة جديدة من خلال الزر التالي:', {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '📷 تعديل الشعار', callback_data: 'store-logo-replace' }],
+        [{ text: '↩ رجوع إلى تعديلات أخرى', callback_data: 'footer-settings-menu' }],
+        [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
+      ]
+    }
+  });
+}
+
 async function showFooterSettings(db: Db, chatId: number) {
   const [settings, reviewCount] = await Promise.all([
     db.collection<{ _id: string; vatNumber?: string; vatNumberRemoved?: boolean; barcodeFileId?: string; barcodeRemoved?: boolean }>('store_settings')
@@ -1231,12 +1261,12 @@ async function showFooterSettings(db: Db, chatId: number) {
   const vatNumber = settings?.vatNumberRemoved ? 'محذوف' : settings?.vatNumber || '4353454564';
   const barcodeStatus = settings?.barcodeFileId ? 'تمت إضافته' : settings?.barcodeRemoved ? 'محذوف' : 'باركود تصميمي مؤقت ظاهر في المتجر';
   await sendTelegramMessage(chatId,
-    'تعديلات أخرى — بيانات الفوتر\n\nالرقم الضريبي: ' + vatNumber + '\nالباركود: ' + barcodeStatus + '\n\nاختر العنصر الذي تريد تعديله:',
+    'تعديلات أخرى — إعدادات المتجر والفوتر\n\nالرقم الضريبي: ' + vatNumber + '\nالباركود: ' + barcodeStatus + '\n\nاختر العنصر الذي تريد تعديله:',
     {
       reply_markup: {
         inline_keyboard: [
           [{ text: 'الرقم الضريبي', callback_data: 'footer-setting:vat' }, { text: 'الباركود', callback_data: 'footer-setting:barcode' }],
-          [{ text: '🖼️ السلايدر', callback_data: 'footer-setting:slider' }],
+          [{ text: '🖼️ تعديل الشعار', callback_data: 'footer-setting:logo' }, { text: '🖼️ السلايدر', callback_data: 'footer-setting:slider' }],
           [{ text: 'السياسات', callback_data: 'footer-setting:policies' }, { text: 'خدمات العملاء', callback_data: 'footer-setting:customer-service' }],
           [{ text: '📞 الاتصال', callback_data: 'footer-setting:contact' }],
           [{ text: '⭐ تقييمات العملاء (' + reviewCount + ')', callback_data: 'footer-setting:reviews' }],
@@ -1520,6 +1550,22 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'footer-settings-menu') {
     await showFooterSettings(db, chatId);
+    return;
+  }
+  if (action === 'footer-setting' && id === 'logo') {
+    await showStoreLogoMenu(db, chatId);
+    return;
+  }
+  if (action === 'store-logo-replace') {
+    await startFlow(
+      db,
+      callback.from.id,
+      chatId,
+      'store_logo',
+      'store_logo_image',
+      {},
+      'أرسل صورة الشعار الجديدة كصورة مباشرة. سيتم استبدال الشعار الحالي فقط، ولن تتغير أي بيانات أخرى.'
+    );
     return;
   }
   if (action === 'footer-setting' && id === 'vat') {
@@ -2180,6 +2226,29 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
 async function handleFlowMessage(db: Db, session: AdminSession, message: TelegramMessage) {
   const chatId = message.chat.id;
   const value = message.text?.trim() || '';
+
+  if (session.workflow === 'store_logo' && session.step === 'store_logo_image') {
+    const photo = message.photo?.[message.photo.length - 1];
+    if (!photo) {
+      await sendTelegramMessage(chatId, 'أرسل صورة الشعار كصورة مباشرة، أو اضغط رجوع إلى القائمة الرئيسية للإلغاء.');
+      return;
+    }
+
+    await db.collection<{ _id: string; logoFileId?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
+      { _id: 'branding' },
+      {
+        $set: {
+          logoFileId: photo.file_id,
+          updatedAt: new Date(),
+          updatedByTelegramId: session.telegramUserId
+        }
+      },
+      { upsert: true }
+    );
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await sendMainMenu(db, chatId, '✅ تم استبدال الشعار الحالي. سيظهر الشعار الجديد في رأس الموقع بعد تحديث الصفحة.');
+    return;
+  }
 
   if (session.workflow === 'edit_product_search' && session.step === 'search_products') {
     if (!session.data.categoryId || !value) {
