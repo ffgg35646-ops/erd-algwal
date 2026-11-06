@@ -12,6 +12,7 @@ export default function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [logoSrc, setLogoSrc] = useState<string>(siteLogo.src);
 
   const categoryNames = catalogCategories.length
     ? catalogCategories.map((category) => category.name)
@@ -19,6 +20,26 @@ export default function SiteHeader() {
 
   useEffect(() => {
     setSearch(new URLSearchParams(window.location.search).get('q') || '');
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+
+    fetch('/api/store/logo', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const image = await response.blob();
+        if (!active) return;
+        objectUrl = URL.createObjectURL(image);
+        setLogoSrc(objectUrl);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, []);
 
   useEffect(() => {
@@ -91,7 +112,7 @@ export default function SiteHeader() {
             <span>جميع الأقسام</span>
           </button>
 
-          <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><Image src={siteLogo} alt="أرض الجوال" width={500} height={500} priority style={{ width: 120, height: 64, objectFit: 'cover', objectPosition: 'center', filter: 'url(#remove-logo-black)' }} /></Link>
+          <Link href="/" className="store-reference-brand" aria-label="أرض الجوال - الرئيسية"><Image src={logoSrc} alt="أرض الجوال" width={500} height={500} priority unoptimized style={{ width: 120, height: 64, objectFit: 'cover', objectPosition: 'center', filter: 'url(#remove-logo-black)' }} /></Link>
 
           <form className={"header-search" + (searchOpen ? " is-open" : "")} role="search" onSubmit={submitSearch}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 4.5 4.5" /></svg>
