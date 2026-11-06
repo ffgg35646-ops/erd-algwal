@@ -202,8 +202,8 @@ export default function StoreCheckoutPage() {
       return;
     }
     const cleanIdNumber = normalizeSaudiPhoneDigits(form.idNumber).replace(/[^0-9]/g, '');
-    if (!/^[0-9]{10}$/.test(cleanIdNumber)) {
-      setFormError('اكتب رقم الهوية أو الإقامة المكوّن من 10 أرقام.');
+    if (!/^[12][0-9]{9}$/.test(cleanIdNumber)) {
+      setFormError('من فضلك عدّل رقم الهوية فقط.');
       return;
     }
     if (policyLoading) {
