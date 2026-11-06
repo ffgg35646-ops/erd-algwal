@@ -339,6 +339,14 @@ export default function CheckoutPaymentPage() {
       ? draft.total
       : null
   );
+  const selectedDownPayment = Number(draft?.installmentDownPayment);
+  const displayPaymentAmount = displayTotal === null
+    ? null
+    : draft?.installment === 'yes'
+      ? Number.isFinite(selectedDownPayment) && selectedDownPayment > 0 && selectedDownPayment < displayTotal
+        ? selectedDownPayment
+        : null
+      : displayTotal;
 
   if (!draft || !draft.fullName || !draft.acceptedPolicies || (!lines.length && !paymentSubmitted)) {
     return (
@@ -405,7 +413,7 @@ export default function CheckoutPaymentPage() {
           </div>
 
           <div className={styles.paymentAmount}>
-            المبلغ المستحق : <strong>{displayTotal === null ? '—' : displayTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س</strong>
+            المبلغ المستحق : <strong>{displayPaymentAmount === null ? '—' : displayPaymentAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ر.س</strong>
           </div>
 
           <div className={styles.paymentFields}>
