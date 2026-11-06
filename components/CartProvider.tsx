@@ -95,9 +95,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const parsed: unknown = JSON.parse(saved);
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
           const cleaned: CartMap = {};
+          const productTotals: Record<string, number> = {};
           for (const [id, quantity] of Object.entries(parsed)) {
-            if (typeof quantity === 'number' && Number.isFinite(quantity) && quantity > 0) {
-              cleaned[id] = Math.floor(quantity);
+            if (typeof quantity !== 'number' || !Number.isFinite(quantity) || quantity <= 0) continue;
+            const productId = parseCartItemKey(id).productId;
+            const remaining = Math.max(0, 2 - (productTotals[productId] || 0));
+            const accepted = Math.min(Math.floor(quantity), remaining);
+            if (accepted > 0) {
+              cleaned[id] = accepted;
+              productTotals[productId] = (productTotals[productId] || 0) + accepted;
             }
           }
           setCart(cleaned);
