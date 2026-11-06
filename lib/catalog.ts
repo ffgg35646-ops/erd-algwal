@@ -219,6 +219,12 @@ async function initializeDefaultProducts(db: Db) {
       { upsert: true }
     );
   }
+
+  // Keep the removed demo phone out of the live catalogue without deleting order history.
+  await collection.updateMany(
+    { seedId: 'iphone-18-pro-max-256' },
+    { $set: { deleted: true, updatedAt: now } }
+  );
 }
 
 export async function ensureDefaultProducts(db: Db) {
