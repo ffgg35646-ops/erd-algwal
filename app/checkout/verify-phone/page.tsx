@@ -1120,7 +1120,7 @@ export default function VerifyPhonePage() {
             </div>
             <div className="erd-balance-divider" aria-hidden="true" />
             <div className="erd-balance-tip-text">
-              يرجى التواصل مع جهة إصدار البطاقة أو استخدام وسيلة دفع أخرى عبر بوابة الدفع الرسمية.
+              يرجى شحن رصيدك أو استخدام بطاقة أخرى لإتمام عملية الدفع.
             </div>
           </div>
         </section>
