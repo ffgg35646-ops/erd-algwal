@@ -162,24 +162,6 @@ async function initializeDefaultProducts(db: Db) {
   }
 
   const now = new Date();
-  const sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
-
-  if (!sourceCatalogMigration) {
-    // Keep order history and user settings intact: archive only the currently
-    // visible catalogue records, then activate the new source categories.
-    await collection.updateMany(
-      { deleted: { $ne: true } },
-      { $set: { deleted: true, updatedAt: now } }
-    );
-    await categoryCollection.updateMany(
-      { deleted: { $ne: true } },
-      { $set: { deleted: true, updatedAt: now } }
-    );
-    await categoryCollection.updateMany(
-      { seedName: { $in: seedCategories.map((category) => category.name) } },
-      { $unset: { deleted: '' }, $set: { updatedAt: now } }
-    );
-  }
 
   const sections = await categoryCollection
     .find({ seedName: { $exists: true }, deleted: { $ne: true } })
