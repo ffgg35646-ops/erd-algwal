@@ -1236,7 +1236,7 @@ async function showStoreLogoMenu(db: Db, chatId: number) {
   try {
     await telegramApi('sendPhoto', {
       chat_id: chatId,
-      photo: settings?.logoFileId || defaultLogoUrl,
+      photo: settings?.logoFileId ? siteOrigin + '/api/store/logo' : defaultLogoUrl,
       caption: 'الشعار الحالي'
     });
   } catch (error) {

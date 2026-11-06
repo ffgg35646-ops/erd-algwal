@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
-import { listCatalogProducts, listCategories } from '@/lib/catalog';
+import { ensureDefaultProducts, listCatalogProducts, listCategories } from '@/lib/catalog';
 import { categories as fallbackCategories, defaultStoreProducts } from '@/lib/products';
 
 export const runtime = 'nodejs';
@@ -23,6 +23,9 @@ export async function GET() {
 
   try {
     const db = await getDb();
+    // Run the one-time catalogue replacement before reading categories so the
+    // first storefront response never mixes archived and replacement sections.
+    await ensureDefaultProducts(db);
     let categoryItems = fallbackCategoryItems;
     let categorySource: 'database' | 'database-direct' | 'fallback' = 'fallback';
 

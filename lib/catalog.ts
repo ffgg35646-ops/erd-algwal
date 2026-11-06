@@ -1,5 +1,5 @@
 import { ObjectId, type Db, type Document, type Filter } from 'mongodb';
-import { categories as seedCategories, defaultStoreProducts, products as seedProducts, type Product, type ProductColorMask } from '@/lib/products';
+import { categories as seedCategories, defaultStoreProducts, type Product, type ProductColorMask } from '@/lib/products';
 
 export type StoreCategory = Document & {
   _id: ObjectId;
@@ -84,53 +84,56 @@ export async function ensureDefaultCategories(db: Db) {
 
 // Link the existing visible demo catalogue to the same MongoDB records the bot edits.
 // Upsert only missing seed identities: never overwrite an existing admin edit.
-const DEFAULT_PRODUCTS_MIGRATION_ID = 'default-products-10-v1';
+const SOURCE_CATALOG_MIGRATION_ID = 'source-catalog-replacement-qauara-v1';
 
 async function initializeDefaultProducts(db: Db) {
   await ensureDefaultCategories(db);
 
   const collection = db.collection<StoredProduct>('products');
   const categoryCollection = db.collection<StoreCategory>('categories');
-  const settings = db.collection<{ _id: string; completedAt?: Date; productIds?: string[] }>('store_settings');
+  const settings = db.collection<{ _id: string; startedAt?: Date; archivedAt?: Date; completedAt?: Date; productIds?: string[]; categories?: string[] }>('store_settings');
   await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
 
-  const migration = await settings.findOne({ _id: DEFAULT_PRODUCTS_MIGRATION_ID });
-  if (!migration) {
-    // Ensure the category needed by the initial ten products is active once.
-    const defaultCategoryNames = [...new Set(defaultStoreProducts.map((product) => product.category))];
-    for (const categoryName of defaultCategoryNames) {
-      const seededCategory = await categoryCollection.findOne({ seedName: categoryName });
-      if (seededCategory) {
-        if (seededCategory.deleted) {
-          await categoryCollection.updateOne(
-            { _id: seededCategory._id },
-            { $unset: { deleted: '' }, $set: { updatedAt: new Date() } }
-          );
-        }
-        continue;
-      }
+  const replacementNow = new Date();
+  let sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
 
-      const legacyCategory = await categoryCollection.findOne({ name: categoryName });
-      if (legacyCategory) {
-        await categoryCollection.updateOne(
-          { _id: legacyCategory._id },
-          { $set: { seedName: categoryName, updatedAt: new Date() }, $unset: { deleted: '' } }
-        );
-      } else {
-        await categoryCollection.updateOne(
-          { seedName: categoryName },
-          { $setOnInsert: { name: categoryName, seedName: categoryName, description: 'أجهزة آيفون', createdAt: new Date(), updatedAt: new Date() } },
-          { upsert: true }
-        );
-      }
-    }
+  if (!sourceCatalogMigration) {
+    await settings.updateOne(
+      { _id: SOURCE_CATALOG_MIGRATION_ID },
+      { $setOnInsert: { startedAt: replacementNow } },
+      { upsert: true }
+    );
+    sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
   }
+
+  if (!sourceCatalogMigration?.archivedAt) {
+    // Archive only the live catalogue once. Keep the documents themselves so
+    // historical orders and references are not broken.
+    await collection.updateMany(
+      { deleted: { $ne: true } },
+      { $set: { deleted: true, updatedAt: replacementNow } }
+    );
+    await categoryCollection.updateMany(
+      { deleted: { $ne: true } },
+      { $set: { deleted: true, updatedAt: replacementNow } }
+    );
+    await categoryCollection.updateMany(
+      { seedName: { $in: seedCategories.map((category) => category.name) } },
+      { $unset: { deleted: '' }, $set: { updatedAt: replacementNow } }
+    );
+    await settings.updateOne(
+      { _id: SOURCE_CATALOG_MIGRATION_ID },
+      { $set: { archivedAt: new Date() } }
+    );
+    sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
+  }
+
+  const now = new Date();
 
   const sections = await categoryCollection
     .find({ seedName: { $exists: true }, deleted: { $ne: true } })
     .toArray();
   const bySeedName = new Map(sections.map((section) => [String(section.seedName), section]));
-  const now = new Date();
   const operations = defaultStoreProducts.flatMap((product) => {
     const section = bySeedName.get(product.category);
     if (!section) return [];
@@ -164,6 +167,21 @@ async function initializeDefaultProducts(db: Db) {
   });
   if (operations.length) await collection.bulkWrite(operations, { ordered: false });
 
+  // Mark the one-time replacement complete after all product records exist.
+  // Subsequent reads preserve admin edits and deletions.
+  if (!sourceCatalogMigration?.completedAt) {
+    await settings.updateOne(
+      { _id: SOURCE_CATALOG_MIGRATION_ID },
+      {
+        $set: {
+          completedAt: new Date(),
+          productIds: defaultStoreProducts.map((product) => product.id),
+          categories: seedCategories.map((category) => category.name)
+        }
+      }
+    );
+  }
+
   // One-time migration: populate missing/empty color options on already-seeded
   // products. Preserve any colors explicitly managed by the Telegram admin bot.
   const colorsMigration = await settings.findOne({ _id: 'default-product-colors-v1' });
@@ -189,33 +207,6 @@ async function initializeDefaultProducts(db: Db) {
     await settings.updateOne(
       { _id: 'default-product-colors-v1' },
       { $setOnInsert: { completedAt: now, productIds: defaultStoreProducts.map((product) => product.id) } },
-      { upsert: true }
-    );
-  }
-
-  if (!migration) {
-    const defaultIds = defaultStoreProducts.map((product) => product.id);
-    const legacySeedIds = seedProducts
-      .filter((product) => !defaultIds.includes(product.id))
-      .map((product) => product.id);
-
-    // Hide the six older demo entries so the initial catalogue contains ten.
-    if (legacySeedIds.length) {
-      await collection.updateMany(
-        { seedId: { $in: legacySeedIds } },
-        { $set: { deleted: true, updatedAt: now } }
-      );
-    }
-
-    // Restore the ten initial products once during this migration. Later
-    // Telegram deletions stay deleted after the migration marker is saved.
-    await collection.updateMany(
-      { seedId: { $in: defaultIds }, deleted: true },
-      { $unset: { deleted: '' }, $set: { updatedAt: now } }
-    );
-    await settings.updateOne(
-      { _id: DEFAULT_PRODUCTS_MIGRATION_ID },
-      { $setOnInsert: { completedAt: now, productIds: defaultIds } },
       { upsert: true }
     );
   }
