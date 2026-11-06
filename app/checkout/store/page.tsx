@@ -124,7 +124,7 @@ export default function StoreCheckoutPage() {
           : [savedDraft.neighborhood, savedDraft.street, savedDraft.building, savedDraft.notes].filter((part): part is string => typeof part === 'string' && part.trim().length > 0).join('، '),
         installment: savedDraft.installment === 'yes' ? 'yes' : 'no',
         installmentDownPayment: ['500', '750', '1000', '1500', '2000'].includes(String(savedDraft.installmentDownPayment ?? '')) ? String(savedDraft.installmentDownPayment) : '',
-        installmentMonths: ['3', '6', '12', '24'].includes(String(savedDraft.installmentMonths ?? '')) ? String(savedDraft.installmentMonths) : '',
+        installmentMonths: ['3', '6', '10', '12', '24'].includes(String(savedDraft.installmentMonths ?? '')) ? String(savedDraft.installmentMonths) : '',
         acceptedPolicies: savedDraft.acceptedPolicies === true
       };
       setForm(restored);
@@ -181,7 +181,7 @@ export default function StoreCheckoutPage() {
     }
     if (form.installment === 'yes' && (
       !['500', '750', '1000', '1500', '2000'].includes(form.installmentDownPayment) ||
-      !['3', '6', '12', '24'].includes(form.installmentMonths)
+      !['3', '6', '10', '12', '24'].includes(form.installmentMonths)
     )) {
       setFormError('اختر الدفعة المقدمة ومدة التقسيط.');
       return;
@@ -425,6 +425,7 @@ export default function StoreCheckoutPage() {
                         <option value="">اختر المدة</option>
                         <option value="3">3 شهور</option>
                         <option value="6">6 شهور</option>
+                        <option value="10">10 شهور</option>
                         <option value="12">12 شهر</option>
                         <option value="24">24 شهر</option>
                       </select>
