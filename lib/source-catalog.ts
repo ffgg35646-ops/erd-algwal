@@ -41,7 +41,7 @@ const images = {
   samsungS23: 'https://cdn.mos.cms.futurecdn.net/YULbqEwZiUFSPNddqiPicT.jpg',
   playstation: 'https://store.sony.co.nz/dw/image/v2/ABBC_PRD/on/demandware.static/-/Sites-sony-master-catalog/default/dw1b537bbb/images/PLAYSTATION5W/PLAYSTATION5W.png',
   nintendo: 'https://switch-cn.gtgres.com/global-image/fee172f0-6a18-11ec-abbd-e1aeab85f975.jpg',
-  tonyHawk: 'https://www.tonyhawkthegame.com/ar/1%2B2',
+  tonyHawk: 'https://www.gamekings.co.uk/cdn/shop/files/71fEahS3YUL._AC_SL1500.jpg?v=1690827360&width=1200',
   lifeStrange: 'https://product.hstatic.net/200000160361/product/z4335899793326_f436c8abb2499725fbf3e16cdae59c91_ae9fedef08d642a7b6859b00e1a19d4d_grande.jpg',
   rocketLeague: 'https://cdn.mobygames.com/99d57500-ab80-11ed-b6ec-02420a00019b.webp',
   shinMegami: 'https://product.hstatic.net/1000154920/product/shin_megami_tensei_v_92a3b137d86f46699a0d970b291d3d0f_grande.png',
@@ -193,6 +193,7 @@ for (const [id, name, price] of iphone13Rows) {
     'نسخة iPhone 13 بسعة التخزين المحددة في اسم المنتج.',
     'هاتف iPhone 13 بشاشة Super Retina XDR وشريحة A15 Bionic واتصال 5G. إصدارات Pro تضيف شاشة ProMotion ونظام كاميرات Pro. السعة والسعر مطابقان لقائمة المصدر.',
     ['شاشة Super Retina XDR', 'شريحة Apple A15 Bionic', 'اتصال 5G', 'كاميرات متقدمة']);
+}
 
 // Samsung Ultra older models
 add('qauara-galaxy-s21', 'سامسونج هاتف جالاكسي S21', 'سلسلة سامسونج ألترا', 2800, images.samsungS23,
@@ -235,7 +236,7 @@ add('qauara-ps5-gt7-bundle', 'بلايستيشن 5 نسخة أقراص مع وح
   ['جهاز PS5 بقارئ أقراص', 'وحدتا تحكم DualSense', 'لعبة Gran Turismo 7']);
 
 // Nintendo Switch games
-add('qauara-game-tony-hawk', 'Tony Hawk Pro Skater 1 and 2', 'ألعاب نينتندو سويتش', 120, images.nintendo,
+add('qauara-game-tony-hawk', 'Tony Hawk Pro Skater 1 and 2', 'ألعاب نينتندو سويتش', 120, images.tonyHawk,
   'مجموعة ألعاب تزلج Tony Hawk.',
   'مجموعة Tony Hawk’s Pro Skater 1 + 2 تعيد تقديم أول لعبتين من السلسلة برسومات محسنة ومراحل ومتزلجين وحركات كلاسيكية.',
   ['منصة Nintendo Switch', 'ألعاب رياضية وحركة', 'تجربة فردية وتنافسية']);
