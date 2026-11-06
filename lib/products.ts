@@ -110,36 +110,6 @@ export const products: Product[] = [
     description: 'منتج إكسسوارات تجريبي. يتم استبدال الصورة والوصف والسعر بالبيانات الفعلية عبر بوت الإدارة مستقبلًا.',
     specifications: ['تصميم عملي', 'خفيف الوزن', 'يرجى التحقق من توافق الموديل']
   },
-  {
-      "id": "iphone-18-pro-max-256",
-      "name": "iPhone 18 Pro Max — 256GB",
-      "category": "آيفون",
-      "price": 6149,
-      "badge": "الأحدث",
-      "image": "https://www.apple.com/newsroom/images/2026/09/apple-debuts-iphone-18-pro-and-iphone-18-pro-max/article/Apple-iPhone-18-Pro-2up-260909_inline.jpg.large.jpg",
-      "shortDescription": "أكبر شاشة Pro وأقوى تجربة تصوير وأداء مع شريحة A20 Pro.",
-      "description": "هاتف Apple iPhone 18 Pro Max بسعة 256GB، يجمع بين شاشة Super Retina XDR OLED مقاس 6.9 بوصة وشريحة A20 Pro ونظام كاميرات Pro Fusion بدقة 48 ميجابكسل. مناسب للتصوير الاحترافي والألعاب والعمل ومشاهدة المحتوى، مع تصميم من الألومنيوم وواجهة وخلفية Ceramic Shield 2.",
-      "specifications": [
-        "الشاشة: Super Retina XDR OLED مقاس 6.9 بوصة مع ProMotion حتى 120Hz",
-        "المعالج: Apple A20 Pro",
-        "الكاميرات الخلفية: نظام Pro Fusion بثلاث كاميرات 48MP مع فتحة عدسة رئيسية متغيرة",
-        "الكاميرا الأمامية: 18MP Center Stage",
-        "السعة المحددة: 256GB",
-        "الألوان المتاحة: أسود، فضي، جليدي، خمري",
-        "مقاومة الماء والغبار: IP68",
-        "الاتصال: 5G وWi‑Fi 7 وBluetooth 6",
-        "الضمان حسب سياسة المتجر"
-      ],
-      "colors": [
-        "أسود",
-        "فضي",
-        "جليدي",
-        "خمري"
-      ],
-      "storageOptions": [
-        "256GB"
-      ]
-    },
     {
       "id": "iphone-18-pro-256",
       "name": "iPhone 18 Pro — 256GB",
@@ -411,7 +381,7 @@ export const products: Product[] = [
     }
 ];
 
-export const defaultStoreProducts: Product[] = products.slice(-10);
+export const defaultStoreProducts: Product[] = products.slice(-9);
 
 export function formatPrice(value: number) {
   const amount = new Intl.NumberFormat('en-US', {
