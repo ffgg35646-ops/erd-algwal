@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       unreadCount,
       notifications: items.map((item) => ({
         id: item._id.toHexString(),
+        orderId: item.orderId,
         orderNumber: item.orderNumber,
         status: item.status,
         statusLabel: item.statusLabel,
