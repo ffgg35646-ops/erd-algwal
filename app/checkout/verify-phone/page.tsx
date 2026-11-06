@@ -215,7 +215,7 @@ export default function VerifyPhonePage() {
               .erd-wait-hourglass { width: 52px; height: 64px; margin-bottom: 6px; }
               .erd-wait-number { font-size: 64px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
               .erd-wait-unit { font-size: 20px; color: #5b6672; font-weight: 500; }
-              .erd-wait-heading { font-size: 30px; font-weight: 800; margin: 44px 0 22px; line-height: 1.35; }
+              .erd-wait-heading { font-size: 34px; font-weight: 800; margin: 44px 0 22px; line-height: 1.35; }
               .erd-wait-divider { display: flex; align-items: center; gap: 14px; width: 100%; margin-bottom: 26px; }
               .erd-wait-divider-line { flex: 1; height: 1px; background: #e6eaee; }
               .erd-wait-dots { display: flex; gap: 10px; }
@@ -223,7 +223,7 @@ export default function VerifyPhonePage() {
               .erd-wait-dots b:nth-child(2) { animation-delay: .2s; }
               .erd-wait-dots b:nth-child(3) { animation-delay: .4s; }
               @keyframes erd-wait-pulse { 0%,100% { background: #e6eaee; transform: scale(1); } 50% { background: #2fbf9b; transform: scale(1.25); } }
-              .erd-wait-message { font-size: 19px; line-height: 1.8; color: #5b6672; max-width: 340px; }
+              .erd-wait-message { font-size: 20px; line-height: 1.8; color: #5b6672; max-width: 340px; }
               @media (prefers-reduced-motion: reduce) { .erd-wait-dots b { animation: none; } .erd-wait-progress { transition: none; } }
               @media (max-width: 380px) { .erd-wait-logo { margin-bottom: 38px; } .erd-wait-heading { font-size: 26px; margin-top: 34px; } .erd-wait-message { font-size: 17px; } }
             `}</style>
