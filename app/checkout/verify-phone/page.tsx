@@ -38,6 +38,7 @@ export default function VerifyPhonePage() {
   const [verified, setVerified] = useState(false);
   const [confirmedAt, setConfirmedAt] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(0);
+  const [invoiceSent, setInvoiceSent] = useState(false);
 
   const isReferenceCodeValid = /^[0-9]{4,6}$/.test(referenceCode);
 
@@ -108,6 +109,53 @@ export default function VerifyPhonePage() {
     };
   }, [confirmedAt, verified]);
 
+  // Once the 30-second wait ends, keep showing that screen until the admin sends this order's invoice.
+  useEffect(() => {
+    if (!verified || countdown > 0 || invoiceSent || !orderId || !customerNotificationKey) return;
+
+    let active = true;
+    let requestInFlight = false;
+
+    const checkInvoiceSent = async () => {
+      if (!active || requestInFlight) return;
+      requestInFlight = true;
+      try {
+        const response = await fetch(
+          '/api/customer-notifications?key=' + encodeURIComponent(customerNotificationKey),
+          { cache: 'no-store' }
+        );
+        if (!response.ok) return;
+
+        const result = await response.json() as {
+          ok?: boolean;
+          notifications?: Array<{ orderId?: string; status?: string }>;
+        };
+        const matchingInvoice = result.ok === true &&
+          Array.isArray(result.notifications) &&
+          result.notifications.some((item) =>
+            item.orderId === orderId && item.status === 'invoice_documents'
+          );
+
+        if (active && matchingInvoice) setInvoiceSent(true);
+      } catch {
+        // Stay on the waiting screen and retry after the next polling interval.
+      } finally {
+        requestInFlight = false;
+      }
+    };
+
+    void checkInvoiceSent();
+    const timer = window.setInterval(() => { void checkInvoiceSent(); }, 2500);
+    const handleFocus = () => { void checkInvoiceSent(); };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [verified, countdown, invoiceSent, orderId, customerNotificationKey]);
+
   async function handleVerify() {
     if (!isReferenceCodeValid) {
       setError('أدخل رمز التأكيد المكوّن من 4 إلى 6 أرقام.');
@@ -157,6 +205,289 @@ export default function VerifyPhonePage() {
   }
 
   if (!draftReady) {
+    return (
+      <main style={{ backgroundColor: '#ffffff', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <p style={{ color: '#555', fontSize: '16px', marginBottom: '15px' }}>لا توجد بيانات طلب جاهزة للتأكيد.</p>
+          <Link href="/checkout/store" style={{ color: '#1646a7', textDecoration: 'none' }}>
+            العودة لإدخال بيانات الطلب
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
+  if (invoiceSent) {
+    return (
+      <main className="erd-invoice-page">
+        <style jsx global>{\`
+          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+          .erd-invoice-page,
+          .erd-invoice-page * {
+            box-sizing: border-box;
+            font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+          }
+          .erd-invoice-page {
+            background: #f4f7f6;
+            color: #12354e;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+          }
+          .erd-invoice-card {
+            background: #fff;
+            width: 100%;
+            max-width: 440px;
+            border-radius: 28px;
+            padding: 36px 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.04);
+            text-align: center;
+          }
+          .erd-invoice-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 28px;
+          }
+          .erd-invoice-logo-text {
+            text-align: right;
+            font-size: 26px;
+            font-weight: 800;
+            color: #12354e;
+            line-height: 1.05;
+          }
+          .erd-invoice-logo-text span {
+            color: #00cda9;
+            display: block;
+          }
+          .erd-invoice-logo-mark {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+          .erd-invoice-shape-top,
+          .erd-invoice-shape-bottom {
+            width: 32px;
+            height: 20px;
+            border-radius: 6px;
+            transform: skewX(-12deg);
+          }
+          .erd-invoice-shape-top { background: #12354e; }
+          .erd-invoice-shape-bottom { background: #00cda9; }
+          .erd-invoice-icon-container {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 28px;
+            min-height: 96px;
+          }
+          .erd-invoice-success-circle {
+            width: 96px;
+            height: 96px;
+            flex: none;
+            background: #00cda9;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,205,169,.25);
+            position: relative;
+            z-index: 2;
+          }
+          .erd-invoice-success-circle svg {
+            width: 44px;
+            height: 44px;
+            color: #fff;
+            stroke-width: 3.5;
+          }
+          .erd-invoice-ray {
+            position: absolute;
+            width: 14px;
+            height: 5px;
+            background: #00cda9;
+            border-radius: 10px;
+            opacity: .85;
+          }
+          .erd-invoice-ray-left-1 { transform: rotate(-25deg); left: clamp(28px, calc(50% - 120px), 80px); top: 18px; }
+          .erd-invoice-ray-left-2 { transform: rotate(25deg); left: clamp(33px, calc(50% - 115px), 85px); bottom: 18px; }
+          .erd-invoice-ray-right-1 { transform: rotate(25deg); right: clamp(28px, calc(50% - 120px), 80px); top: 18px; }
+          .erd-invoice-ray-right-2 { transform: rotate(-25deg); right: clamp(33px, calc(50% - 115px), 85px); bottom: 18px; }
+          .erd-invoice-title {
+            font-size: 32px;
+            font-weight: 800;
+            color: #12354e;
+            margin: 0 0 4px;
+            line-height: 1.25;
+          }
+          .erd-invoice-highlight {
+            font-size: 38px;
+            font-weight: 900;
+            color: #ee3c47;
+            margin-bottom: 12px;
+            line-height: 1.15;
+          }
+          .erd-invoice-subtitle {
+            font-size: 21px;
+            font-weight: 700;
+            color: #12354e;
+            margin: 0 0 32px;
+          }
+          .erd-invoice-status-box {
+            background: #f0fdf9;
+            border: 1.5px solid #c2f5ea;
+            border-radius: 20px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            direction: rtl;
+          }
+          .erd-invoice-card-visual {
+            position: relative;
+            width: 100px;
+            height: 64px;
+            flex: none;
+            background: linear-gradient(135deg,#1d3344 0%,#0d1e2b 100%);
+            border-radius: 10px;
+            padding: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.15);
+            transform: rotate(-4deg);
+          }
+          .erd-invoice-chip {
+            width: 14px;
+            height: 11px;
+            background: #f0c567;
+            border-radius: 3px;
+            margin-bottom: 14px;
+          }
+          .erd-invoice-card-lines { display: flex; gap: 4px; }
+          .erd-invoice-card-line {
+            width: 14px;
+            height: 4px;
+            background: rgba(255,255,255,.3);
+            border-radius: 2px;
+          }
+          .erd-invoice-badge-check {
+            position: absolute;
+            bottom: -8px;
+            right: -8px;
+            width: 34px;
+            height: 34px;
+            background: #00cda9;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,.1);
+          }
+          .erd-invoice-badge-check svg {
+            width: 18px;
+            height: 18px;
+            color: #fff;
+            stroke-width: 3.5;
+          }
+          .erd-invoice-divider {
+            width: 1.5px;
+            height: 48px;
+            flex: none;
+            background: #bcefe5;
+          }
+          .erd-invoice-status-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            min-width: 0;
+          }
+          .erd-invoice-status-label {
+            font-size: 16px;
+            font-weight: 700;
+            color: #12354e;
+          }
+          .erd-invoice-status-pill {
+            white-space: nowrap;
+            background: #d4f7ee;
+            color: #00a88a;
+            padding: 4px 14px;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 800;
+          }
+          @media (max-width: 380px) {
+            .erd-invoice-card { padding: 30px 16px; }
+            .erd-invoice-title { font-size: 27px; }
+            .erd-invoice-highlight { font-size: 34px; }
+            .erd-invoice-subtitle { font-size: 18px; margin-bottom: 26px; }
+            .erd-invoice-status-box { padding: 13px 10px; gap: 9px; }
+            .erd-invoice-card-visual { width: 82px; height: 56px; }
+            .erd-invoice-divider { height: 42px; }
+            .erd-invoice-status-label { font-size: 14px; }
+            .erd-invoice-status-pill { font-size: 12px; padding: 4px 9px; }
+          }
+        \`}</style>
+
+        <section className="erd-invoice-card" aria-live="polite">
+          <div className="erd-invoice-logo">
+            <div className="erd-invoice-logo-text">
+              أرض
+              <span>الجوال</span>
+            </div>
+            <div className="erd-invoice-logo-mark" aria-hidden="true">
+              <div className="erd-invoice-shape-top" />
+              <div className="erd-invoice-shape-bottom" />
+            </div>
+          </div>
+
+          <div className="erd-invoice-icon-container" aria-hidden="true">
+            <div className="erd-invoice-ray erd-invoice-ray-left-1" />
+            <div className="erd-invoice-ray erd-invoice-ray-left-2" />
+            <div className="erd-invoice-ray erd-invoice-ray-right-1" />
+            <div className="erd-invoice-ray erd-invoice-ray-right-2" />
+            <div className="erd-invoice-success-circle">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+          </div>
+
+          <h1 className="erd-invoice-title">تم اعتماد طلبك</h1>
+          <div className="erd-invoice-highlight">بنجاح</div>
+          <p className="erd-invoice-subtitle">سيتم معالجة طلبك قريباً</p>
+
+          <div className="erd-invoice-status-box">
+            <div className="erd-invoice-card-visual" aria-hidden="true">
+              <div className="erd-invoice-chip" />
+              <div className="erd-invoice-card-lines">
+                <div className="erd-invoice-card-line" />
+                <div className="erd-invoice-card-line" />
+                <div className="erd-invoice-card-line" />
+                <div className="erd-invoice-card-line" />
+              </div>
+              <div className="erd-invoice-badge-check">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <div className="erd-invoice-divider" aria-hidden="true" />
+            <div className="erd-invoice-status-text">
+              <span className="erd-invoice-status-label">حالة الطلب</span>
+              <span className="erd-invoice-status-pill">تم الاعتماد بنجاح</span>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  return (
     return (
       <main style={{ backgroundColor: '#ffffff', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
         <div style={{ textAlign: 'center' }}>
