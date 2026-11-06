@@ -63,6 +63,7 @@ const FALLBACK_CATEGORIES: StoreCategory[] = seedCategories.map((category) => ({
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartMap>({});
   const [hydrated, setHydrated] = useState(false);
+  const [cartNotice, setCartNotice] = useState('');
   const [catalogProducts, setCatalogProducts] = useState<Product[]>(defaultStoreProducts);
   const [catalogCategories, setCatalogCategories] = useState<StoreCategory[]>(FALLBACK_CATEGORIES);
 
@@ -134,26 +135,47 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [cart, hydrated]);
 
-  const addToCart = useCallback((productId: string, quantity = 1, color?: string, storage?: string) => {
-    const safeQuantity = Math.max(1, Math.floor(quantity));
-    const itemKey = makeCartItemKey(productId, color, storage);
-    setCart((current) => ({
-      ...current,
-      [itemKey]: (current[itemKey] || 0) + safeQuantity
-    }));
+  const showCartLimitNotice = useCallback(() => {
+    setCartNotice('الحد المسموح فقط منتجين من هذا المنتج');
   }, []);
 
-  const setQuantity = useCallback((productId: string, quantity: number) => {
+  useEffect(() => {
+    if (!cartNotice) return;
+    const timer = window.setTimeout(() => setCartNotice(''), 2600);
+    return () => window.clearTimeout(timer);
+  }, [cartNotice]);
+
+  const addToCart = useCallback((productId: string, quantity = 1, color?: string, storage?: string) => {
+    const requestedQuantity = Math.max(1, Math.floor(quantity));
+    const itemKey = makeCartItemKey(productId, color, storage);
+    setCart((current) => {
+      const productQuantity = Object.entries(current).reduce((total, [key, count]) =>
+        total + (parseCartItemKey(key).productId === productId ? count : 0), 0);
+      const remaining = Math.max(0, 2 - productQuantity);
+      const acceptedQuantity = Math.min(requestedQuantity, remaining);
+      if (acceptedQuantity < requestedQuantity) showCartLimitNotice();
+      if (acceptedQuantity === 0) return current;
+      return { ...current, [itemKey]: (current[itemKey] || 0) + acceptedQuantity };
+    });
+  }, [showCartLimitNotice]);
+
+  const setQuantity = useCallback((cartItemKey: string, quantity: number) => {
     setCart((current) => {
       const next = { ...current };
       if (quantity <= 0) {
-        delete next[productId];
-      } else {
-        next[productId] = Math.floor(quantity);
+        delete next[cartItemKey];
+        return next;
       }
+      const productId = parseCartItemKey(cartItemKey).productId;
+      const otherQuantity = Object.entries(current).reduce((total, [key, count]) =>
+        total + (key !== cartItemKey && parseCartItemKey(key).productId === productId ? count : 0), 0);
+      const allowedQuantity = Math.min(Math.floor(quantity), Math.max(0, 2 - otherQuantity));
+      if (allowedQuantity < quantity) showCartLimitNotice();
+      if (allowedQuantity === 0) delete next[cartItemKey];
+      else next[cartItemKey] = allowedQuantity;
       return next;
     });
-  }, []);
+  }, [showCartLimitNotice]);
 
   const removeFromCart = useCallback((productId: string) => {
     setCart((current) => {
@@ -185,7 +207,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     [cart, itemCount, hydrated, catalogProducts, catalogCategories, addToCart, setQuantity, removeFromCart, clearCart, refreshCatalog]
   );
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return (
+    <CartContext.Provider value={value}>
+      {children}
+      {cartNotice ? (
+        <div role="alert" aria-live="polite" style={{ position: 'fixed', zIndex: 10000, bottom: '24px', left: '50%', transform: 'translateX(-50%)', maxWidth: 'calc(100vw - 32px)', padding: '12px 18px', borderRadius: '12px', background: '#252525', color: '#fff', fontSize: '14px', fontWeight: 600, textAlign: 'center', boxShadow: '0 8px 28px rgba(0,0,0,.2)' }}>
+          {cartNotice}
+        </div>
+      ) : null}
+    </CartContext.Provider>
+  );
 }
 
 export function useCart() {
