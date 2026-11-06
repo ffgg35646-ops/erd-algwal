@@ -1,3 +1,5 @@
+import { sourceCatalogCategories, sourceCatalogProducts } from '@/lib/source-catalog';
+
 export type ProductColorMask = {
   version: 1;
   sourceColor: string;
@@ -34,8 +36,6 @@ export type Product = {
   images?: string[];
   colorMask?: ProductColorMask;
 };
-
-import { sourceCatalogCategories, sourceCatalogProducts } from '@/lib/source-catalog';
 
 export const categories = sourceCatalogCategories;
 export const products: Product[] = sourceCatalogProducts;
