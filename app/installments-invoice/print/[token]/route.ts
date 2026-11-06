@@ -118,7 +118,13 @@ export async function GET(
     const remainingCents = Math.max(0, totalCents - downPaymentCents);
     const remaining = remainingCents / 100;
     const months = Math.min(24, Math.max(1, Math.floor(Number(order.installmentMonths) || 1)));
-    const baseInstallmentCents = Math.floor(remainingCents / months);
+    const fixedPaymentPlan = order.installmentModel === 'fixed-payment';
+    const baseInstallmentCents = fixedPaymentPlan
+      ? downPaymentCents
+      : Math.floor(remainingCents / months);
+    const installmentCount = fixedPaymentPlan && baseInstallmentCents > 0
+      ? Math.ceil(remainingCents / baseInstallmentCents)
+      : months;
     const customer = order.customer || { name: '', phone: '', address: '' };
     const createdAt = new Date(order.createdAt);
     const orderDate = Number.isNaN(createdAt.getTime()) ? new Date() : createdAt;
@@ -147,10 +153,12 @@ export async function GET(
       '</tr>';
     }).join('');
 
-    const installments = Array.from({ length: months }, (_, index) => {
-      const amountCents = index === months - 1
-        ? remainingCents - (baseInstallmentCents * (months - 1))
-        : baseInstallmentCents;
+    const installments = Array.from({ length: installmentCount }, (_, index) => {
+      const amountCents = fixedPaymentPlan
+        ? Math.min(baseInstallmentCents, remainingCents - (baseInstallmentCents * index))
+        : index === months - 1
+          ? remainingCents - (baseInstallmentCents * (months - 1))
+          : baseInstallmentCents;
       return {
         number: index + 1,
         amount: amountCents / 100,
