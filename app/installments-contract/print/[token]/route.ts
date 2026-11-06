@@ -89,7 +89,13 @@ export async function GET(
     const downPayment = Math.min(total, Math.max(0, Number(order.installmentDownPayment) || 0));
     const remaining = Math.max(0, total - downPayment);
     const months = Math.max(1, Math.floor(Number(order.installmentMonths) || 1));
-    const monthlyPayment = remaining / months;
+    const fixedPaymentPlan = order.installmentModel === 'fixed-payment';
+    const monthlyPayment = fixedPaymentPlan ? downPayment : remaining / months;
+    const remainingCents = Math.round(remaining * 100);
+    const monthlyPaymentCents = Math.round(monthlyPayment * 100);
+    const finalInstallment = fixedPaymentPlan && monthlyPaymentCents > 0
+      ? Math.max(0, remainingCents - (monthlyPaymentCents * (Math.ceil(remainingCents / monthlyPaymentCents) - 1))) / 100
+      : monthlyPayment;
     const customer = order.customer || { name: '', phone: '', address: '' };
     const products = (order.items || []).map((item) =>
       `${item.name || 'منتج'} × ${Math.max(1, Number(item.quantity) || 1)}`
@@ -167,7 +173,7 @@ export async function GET(
 
   <p>على أن يدفع المبلغ على أقساط شهرية متتالية ومستمرة بدون انقطاع بما فيها شهر رمضان والأعياد.</p>
 
-  <p>قيمة الدفعة الشهرية:/ <b>${money(monthlyPayment)}</b> ريال فقط اعتبارًا من تاريخ:/ <b>${escapeHtml(formatContractDate(firstInstallmentDate))}</b></p>
+  <p>قيمة الدفعة الشهرية:/ <b>${money(monthlyPayment)}</b> ريال فقط اعتبارًا من تاريخ:/ <b>${escapeHtml(formatContractDate(firstInstallmentDate))}</b>${fixedPaymentPlan ? `<br>قيمة القسط الأخير:/ <b>${money(finalInstallment)}</b> ريال فقط` : ''}</p>
 
   <p>نهاية المبلغ المذكور أعلاه، وأنني بسداد الأقساط في موعدها بدون تأخر عن أي قسط عن موعده المحدد فإني ملتزم التزامًا تامًا بسداد المبلغ المتبقي كاملًا دفعة واحدة.</p>
 
