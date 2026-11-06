@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type StoreBanner = {
   id: string;
@@ -52,7 +52,6 @@ export default function StoreBannerSlider() {
   const [trackIndex, setTrackIndex] = useState(1);
   const [trackTransitionEnabled, setTrackTransitionEnabled] = useState(true);
   const [fallbackAttempts, setFallbackAttempts] = useState<Record<string, number>>({});
-  const touchStartXRef = useRef<number | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -112,23 +111,6 @@ export default function StoreBannerSlider() {
   const active = banners[activeIndex];
   if (!active) return null;
 
-  function show(index: number) {
-    const nextIndex = (index + banners.length) % banners.length;
-    setActiveIndex(nextIndex);
-    setTrackTransitionEnabled(true);
-    if (banners.length < 2) {
-      setTrackIndex(0);
-      return;
-    }
-    if (activeIndex === banners.length - 1 && nextIndex === 0) {
-      setTrackIndex(banners.length + 1);
-    } else if (activeIndex === 0 && nextIndex === banners.length - 1) {
-      setTrackIndex(0);
-    } else {
-      setTrackIndex(nextIndex + 1);
-    }
-  }
-
   const sliderItems = banners.length > 1
     ? [
         { banner: banners[banners.length - 1], key: 'clone-prev-' + banners[banners.length - 1].id },
@@ -143,21 +125,6 @@ export default function StoreBannerSlider() {
     <section className="store-promo-slider container" aria-label="العروض والإعلانات">
       <div
         className="store-promo-frame"
-        onTouchStart={(event) => {
-          touchStartXRef.current = event.touches[0]?.clientX ?? null;
-        }}
-        onTouchEnd={(event) => {
-          const startX = touchStartXRef.current;
-          const endX = event.changedTouches[0]?.clientX;
-          touchStartXRef.current = null;
-          if (startX === null || endX === undefined || banners.length < 2) return;
-          const distance = endX - startX;
-          if (Math.abs(distance) < 45) return;
-          show(activeIndex + (distance < 0 ? 1 : -1));
-        }}
-        onTouchCancel={() => {
-          touchStartXRef.current = null;
-        }}
       >
         <div
           className="store-promo-track"
@@ -203,24 +170,6 @@ export default function StoreBannerSlider() {
             );
           })}
         </div>
-        {banners.length > 1 ? (
-          <>
-            <button type="button" className="store-promo-arrow store-promo-prev" onClick={() => show(activeIndex - 1)} aria-label="العرض السابق">‹</button>
-            <button type="button" className="store-promo-arrow store-promo-next" onClick={() => show(activeIndex + 1)} aria-label="العرض التالي">›</button>
-            <div className="store-promo-dots" aria-label="اختر العرض">
-              {banners.map((banner, index) => (
-                <button
-                  key={banner.id}
-                  type="button"
-                  className={index === activeIndex ? 'is-active' : ''}
-                  aria-label={'عرض رقم ' + (index + 1)}
-                  aria-pressed={index === activeIndex}
-                  onClick={() => show(index)}
-                />
-              ))}
-            </div>
-          </>
-        ) : null}
       </div>
     </section>
   );
