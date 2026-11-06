@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const DRAFT_KEY = 'erd-algwal-checkout-draft-v1';
@@ -27,7 +26,6 @@ function normalizeDigits(value: string) {
 }
 
 export default function VerifyPhonePage() {
-  const router = useRouter();
   const [phone, setPhone] = useState('');
   const [cardLast4, setCardLast4] = useState('0000');
   const [orderId, setOrderId] = useState('');
@@ -99,10 +97,6 @@ export default function VerifyPhonePage() {
     }
 
     const verificationTime = confirmedAt ?? Date.now();
-    const redirectTimer = window.setTimeout(
-      () => router.replace('/'),
-      Math.max(0, verificationTime + 30_000 - Date.now())
-    );
     const updateCountdown = () => {
       setCountdown(Math.max(0, Math.ceil((verificationTime + 30_000 - Date.now()) / 1000)));
     };
@@ -111,9 +105,8 @@ export default function VerifyPhonePage() {
     const interval = window.setInterval(updateCountdown, 250);
     return () => {
       window.clearInterval(interval);
-      window.clearTimeout(redirectTimer);
     };
-  }, [confirmedAt, verified, router]);
+  }, [confirmedAt, verified]);
 
   async function handleVerify() {
     if (!isReferenceCodeValid) {
