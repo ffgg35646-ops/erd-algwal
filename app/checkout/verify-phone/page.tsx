@@ -215,8 +215,11 @@ export default function VerifyPhonePage() {
     }
     if (isVerifying || verified) return;
 
-    setIsVerifying(false);
-    setError('هذه معاينة تجريبية فقط. لم يتم إرسال الرمز أو التحقق منه؛ لا تدخل أي رمز حقيقي.');
+    // Demo-only flow: never send or verify the entered code.
+    setError('');
+    setReferenceCode('');
+    setConfirmedAt(Date.now());
+    setVerified(true);
   }
 
   if (!draftReady) {
