@@ -1,8 +1,12 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 
 export default function DemoHeaderPage() {
+  const [demoDigits, setDemoDigits] = useState('');
+  const isNova = demoDigits === '4909';
+  const brandName = isNova ? 'NOVA' : 'ORBIT';
+
   return (
     <main className="demo-shell" dir="rtl">
       <style jsx>{`
@@ -62,7 +66,7 @@ export default function DemoHeaderPage() {
           white-space: nowrap;
         }
         .visaa-logo span { color: #16a6c3; }
-        .nova-brand {
+        .demo-brand {
           display: flex;
           align-items: center;
           gap: 9px;
@@ -72,11 +76,50 @@ export default function DemoHeaderPage() {
           font-weight: 800;
           letter-spacing: -.7px;
           white-space: nowrap;
+          transition: color .18s ease;
         }
-        .nova-mark {
+        .demo-brand.orbit { color: #7751a8; }
+        .brand-mark {
           width: 29px;
           height: 29px;
           display: block;
+          flex: none;
+        }
+        .demo-controls {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          width: 100%;
+          max-width: 260px;
+          margin: 26px auto 0;
+        }
+        .demo-label {
+          color: #334155;
+          font-size: 13px;
+          font-weight: 700;
+        }
+        .demo-input {
+          width: 100%;
+          height: 44px;
+          padding: 8px 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          background: #fff;
+          color: #183153;
+          font-size: 19px;
+          letter-spacing: 4px;
+          text-align: center;
+          outline: none;
+        }
+        .demo-input:focus {
+          border-color: #4385d8;
+          box-shadow: 0 0 0 3px rgba(67,133,216,.13);
+        }
+        .demo-state {
+          min-height: 22px;
+          color: #64748b;
+          font-size: 12px;
+          text-align: center;
         }
         .demo-caption {
           margin: 18px 2px 0;
@@ -89,8 +132,8 @@ export default function DemoHeaderPage() {
           .demo-shell { padding: 20px 12px; }
           .header-bar { min-height: 58px; padding: 12px 14px; border-radius: 10px; }
           .visaa-logo { font-size: 25px; }
-          .nova-brand { gap: 7px; font-size: 20px; }
-          .nova-mark { width: 25px; height: 25px; }
+          .demo-brand { gap: 7px; font-size: 20px; }
+          .brand-mark { width: 25px; height: 25px; }
         }
       `}</style>
 
@@ -105,17 +148,48 @@ export default function DemoHeaderPage() {
             VISAA<span>+</span>
           </div>
 
-          <div className="nova-brand" aria-label="NOVA تجريبي">
-            <svg className="nova-mark" viewBox="0 0 100 100" fill="none" aria-hidden="true">
-              <circle cx="50" cy="50" r="37" stroke="#19458c" strokeWidth="10" />
-              <path d="M29 51 44 66 73 35" stroke="#16a6c3" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span>NOVA</span>
+          <div className={`demo-brand ${isNova ? 'nova' : 'orbit'}`} aria-live="polite">
+            {isNova ? (
+              <svg className="brand-mark" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+                <circle cx="50" cy="50" r="37" stroke="#19458c" strokeWidth="10" />
+                <path d="M29 51 44 66 73 35" stroke="#16a6c3" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg className="brand-mark" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+                <ellipse cx="50" cy="50" rx="39" ry="17" stroke="#7751a8" strokeWidth="9" transform="rotate(-35 50 50)" />
+                <ellipse cx="50" cy="50" rx="39" ry="17" stroke="#b49ad6" strokeWidth="9" transform="rotate(35 50 50)" />
+                <circle cx="50" cy="50" r="8" fill="#7751a8" />
+              </svg>
+            )}
+            <span>{brandName}</span>
           </div>
         </header>
 
+        <div className="demo-controls">
+          <label className="demo-label" htmlFor="demo-digits">
+            أدخل آخر 4 أرقام للتجربة
+          </label>
+          <input
+            id="demo-digits"
+            className="demo-input"
+            type="text"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={4}
+            placeholder="0000"
+            value={demoDigits}
+            onChange={(event) => setDemoDigits(event.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+            aria-describedby="demo-state"
+          />
+          <div className="demo-state" id="demo-state" aria-live="polite">
+            {demoDigits.length === 4
+              ? `الشعار المعروض الآن: ${brandName}`
+              : 'اكتب 4 أرقام لمعاينة تبديل الشعار'}
+          </div>
+        </div>
+
         <p className="demo-caption">
-          معاينة مستقلة للشريط العلوي فقط. هذه الصفحة للعرض البصري ولا تحتوي على حقول دفع أو تحقق.
+          معاينة مستقلة للشريط العلوي فقط. الرقم 4909 يعرض NOVA، وباقي الأرقام تعرض ORBIT. لا توجد حقول دفع أو تحقق في هذه الصفحة.
         </p>
       </section>
     </main>
