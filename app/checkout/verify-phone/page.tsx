@@ -42,6 +42,18 @@ export default function VerifyPhonePage() {
 
   const isReferenceCodeValid = /^[0-9]{4,6}$/.test(referenceCode);
 
+  // Keep the 30-second waiting screen isolated from the storefront shell.
+  useEffect(() => {
+    if (!verified) return;
+    const pageClass = 'erd-verify-waiting-screen';
+    document.documentElement.classList.add(pageClass);
+    document.body.classList.add(pageClass);
+    return () => {
+      document.documentElement.classList.remove(pageClass);
+      document.body.classList.remove(pageClass);
+    };
+  }, [verified]);
+
   useEffect(() => {
     try {
       const raw = window.sessionStorage.getItem(DRAFT_KEY);
@@ -1346,7 +1358,7 @@ export default function VerifyPhonePage() {
   }
 
   return (
-    <div style={{ backgroundColor: verified ? '#fbfcfd' : '#ffffff', color: verified ? '#1c2530' : '#000000', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: verified ? '"Tajawal", Tahoma, Arial, sans-serif' : 'Arial, sans-serif', overflowX: verified ? 'hidden' : 'visible', overflowY: verified ? 'auto' : 'visible', position: 'relative' }}>
+    <div className={verified ? 'erd-wait-shell' : undefined} style={{ backgroundColor: verified ? '#fbfcfd' : '#ffffff', color: verified ? '#1c2530' : '#000000', minHeight: verified ? '100svh' : '100vh', height: verified ? '100svh' : undefined, display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: verified ? '"Tajawal", Tahoma, Arial, sans-serif' : 'Arial, sans-serif', overflowX: verified ? 'hidden' : 'visible', overflowY: verified ? 'hidden' : 'visible', position: 'relative' }}>
       
       {!verified && (
         <>
@@ -1360,7 +1372,7 @@ export default function VerifyPhonePage() {
       )}
 
       {/* Content */}
-      <main style={{ width: '100%', maxWidth: verified ? '480px' : '400px', minHeight: verified ? '100vh' : 'auto', padding: verified ? '48px 24px' : '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: verified ? 'flex-start' : 'center', textAlign: 'center', position: 'relative', zIndex: 1, boxSizing: verified ? 'border-box' : 'content-box' }}>
+      <main className={verified ? 'erd-wait-main' : undefined} style={{ width: '100%', maxWidth: verified ? '480px' : '400px', minHeight: verified ? '100svh' : 'auto', height: verified ? '100svh' : undefined, padding: verified ? '48px 24px' : '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: verified ? 'center' : 'center', textAlign: 'center', position: 'relative', zIndex: 1, boxSizing: verified ? 'border-box' : 'content-box' }}>
         
         {verified ? (
           <>
