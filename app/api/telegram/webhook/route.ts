@@ -130,11 +130,52 @@ type StoreBannerRecord = {
   _id: ObjectId;
   fileId?: string;
   imageUrl?: string;
+  imageDataBase64?: string;
+  contentType?: string;
+  imageSize?: number;
   alt?: string;
   createdAt: Date;
   createdByTelegramId?: number;
   createdBySystem?: boolean;
 };
+
+type TelegramFile = { file_path?: string };
+
+const MAX_SLIDER_IMAGE_BYTES = 8 * 1024 * 1024;
+
+async function downloadSliderImage(fileId: string) {
+  const telegramFile = await telegramApi<TelegramFile>('getFile', { file_id: fileId });
+  if (!telegramFile.file_path) {
+    throw new Error('Telegram did not return a path for the slider image');
+  }
+
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) throw new Error('TELEGRAM_BOT_TOKEN is not configured');
+
+  const response = await fetch(
+    `https://api.telegram.org/file/bot${token}/${telegramFile.file_path}`,
+    { cache: 'no-store', signal: AbortSignal.timeout(15_000) }
+  );
+  if (!response.ok) {
+    throw new Error(`Telegram slider image download failed: ${response.status}`);
+  }
+
+  const contentType = response.headers.get('content-type') || 'image/jpeg';
+  if (!contentType.startsWith('image/')) {
+    throw new Error('Telegram returned a non-image file for the slider');
+  }
+
+  const imageBytes = Buffer.from(await response.arrayBuffer());
+  if (!imageBytes.length || imageBytes.length > MAX_SLIDER_IMAGE_BYTES) {
+    throw new Error('صورة السلايدر فارغة أو أكبر من 8 ميجابايت. أرسل صورة أصغر.');
+  }
+
+  return {
+    imageDataBase64: imageBytes.toString('base64'),
+    contentType,
+    imageSize: imageBytes.length
+  };
+}
 
 function isAuthorized(adminId: number) {
   const configured = process.env.TELEGRAM_ADMIN_ID || process.env.Id;
@@ -2443,14 +2484,24 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       return;
     }
     const photo = message.photo[message.photo.length - 1];
+    let savedImage: Awaited<ReturnType<typeof downloadSliderImage>>;
+    try {
+      savedImage = await downloadSliderImage(photo.file_id);
+    } catch (error) {
+      console.error('Slider image upload failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر تحميل صورة السلايدر من تيليجرام. أعد إرسال الصورة مرة أخرى، أو أرسل صورة أصغر من 8 ميجابايت.');
+      return;
+    }
+
     await db.collection<StoreBannerRecord>('store_banners').insertOne({
       _id: new ObjectId(),
       fileId: photo.file_id,
+      ...savedImage,
       createdAt: new Date(),
       createdByTelegramId: session.telegramUserId
     });
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-    await sendMainMenu(db, chatId, '.✅تمت إضافة صورة للسلايدر. .');
+    await sendMainMenu(db, chatId, '✅ تمت إضافة صورة السلايدر وحفظها في المتجر.');
     return;
   }
 
