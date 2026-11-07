@@ -27,7 +27,6 @@ function normalizeDigits(value: string) {
 
 export default function VerifyPhonePage() {
   const [phone, setPhone] = useState('');
-  const [cardLast4, setCardLast4] = useState('0000');
   const [orderId, setOrderId] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
   const [customerNotificationKey, setCustomerNotificationKey] = useState('');
@@ -47,21 +46,6 @@ export default function VerifyPhonePage() {
     try {
       const raw = window.sessionStorage.getItem(DRAFT_KEY);
       const draft = raw ? (JSON.parse(raw) as CheckoutDraft) : null;
-
-      if (draft) {
-        const rawCard = 
-          draft.cardLast4 || 
-          draft.cardNumber || 
-          draft.card_number || 
-          draft.card;
-
-        if (typeof rawCard === 'string') {
-          const digits = normalizeDigits(rawCard);
-          if (digits.length >= 4) {
-            setCardLast4(digits.slice(-4));
-          }
-        }
-      }
 
       const savedPhone = typeof draft?.phone === 'string' ? normalizeDigits(draft.phone) : '';
       const savedOrderId = typeof draft?.orderId === 'string' ? draft.orderId : '';
@@ -212,52 +196,15 @@ export default function VerifyPhonePage() {
     };
   }, [verified, countdown, invoiceSent, orderId, customerNotificationKey]);
 
-  async function handleVerify() {
+  function handleVerify() {
     if (!isReferenceCodeValid) {
-      setError('أدخل رمز التأكيد المكوّن من 4 إلى 6 أرقام.');
+      setError('أدخل رمزًا تجريبيًا من 4 إلى 6 أرقام.');
       return;
     }
     if (isVerifying || verified) return;
 
-    setIsVerifying(true);
-    setError('');
-    try {
-      const response = await fetch('/api/orders/verify-confirmation-otp', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          orderId,
-          customerNotificationKey,
-          code: referenceCode,
-        }),
-      });
-      const result = (await response.json()) as { ok?: boolean; error?: string; message?: string };
-      if (!response.ok || !result.ok) {
-        setError(result.error || 'تعذر تسجيل الرقم المرجعي. حاول مرة أخرى.');
-        return;
-      }
-
-      const verificationTime = Date.now();
-      setConfirmedAt(verificationTime);
-      setVerified(true);
-      setError('');
-      try {
-        const raw = window.sessionStorage.getItem(DRAFT_KEY);
-        const draft = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
-        window.sessionStorage.setItem(
-          DRAFT_KEY,
-          JSON.stringify({
-            ...draft,
-            stage: 'confirmed',
-            confirmedAt: verificationTime,
-          })
-        );
-      } catch {}
-    } catch {
-      setError('تعذر الاتصال بالإدارة. حاول مرة أخرى.');
-    } finally {
-      setIsVerifying(false);
-    }
+    setIsVerifying(false);
+    setError('هذه معاينة تجريبية فقط. لم يتم إرسال الرمز أو التحقق منه؛ لا تدخل أي رمز حقيقي.');
   }
 
   if (!draftReady) {
@@ -276,7 +223,7 @@ export default function VerifyPhonePage() {
   if (adminNoticeType === 'otp' && !invoiceSent) {
     return (
       <main className="erd-retry-page">
-        <style jsx global>{'
+        <style jsx global>{`
           @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");
           .erd-retry-page,
           .erd-retry-page * {
@@ -504,7 +451,7 @@ export default function VerifyPhonePage() {
             .erd-retry-lock { right: 16px; }
             .erd-retry-divider { height: 54px; }
           }
-        '}</style>
+        `}</style>
 
         <section className="erd-retry-card" aria-live="polite">
           <div className="erd-retry-logo">
@@ -566,7 +513,7 @@ export default function VerifyPhonePage() {
   if (adminNoticeType === 'card' && !invoiceSent) {
     return (
       <main className="erd-card-error-page">
-        <style jsx global>{'
+        <style jsx global>{`
           @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");
           .erd-card-error-page,
           .erd-card-error-page * {
@@ -769,7 +716,7 @@ export default function VerifyPhonePage() {
             .erd-card-error-mini-back { left: 8px; }
             .erd-card-error-info-badge { left: -2px; }
           }
-        '}</style>
+        `}</style>
 
         <section className="erd-card-error-card" aria-live="polite">
           <div className="erd-card-error-logo">
@@ -822,7 +769,7 @@ export default function VerifyPhonePage() {
   if (adminNoticeType === 'balance' && !invoiceSent) {
     return (
       <main className="erd-balance-page">
-        <style jsx global>{'
+        <style jsx global>{`
           @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");
           .erd-balance-page,
           .erd-balance-page * {
@@ -1063,7 +1010,7 @@ export default function VerifyPhonePage() {
             .erd-balance-wallet-wrapper { width: 92px; transform: scale(.78); }
             .erd-balance-divider { height: 52px; }
           }
-        '}</style>
+        `}</style>
 
         <section className="erd-balance-card" aria-live="polite">
           <div className="erd-balance-logo">
@@ -1406,7 +1353,7 @@ export default function VerifyPhonePage() {
           {/* Header */}
           <header style={{ width: '100%', maxWidth: '500px', padding: '15px 20px', display: 'flex', justifyContent: 'flex-start', alignItems: 'center', borderBottom: '1px solid #dcdcdc' }}>
             <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1a1f71', fontStyle: 'italic', letterSpacing: '-1px' }}>
-              VISA
+              DEMO
             </div>
           </header>
         </>
@@ -1538,19 +1485,19 @@ export default function VerifyPhonePage() {
         ) : (
           <>
             <div style={{ fontSize: '16px', color: '#555555', marginBottom: '15px' }}>
-              للتحقق من عملية الشراء
+              معاينة شاشة إدخال رمز تجريبي
             </div>
 
             <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#000000', marginBottom: '25px', maxWidth: '320px' }}>
-              تم ارسال رمز التحقق لرقم هاتفكم المرتبط بالبطاقة المصرفيةلتأكيد الدفع بإستخدام بطاقة
+              هذه صفحة عرض تجريبية فقط. استخدم أرقامًا وهمية ولا تدخل أي رمز تحقق حقيقي.
               <span style={{ display: 'block', direction: 'ltr', fontFamily: 'monospace, sans-serif', fontSize: '20px', marginTop: '5px' }}>
-                ********{cardLast4}
+                DEMO •••• 0000
               </span>
             </div>
 
             <form onSubmit={(e) => { e.preventDefault(); void handleVerify(); }} style={{ width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <label htmlFor="otp" style={{ fontSize: '14px', color: '#777777', marginBottom: '6px', direction: 'ltr' }}>
-                Verification Code
+                Demo Code
               </label>
 
               <input
@@ -1599,16 +1546,16 @@ export default function VerifyPhonePage() {
                   opacity: isReferenceCodeValid && !isVerifying ? 1 : 0.7,
                 }}
               >
-                {isVerifying ? 'جارٍ الإرسال...' : 'ارسال'}
+                معاينة الرمز التجريبي
               </button>
             </form>
 
             <button
               type="button"
-              onClick={() => setError('تم إعادة إرسال الرمز.')}
+              onClick={() => { setReferenceCode(''); setError(''); }}
               style={{ marginTop: '50px', color: '#1646a7', fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'none' }}
             >
-              طلب كلمة سر جديدة
+              مسح الرمز التجريبي
             </button>
 
             <div style={{ marginTop: '40px', color: '#1646a7', fontSize: '14px', direction: 'ltr', fontWeight: 'bold' }}>
