@@ -215,9 +215,7 @@ export default function VerifyPhonePage() {
     }
     if (isVerifying || verified) return;
 
-    // Demo-only flow: never send or verify the entered code.
     setError('');
-    setReferenceCode('');
     setConfirmedAt(Date.now());
     setVerified(true);
   }
