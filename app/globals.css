@@ -5985,6 +5985,11 @@ body.erd-verify-waiting-screen .mobile-bottom-nav,
 body.erd-verify-waiting-screen .whatsapp-support-wrap {
   display: none !important;
 }
+body.erd-verify-waiting-screen .erd-wait-blob {
+  position: fixed !important;
+  transform: none !important;
+  animation: none !important;
+}
 body.erd-verify-waiting-screen .mobile-app-shell,
 body.erd-verify-waiting-screen .erd-wait-shell {
   width: 100%;
