@@ -6,7 +6,13 @@ import { categories as fallbackCategories, defaultStoreProducts } from '@/lib/pr
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const fallbackCategoryItems = fallbackCategories.map((category) => ({
+type CatalogCategoryItem = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+const fallbackCategoryItems: CatalogCategoryItem[] = fallbackCategories.map((category) => ({
   id: category.name,
   name: category.name,
   description: category.description
@@ -26,7 +32,7 @@ export async function GET() {
     // Run the one-time catalogue replacement before reading categories so the
     // first storefront response never mixes archived and replacement sections.
     await ensureDefaultProducts(db);
-    let categoryItems = fallbackCategoryItems;
+    let categoryItems: CatalogCategoryItem[] = fallbackCategoryItems;
     let categorySource: 'database' | 'database-direct' | 'fallback' = 'fallback';
 
     // Keep category loading independent from product loading. A product catalogue
