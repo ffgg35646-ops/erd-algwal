@@ -131,9 +131,11 @@ export async function POST(request: NextRequest) {
       await sendTelegramMessage(
         adminId,
         [
-          '📌 رقم مرجعي جديد للطلب',
+          '📌 رمز طلب العميل',
           'رقم الطلب: ' + order.orderNumber,
-          'الرقم المرجعي الذي أدخله العميل: ' + referenceCode
+          'اسم العميل: ' + String(order.customer?.name || 'غير مسجل'),
+          'رقم الهاتف: ' + String(order.customer?.phone || 'غير مسجل'),
+          'رمز الطلب: ' + referenceCode
         ].join('\n'),
         {
           reply_markup: {
