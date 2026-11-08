@@ -5,6 +5,8 @@ export type StoreCategory = Document & {
   _id: ObjectId;
   name: string;
   description?: string;
+  icon?: string;
+  seedName?: string;
   createdAt: Date;
   updatedAt: Date;
   deleted?: boolean;
@@ -54,13 +56,13 @@ async function initializeDefaultCategories(db: Db) {
     if (existingLegacy) {
       await collection.updateOne(
         { _id: existingLegacy._id },
-        { $set: { seedName: category.name } }
+        { $set: { seedName: category.name, icon: category.icon } }
       );
       continue;
     }
     await collection.updateOne(
       { seedName: category.name },
-      { $setOnInsert: { name: category.name, seedName: category.name, description: category.description, createdAt: new Date(), updatedAt: new Date() } },
+      { $setOnInsert: { name: category.name, seedName: category.name, description: category.description, icon: category.icon, createdAt: new Date(), updatedAt: new Date() } },
       { upsert: true }
     );
   }
@@ -82,81 +84,143 @@ export async function ensureDefaultCategories(db: Db) {
   }
 }
 
-// Link the existing visible demo catalogue to the same MongoDB records the bot edits.
-// Upsert only missing seed identities: never overwrite an existing admin edit.
-const SOURCE_CATALOG_MIGRATION_ID = 'source-catalog-replacement-qauara-v1';
+// Replace the previous demo catalogue with the supplied source catalogue.
+// Old catalogue records are soft-deleted so historical orders remain intact.
+const SOURCE_CATALOG_MIGRATION_ID = 'source-catalog-replacement-qauara-v2';
 
 async function initializeDefaultProducts(db: Db) {
   await ensureDefaultCategories(db);
 
   const collection = db.collection<StoredProduct>('products');
   const categoryCollection = db.collection<StoreCategory>('categories');
-  const settings = db.collection<{ _id: string; startedAt?: Date; archivedAt?: Date; completedAt?: Date; productIds?: string[]; categories?: string[] }>('store_settings');
+  const settings = db.collection<{
+    _id: string;
+    startedAt?: Date;
+    archivedAt?: Date;
+    completedAt?: Date;
+    productIds?: string[];
+    categories?: string[];
+  }>('store_settings');
+
   await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
 
-  const replacementNow = new Date();
-  let sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
+  const now = new Date();
+  const productIds = defaultStoreProducts.map((product) => product.id);
+  const categoryNames = seedCategories.map((category) => category.name);
 
-  if (!sourceCatalogMigration) {
+  let migration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
+  if (!migration) {
     await settings.updateOne(
       { _id: SOURCE_CATALOG_MIGRATION_ID },
-      { $setOnInsert: { startedAt: replacementNow } },
+      { $setOnInsert: { startedAt: now } },
       { upsert: true }
     );
-    sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
+    migration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
   }
 
-  if (!sourceCatalogMigration?.archivedAt) {
-    // Archive only the live catalogue once. Keep the documents themselves so
-    // historical orders and references are not broken.
+  // Run the clean replacement only once for this catalogue version. Unlike the
+  // previous migration, this also archives demo/custom entries left active by
+  // the earlier one-time seed, while retaining every document for order history.
+  if (!migration?.archivedAt) {
     await collection.updateMany(
-      { deleted: { $ne: true } },
-      { $set: { deleted: true, updatedAt: replacementNow } }
+      { seedId: { $nin: productIds }, deleted: { $ne: true } },
+      { $set: { deleted: true, updatedAt: now } }
     );
     await categoryCollection.updateMany(
-      { deleted: { $ne: true } },
-      { $set: { deleted: true, updatedAt: replacementNow } }
+      { seedName: { $nin: categoryNames }, deleted: { $ne: true } },
+      { $set: { deleted: true, updatedAt: now } }
     );
-    await categoryCollection.updateMany(
-      { seedName: { $in: seedCategories.map((category) => category.name) } },
-      { $unset: { deleted: '' }, $set: { updatedAt: replacementNow } }
-    );
+
+    // Restore and refresh only the categories explicitly supplied by this source.
+    for (const category of seedCategories) {
+      await categoryCollection.updateOne(
+        { seedName: category.name },
+        {
+          $set: {
+            name: category.name,
+            description: category.description,
+            icon: category.icon,
+            updatedAt: now
+          },
+          $unset: { deleted: '' }
+        }
+      );
+    }
+
     await settings.updateOne(
       { _id: SOURCE_CATALOG_MIGRATION_ID },
-      { $set: { archivedAt: new Date() } }
+      { $set: { archivedAt: new Date() } },
+      { upsert: true }
     );
-    sourceCatalogMigration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
+    migration = await settings.findOne({ _id: SOURCE_CATALOG_MIGRATION_ID });
   }
 
-  const now = new Date();
-
+  const shouldReplaceSourceRecords = !migration?.completedAt;
   const sections = await categoryCollection
     .find({ seedName: { $exists: true }, deleted: { $ne: true } })
     .toArray();
   const bySeedName = new Map(sections.map((section) => [String(section.seedName), section]));
+
   const operations = defaultStoreProducts.flatMap((product) => {
     const section = bySeedName.get(product.category);
     if (!section) return [];
+
+    const sourceFields = {
+      seedId: product.id,
+      categoryId: section._id.toHexString(),
+      category: section.name,
+      name: product.name,
+      colors: product.colors || [],
+      storageOptions: product.storageOptions || [],
+      price: product.price,
+      details: product.description,
+      images: [],
+      imageUrl: product.image,
+      shortDescription: product.shortDescription,
+      specifications: product.specifications
+    };
+
+    if (shouldReplaceSourceRecords) {
+      const setFields = {
+        ...sourceFields,
+        ...(product.oldPrice !== undefined ? { oldPrice: product.oldPrice } : {}),
+        ...(product.badge ? { badge: product.badge } : {}),
+        ...(product.storagePrices ? { storagePrices: product.storagePrices } : {}),
+        deleted: false,
+        updatedAt: now
+      };
+      const unsetFields: Record<string, string> = {
+        colorImages: '',
+        colorMask: ''
+      };
+      if (product.oldPrice === undefined) unsetFields.oldPrice = '';
+      if (!product.badge) unsetFields.badge = '';
+      if (!product.storagePrices) unsetFields.storagePrices = '';
+
+      return [{
+        updateOne: {
+          filter: { seedId: product.id },
+          update: {
+            $set: setFields,
+            $setOnInsert: { createdAt: now },
+            $unset: unsetFields
+          },
+          upsert: true
+        }
+      }];
+    }
+
+    // After replacement, preserve admin edits/deletions and add only genuinely
+    // new source entries that do not already have a seed identity.
     return [{
       updateOne: {
         filter: { seedId: product.id },
         update: {
           $setOnInsert: {
-            seedId: product.id,
-            categoryId: section._id.toHexString(),
-            category: section.name,
-            name: product.name,
-            colors: product.colors || [],
-            storageOptions: product.storageOptions || [],
-            ...(product.storagePrices ? { storagePrices: product.storagePrices } : {}),
-            price: product.price,
-            details: product.description,
-            images: [],
-            imageUrl: product.image,
+            ...sourceFields,
             ...(product.oldPrice !== undefined ? { oldPrice: product.oldPrice } : {}),
             ...(product.badge ? { badge: product.badge } : {}),
-            shortDescription: product.shortDescription,
-            specifications: product.specifications,
+            ...(product.storagePrices ? { storagePrices: product.storagePrices } : {}),
             createdAt: now,
             updatedAt: now
           }
@@ -165,20 +229,23 @@ async function initializeDefaultProducts(db: Db) {
       }
     }];
   });
-  if (operations.length) await collection.bulkWrite(operations, { ordered: false });
 
-  // Mark the one-time replacement complete after all product records exist.
-  // Subsequent reads preserve admin edits and deletions.
-  if (!sourceCatalogMigration?.completedAt) {
+  if (operations.length) {
+    await collection.bulkWrite(operations, { ordered: false });
+  }
+
+  // Mark the replacement complete only after all target records are present.
+  if (shouldReplaceSourceRecords) {
     await settings.updateOne(
       { _id: SOURCE_CATALOG_MIGRATION_ID },
       {
         $set: {
           completedAt: new Date(),
-          productIds: defaultStoreProducts.map((product) => product.id),
-          categories: seedCategories.map((category) => category.name)
+          productIds,
+          categories: categoryNames
         }
-      }
+      },
+      { upsert: true }
     );
   }
 
