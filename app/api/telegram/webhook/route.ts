@@ -1439,7 +1439,13 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       ? (alreadySelected ? categoryIds : [...categoryIds, sectionId])
       : categoryIds.filter((categoryId) => categoryId !== sectionId);
 
-    await db.collection('store_settings').updateOne(
+    await db.collection<{
+      _id: string;
+      categoryIds?: string[];
+      configured?: boolean;
+      updatedAt?: Date;
+      updatedByTelegramId?: number;
+    }>('store_settings').updateOne(
       { _id: 'red-category-bar' },
       {
         $set: {
