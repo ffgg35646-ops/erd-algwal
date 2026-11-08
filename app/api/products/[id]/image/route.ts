@@ -18,17 +18,32 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   if (color !== null && (!color.trim() || color.length > 80)) {
     return NextResponse.json({ error: 'Invalid product color' }, { status: 400 });
   }
-  if (!process.env.MONGODB_URI || !process.env.TELEGRAM_BOT_TOKEN) {
+  if (!process.env.MONGODB_URI) {
     return new NextResponse('Product image service not configured', { status: 503 });
   }
 
   try {
     const db = await getDb();
     const product = await findStoredProduct(db, id);
-    const fileId = color !== null ? product?.colorImages?.[color] : product?.images?.[index];
-    if (!fileId) return new NextResponse('Image not found', { status: 404 });
+    const imageValue = color !== null ? product?.colorImages?.[color] : product?.images?.[index];
+    if (!imageValue) return new NextResponse('Image not found', { status: 404 });
 
-    const file = await telegramApi<TelegramFile>('getFile', { file_id: fileId });
+    // Some importers store HTTP(S) image URLs instead of Telegram file IDs.
+    // Redirect those to the public image host; only Telegram IDs use getFile.
+    try {
+      const imageUrl = new URL(imageValue);
+      if ((imageUrl.protocol === 'https:' || imageUrl.protocol === 'http:') && !imageUrl.username && !imageUrl.password) {
+        const response = NextResponse.redirect(imageUrl, 302);
+        response.headers.set('cache-control', 'public, max-age=3600, stale-while-revalidate=86400');
+        return response;
+      }
+    } catch {
+      // A non-URL value is treated as a Telegram file ID below.
+    }
+
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) return new NextResponse('Telegram image service not configured', { status: 503 });
+    const file = await telegramApi<TelegramFile>('getFile', { file_id: imageValue });
     if (!file.file_path) return new NextResponse('Image not available', { status: 404 });
 
     const token = process.env.TELEGRAM_BOT_TOKEN;
