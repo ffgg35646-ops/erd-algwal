@@ -12,11 +12,66 @@ type CatalogCategoryItem = {
   description: string;
 };
 
+type CatalogCategoryResult = {
+  items: CatalogCategoryItem[];
+  source: 'database' | 'database-direct' | 'fallback';
+};
+
 const fallbackCategoryItems: CatalogCategoryItem[] = fallbackCategories.map((category) => ({
   id: category.name,
   name: category.name,
   description: category.description
 }));
+
+const NO_STORE_HEADERS = { 'cache-control': 'no-store, max-age=0' };
+// Public catalogue data can be reused briefly at the browser/CDN layer. The
+// client still keeps its last good snapshot and refreshes it in the background.
+const CATALOG_CACHE_HEADERS = {
+  'cache-control': 'public, max-age=15, s-maxage=30, stale-while-revalidate=120'
+};
+
+async function readCategories(db: Awaited<ReturnType<typeof getDb>>): Promise<CatalogCategoryResult> {
+  try {
+    const categories = await listCategories(db);
+    return {
+      items: categories.map((category) => ({
+        id: category._id.toHexString(),
+        name: category.name,
+        description: category.description || ''
+      })),
+      source: 'database'
+    };
+  } catch (error) {
+    console.error(
+      'Catalogue category initialization failed; trying the saved categories directly:',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
+
+    try {
+      // This read does not run the one-time seed reconciliation.
+      const categories = await db.collection('categories')
+        .find({ deleted: { $ne: true } })
+        .sort({ createdAt: 1, name: 1 })
+        .toArray();
+      return {
+        items: categories
+          .filter((category) => typeof category.name === 'string' && category.name.trim())
+          .map((category) => ({
+            id: String(category._id),
+            name: String(category.name),
+            description: typeof category.description === 'string' ? category.description : ''
+          })),
+        source: 'database-direct'
+      };
+    } catch (directError) {
+      console.error(
+        'Direct category read failed:',
+        directError instanceof Error ? directError.message : 'Unknown error'
+      );
+      return { items: fallbackCategoryItems, source: 'fallback' };
+    }
+  }
+}
 
 export async function GET() {
   if (!process.env.MONGODB_URI) {
@@ -24,77 +79,66 @@ export async function GET() {
       error: 'Catalogue database connection failed',
       categories: [],
       products: [],
+      redCategoryBarIds: null,
       sources: { categories: 'unavailable', products: 'unavailable' }
-    }, { status: 503, headers: { 'cache-control': 'no-store, max-age=0' } });
+    }, { status: 503, headers: NO_STORE_HEADERS });
   }
 
   try {
     const db = await getDb();
-    // Run the one-time catalogue replacement before reading categories so the
-    // first storefront response never mixes archived and replacement sections.
+
+    // Keep one-time catalogue safety checks before serving records. After this,
+    // independent reads run together instead of waiting on one another.
     await ensureDefaultProducts(db);
-    let categoryItems: CatalogCategoryItem[] = fallbackCategoryItems;
-    let categorySource: 'database' | 'database-direct' | 'fallback' = 'fallback';
 
-    // Keep category loading independent from product loading. A product catalogue
-    // error must never replace the admin-managed sections with built-in defaults.
-    try {
-      const categories = await listCategories(db);
-      categoryItems = categories.map((category) => ({
-        id: category._id.toHexString(),
-        name: category.name,
-        description: category.description || ''
-      }));
-      categorySource = 'database';
-    } catch (error) {
-      console.error('Catalogue category initialization failed; trying the saved categories directly:', error instanceof Error ? error.message : 'Unknown error');
-
-      // Reading existing category documents does not require the seed/index
-      // initialization performed by listCategories().
-      try {
-        const categories = await db.collection('categories')
-          .find({ deleted: { $ne: true } })
-          .sort({ createdAt: 1, name: 1 })
-          .toArray();
-        categoryItems = categories
-          .filter((category) => typeof category.name === 'string' && category.name.trim())
-          .map((category) => ({
-            id: String(category._id),
-            name: String(category.name),
-            description: typeof category.description === 'string' ? category.description : ''
-          }));
-        categorySource = 'database-direct';
-      } catch (directError) {
-        console.error('Direct category read failed:', directError instanceof Error ? directError.message : 'Unknown error');
+    const categoryPromise = readCategories(db);
+    const productPromise = listCatalogProducts(db).then(
+      (products) => ({ products, error: null as string | null }),
+      (error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('Catalogue product load failed:', message);
+        return { products: null, error: message };
       }
-    }
+    );
+    const redBarPromise = db.collection<{ _id: string; categoryIds?: string[] }>('store_settings')
+      .findOne({ _id: 'red-category-bar' })
+      .catch((error) => {
+        console.error('Red category bar settings read failed:', error instanceof Error ? error.message : 'Unknown error');
+        return null;
+      });
 
-    let productItems: Product[];
-    let productSource: 'database' | 'fallback' = 'fallback';
-    try {
-      productItems = await listCatalogProducts(db);
-      productSource = 'database';
-    } catch (error) {
-      console.error('Catalogue product load failed:', error instanceof Error ? error.message : 'Unknown error');
+    const [categoryResult, productResult, redBarSettings] = await Promise.all([
+      categoryPromise,
+      productPromise,
+      redBarPromise
+    ]);
+
+    if (!productResult.products) {
       return NextResponse.json({
         error: 'Catalogue products could not be loaded',
-        categories: categoryItems,
+        categories: categoryResult.items,
         products: [],
-        sources: { categories: categorySource, products: 'unavailable' }
-      }, { status: 503, headers: { 'cache-control': 'no-store, max-age=0' } });
+        redCategoryBarIds: Array.isArray(redBarSettings?.categoryIds) ? redBarSettings.categoryIds : null,
+        sources: { categories: categoryResult.source, products: 'unavailable' }
+      }, { status: 503, headers: NO_STORE_HEADERS });
     }
 
     return NextResponse.json({
-      categories: categoryItems,
-      products: productItems,
-      sources: { categories: categorySource, products: productSource }
-    }, { headers: { 'cache-control': 'no-store, max-age=0' } });
+      categories: categoryResult.items,
+      products: productResult.products as Product[],
+      // null preserves the current default: show all active categories.
+      redCategoryBarIds: Array.isArray(redBarSettings?.categoryIds)
+        ? redBarSettings.categoryIds
+        : null,
+      sources: { categories: categoryResult.source, products: 'database' }
+    }, { headers: CATALOG_CACHE_HEADERS });
   } catch (error) {
     console.error('Catalogue database connection failed:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({
       categories: fallbackCategoryItems,
       products: defaultStoreProducts,
+      redCategoryBarIds: null,
       sources: { categories: 'fallback', products: 'fallback' }
-    }, { headers: { 'cache-control': 'no-store, max-age=0' } });
+    }, { headers: NO_STORE_HEADERS });
   }
 }
