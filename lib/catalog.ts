@@ -477,6 +477,23 @@ export async function listCategories(db: Db) {
   return db.collection<StoreCategory>('categories').find({ deleted: { $ne: true } }).sort({ createdAt: 1, name: 1 }).toArray();
 }
 
+const BLOCKED_CATALOG_IMAGE_NAMES = new Set([
+  'mtc3img_6a7a1945-3a12-4fac-82cc-e207d76bdee8.png',
+  '1793472237161236.png'
+]);
+
+/** Exclude known broken source images wherever they appear in a product. */
+export function isBlockedCatalogImage(value: unknown): boolean {
+  if (typeof value !== 'string' || !value.trim()) return false;
+  try {
+    const pathname = new URL(value).pathname;
+    const filename = decodeURIComponent(pathname.slice(pathname.lastIndexOf('/') + 1));
+    return BLOCKED_CATALOG_IMAGE_NAMES.has(filename.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
 function isHttpImageUrl(value: unknown): value is string {
   if (typeof value !== 'string') return false;
   try {
@@ -497,12 +514,25 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
   const id = product._id.toHexString();
   const colorImageVersion = product.updatedAt instanceof Date ? product.updatedAt.getTime() : 0;
   const images = Array.isArray(product.images) ? product.images : [];
-  // Imported source-catalog images are ordinary URLs; Telegram file IDs need
-  // the image API proxy. Do not route every stored image through getFile.
-  const storedImageUrls = images.map((image, index) => (
-    isHttpImageUrl(image) ? image : `/api/products/${id}/image?index=${index}`
+  // Filter the known broken source images, but retain original indices for
+  // Telegram file IDs because the image API reads from the stored array.
+  const storedImageUrls = images.flatMap((image, index) => (
+    isBlockedCatalogImage(image)
+      ? []
+      : [isHttpImageUrl(image) ? image : `/api/products/${id}/image?index=${index}`]
   ));
-  const displayImages = storedImageUrls.length ? storedImageUrls : product.imageUrl ? [product.imageUrl] : [];
+  const fallbackImage = isBlockedCatalogImage(product.imageUrl) ? '' : product.imageUrl || '';
+  const displayImages = storedImageUrls.length ? storedImageUrls : fallbackImage ? [fallbackImage] : [];
+  const colorImages = Object.fromEntries(
+    Object.entries(product.colorImages || {})
+      .filter(([, image]) => !isBlockedCatalogImage(image))
+      .map(([color, image]) => [
+        color,
+        isHttpImageUrl(image)
+          ? image
+          : `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
+      ] as const)
+  );
   return {
     id: product.seedId || id,
     name: product.name,
@@ -514,21 +544,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
     ...(product.oldPrice !== undefined ? { oldPrice: product.oldPrice } : {}),
     ...(product.badge ? { badge: product.badge } : {}),
     colors: product.colors || [],
-    ...(Object.keys(product.colorImages || {}).length
-      ? {
-          colorImages: Object.fromEntries(
-            Object.keys(product.colorImages || {}).map((color) => {
-              const colorImage = product.colorImages?.[color];
-              return [
-                color,
-                isHttpImageUrl(colorImage)
-                  ? colorImage
-                  : `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
-              ] as const;
-            })
-          )
-        }
-      : {}),
+    ...(Object.keys(colorImages).length ? { colorImages } : {}),
     storageOptions: product.storageOptions || [],
     storagePrices: product.storagePrices || {},
     shortDescription: product.shortDescription || product.details,
