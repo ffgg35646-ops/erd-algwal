@@ -251,7 +251,7 @@ async function getOrderSectionCounts(db: Db) {
 }
 
 async function sendMainMenu(db: Db, chatId: number, message = 'أهلًا بك في لوحة إدارة أرض الجوال. اختر القسم المطلوب:') {
-  await ensureDefaultCategories(db);
+  await ensureDefaultProducts(db);
   const counts = await getOrderSectionCounts(db);
   await sendTelegramMessage(chatId, message, {
     reply_markup: adminReplyKeyboard(counts.newCount + counts.shippedCount)
@@ -315,7 +315,7 @@ function sectionManagementKeyboard(sections: StoreCategory[]) {
 }
 
 async function listSectionsForEdit(db: Db, chatId: number) {
-  await ensureDefaultCategories(db);
+  await ensureDefaultProducts(db);
   const sections = await db.collection<StoreCategory>('categories')
     .find({ deleted: { $ne: true } }).sort({ name: 1 }).limit(80).toArray();
   if (!sections.length) {
@@ -328,7 +328,7 @@ async function listSectionsForEdit(db: Db, chatId: number) {
 }
 
 async function listSectionsForProduct(db: Db, chatId: number) {
-  await ensureDefaultCategories(db);
+  await ensureDefaultProducts(db);
   const sections = await db.collection<StoreCategory>('categories')
     .find({ deleted: { $ne: true } }).sort({ name: 1 }).limit(80).toArray();
   if (!sections.length) {
@@ -341,7 +341,7 @@ async function listSectionsForProduct(db: Db, chatId: number) {
 }
 
 async function listProductSectionsForEdit(db: Db, chatId: number) {
-  await ensureDefaultCategories(db);
+  await ensureDefaultProducts(db);
   const sections = await db.collection<StoreCategory>('categories')
     .find({ deleted: { $ne: true } })
     .project({ _id: 1, name: 1 })
