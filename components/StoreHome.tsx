@@ -76,7 +76,7 @@ function matchesSearch(product: Product, term: string) {
 }
 
 export default function StoreHome() {
-  const { catalogProducts: products, catalogCategories: categories } = useCart();
+  const { catalogProducts: products, catalogCategories: categories, catalogStatus } = useCart();
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -130,7 +130,16 @@ export default function StoreHome() {
     <main className="store-home" id="home">
       <StoreBannerSlider />
       <div className="category-stream" id="categories">
-        {sections.length ? sections.map((category) => {
+        {catalogStatus === 'loading' ? (
+          <div className="store-no-results" role="status" aria-live="polite">
+            <strong>جارٍ تحميل الكتالوج الحالي...</strong>
+          </div>
+        ) : catalogStatus === 'error' ? (
+          <div className="store-no-results" role="alert">
+            <strong>تعذر تحميل المنتجات حاليًا</strong>
+            <p>تحقق من اتصال قاعدة البيانات وحاول تحديث الصفحة.</p>
+          </div>
+        ) : sections.length ? sections.map((category) => {
           const isExpanded = expandedCategory === category.name;
           const symbol = categorySymbols[category.name] || '✦';
 
