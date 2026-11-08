@@ -12,6 +12,8 @@ type CartContextValue = {
   hydrated: boolean;
   catalogProducts: Product[];
   catalogCategories: StoreCategory[];
+  /** null means the red category bar currently shows all active categories. */
+  redCategoryBarIds: string[] | null;
   addToCart: (productId: string, quantity?: number, color?: string, storage?: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
   removeFromCart: (productId: string) => void;
@@ -67,18 +69,30 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cartNotice, setCartNotice] = useState('');
   const [catalogProducts, setCatalogProducts] = useState<Product[]>(defaultStoreProducts);
   const [catalogCategories, setCatalogCategories] = useState<StoreCategory[]>(FALLBACK_CATEGORIES);
+  const [redCategoryBarIds, setRedCategoryBarIds] = useState<string[] | null>(null);
 
   const refreshCatalog = useCallback(async () => {
     try {
-      const response = await fetch('/api/catalog', { cache: 'no-store' });
+      // Use the browser/CDN HTTP cache when possible. A saved local catalogue
+      // is already rendered before this background refresh starts.
+      const response = await fetch('/api/catalog', { cache: 'default' });
       if (!response.ok) return;
-      const data = await response.json() as { products?: Product[]; categories?: StoreCategory[] };
+      const data = await response.json() as {
+        products?: Product[];
+        categories?: StoreCategory[];
+        redCategoryBarIds?: string[] | null;
+      };
       if (Array.isArray(data.products)) setCatalogProducts(data.products);
       if (Array.isArray(data.categories)) setCatalogCategories(data.categories);
+      const nextRedCategoryBarIds = Array.isArray(data.redCategoryBarIds)
+        ? data.redCategoryBarIds.filter((id): id is string => typeof id === 'string')
+        : null;
+      setRedCategoryBarIds(nextRedCategoryBarIds);
       try {
         window.localStorage.setItem(CATALOG_STORAGE_KEY, JSON.stringify({
           products: Array.isArray(data.products) ? data.products : undefined,
           categories: Array.isArray(data.categories) ? data.categories : undefined,
+          redCategoryBarIds: nextRedCategoryBarIds,
           savedAt: Date.now()
         }));
       } catch {
@@ -120,9 +134,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
       window.localStorage.removeItem(LEGACY_CATALOG_STORAGE_KEY);
       const cachedCatalog = window.localStorage.getItem(CATALOG_STORAGE_KEY);
       if (cachedCatalog) {
-        const parsed = JSON.parse(cachedCatalog) as { products?: Product[]; categories?: StoreCategory[] };
+        const parsed = JSON.parse(cachedCatalog) as {
+          products?: Product[];
+          categories?: StoreCategory[];
+          redCategoryBarIds?: string[] | null;
+        };
         if (Array.isArray(parsed.products)) setCatalogProducts(parsed.products);
         if (Array.isArray(parsed.categories)) setCatalogCategories(parsed.categories);
+        setRedCategoryBarIds(
+          Array.isArray(parsed.redCategoryBarIds)
+            ? parsed.redCategoryBarIds.filter((id): id is string => typeof id === 'string')
+            : null
+        );
       }
     } catch {
       // Ignore a damaged cache and let the background request refresh the catalogue.
@@ -208,10 +231,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      cart, itemCount, hydrated, catalogProducts, catalogCategories,
+      cart, itemCount, hydrated, catalogProducts, catalogCategories, redCategoryBarIds,
       addToCart, setQuantity, removeFromCart, clearCart, refreshCatalog
     }),
-    [cart, itemCount, hydrated, catalogProducts, catalogCategories, addToCart, setQuantity, removeFromCart, clearCart, refreshCatalog]
+    [cart, itemCount, hydrated, catalogProducts, catalogCategories, redCategoryBarIds, addToCart, setQuantity, removeFromCart, clearCart, refreshCatalog]
   );
 
   return (
