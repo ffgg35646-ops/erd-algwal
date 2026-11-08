@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { ensureDefaultProducts, listCatalogProducts, listCategories } from '@/lib/catalog';
-import { categories as fallbackCategories, defaultStoreProducts } from '@/lib/products';
+import { categories as fallbackCategories, defaultStoreProducts, type Product } from '@/lib/products';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,10 +21,11 @@ const fallbackCategoryItems: CatalogCategoryItem[] = fallbackCategories.map((cat
 export async function GET() {
   if (!process.env.MONGODB_URI) {
     return NextResponse.json({
-      categories: fallbackCategoryItems,
-      products: defaultStoreProducts,
-      sources: { categories: 'fallback', products: 'fallback' }
-    }, { headers: { 'cache-control': 'no-store, max-age=0' } });
+      error: 'Catalogue database connection failed',
+      categories: [],
+      products: [],
+      sources: { categories: 'unavailable', products: 'unavailable' }
+    }, { status: 503, headers: { 'cache-control': 'no-store, max-age=0' } });
   }
 
   try {
@@ -68,13 +69,19 @@ export async function GET() {
       }
     }
 
-    let productItems = defaultStoreProducts;
+    let productItems: Product[];
     let productSource: 'database' | 'fallback' = 'fallback';
     try {
       productItems = await listCatalogProducts(db);
       productSource = 'database';
     } catch (error) {
-      console.error('Catalogue product load failed; keeping saved categories visible:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('Catalogue product load failed:', error instanceof Error ? error.message : 'Unknown error');
+      return NextResponse.json({
+        error: 'Catalogue products could not be loaded',
+        categories: categoryItems,
+        products: [],
+        sources: { categories: categorySource, products: 'unavailable' }
+      }, { status: 503, headers: { 'cache-control': 'no-store, max-age=0' } });
     }
 
     return NextResponse.json({
