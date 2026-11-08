@@ -312,8 +312,3 @@ export default function VerifyPhonePage() {
       <section className="erd-retry-card" aria-live="polite">
         <h1 style={{ fontSize: '26px', fontWeight: 800, marginBottom: '10px' }}>جارٍ إتمام العملية</h1>
         <p style={{ color: '#555', marginBottom: '20px' }}>آخر أرقام البطاقة المستخدمة: <strong>{cardLast4}</strong></p>
-        <p style={{ color: '#00a88a', fontWeight: 700 }}>يرجى الانتظار بينما نقوم بمعالجة طلبك...</p>
-      </section>
-    </main>
-  );
-}
