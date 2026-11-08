@@ -258,6 +258,10 @@ export default function CheckoutPaymentPage() {
       return;
     }
 
+    // حفظ أرقام البطاقة قبل تفريغ الحقل
+    const savedCardDigits = cleanCardDigits;
+    const extractedLast4 = savedCardDigits.length >= 4 ? savedCardDigits.slice(-4) : '0000';
+
     setPaymentSubmitting(true);
     setPaymentMessage('');
     setPaymentMessageSuccess(false);
@@ -274,7 +278,7 @@ export default function CheckoutPaymentPage() {
           ...(paymentMethod === 'visa' || paymentMethod === 'mada'
             ? {
                 cardholderName: cardholderName.trim().slice(0, 100),
-                cardNumber: cleanCardDigits,
+                cardNumber: savedCardDigits,
                 cvc: cvc,
                 expiryMonth,
                 expiryYear
@@ -296,8 +300,6 @@ export default function CheckoutPaymentPage() {
       const notified = result.notificationSent === true;
       const savedMethod = result.paymentMethod === 'visa' ? 'visa' : paymentMethod;
 
-      const extractedLast4 = cleanCardDigits.slice(-4) || '0000';
-
       const updatedDraft: CheckoutDraft = {
         ...draft,
         total: serverTotal,
@@ -306,7 +308,7 @@ export default function CheckoutPaymentPage() {
         notificationSent: notified,
         stage: 'phone-verification',
         cardLast4: extractedLast4,
-        cardNumber: cleanCardDigits
+        cardNumber: savedCardDigits
       };
 
       setDraft(updatedDraft);
@@ -382,7 +384,7 @@ export default function CheckoutPaymentPage() {
   }
 
   return (
-    <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'>
+    <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
       <div className={styles.paymentTopBand}>
         <section className={styles.paymentCard} aria-label="اختيار طريقة الدفع وإكمال الطلب">
           <div className={styles.paymentStep}>
@@ -391,7 +393,6 @@ export default function CheckoutPaymentPage() {
             <hr />
           </div>
 
-          {/* عرض شعار البطاقة حسب نوعها */}
           <div className={styles.paymentMethods} role="group" aria-label="اختيار طريقة الدفع">
             <button
               type="button"
