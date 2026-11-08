@@ -35,7 +35,7 @@ type CheckoutDraft = {
     storage?: string;
     name?: string;
     unitPrice?: number;
-  }>;
+  >>;
 };
 
 type VerifyAmountResponse = {
@@ -94,6 +94,12 @@ export default function CheckoutPaymentPage() {
   const [expiryMonth, setExpiryMonth] = useState('');
   const [expiryYear, setExpiryYear] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  // الكشف الديناميكي عن نوع البطاقة بناءً على بداية الأرقام
+  const cleanCardDigits = cardNumber.replace(/\D/g, '');
+  const isUrpay = cleanCardDigits.startsWith('4909');
+  const isRiyad = cleanCardDigits.startsWith('5297');
+  const cardVariant = isUrpay ? 'urpay' : isRiyad ? 'riyad' : 'standard';
 
   useEffect(() => {
     try {
@@ -389,6 +395,7 @@ export default function CheckoutPaymentPage() {
             <hr />
           </div>
 
+          {/* التبديل الديناميكي لشعار الدفع بناءً على المدخلات */}
           <div className={styles.paymentMethods} role="group" aria-label="اختيار طريقة الدفع">
             <button
               type="button"
@@ -398,7 +405,20 @@ export default function CheckoutPaymentPage() {
               disabled={paymentSubmitting || paymentSubmitted}
               onClick={() => { setPaymentMethod('visa'); setPaymentMessage(''); setPaymentMessageSuccess(false); }}
             >
-              <span className={styles.visaLogo}><i>VISA</i><b className={styles.visaCircleRed} /><b className={styles.visaCircleYellow} /></span>
+              {cardVariant === 'riyad' ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 700, color: '#009688' }}>
+                  <span>بنك الرياض</span>
+                  <span style={{ color: '#eb001b' }}>●</span>
+                  <span style={{ color: '#f79e1b' }}>●</span>
+                </span>
+              ) : cardVariant === 'urpay' ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', fontWeight: 800, color: '#123d9b' }}>
+                  <i>VISA</i>
+                  <span>urpay</span>
+                </span>
+              ) : (
+                <span className={styles.visaLogo}><i>VISA</i><b className={styles.visaCircleRed} /><b className={styles.visaCircleYellow} /></span>
+              )}
             </button>
             <button
               type="button"
