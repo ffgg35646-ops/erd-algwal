@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useCart } from '@/components/CartProvider';
+import { useCart, type StoreCategory } from '@/components/CartProvider';
 import { formatPrice, type Product } from '@/lib/products';
 import StoreBannerSlider from '@/components/StoreBannerSlider';
 import CustomerReviews from '@/components/CustomerReviews';
@@ -75,8 +75,23 @@ function matchesSearch(product: Product, term: string) {
   return searchableValues.some((value) => normalizeSearchValue(value).includes(term));
 }
 
-export default function StoreHome() {
-  const { catalogProducts: products, catalogCategories: categories, catalogStatus } = useCart();
+export type InitialStoreCatalog = {
+  products: Product[];
+  categories: StoreCategory[];
+};
+
+export default function StoreHome({ initialCatalog = null }: { initialCatalog?: InitialStoreCatalog | null }) {
+  const { catalogProducts, catalogCategories, catalogStatus } = useCart();
+  // Prefer the fresh server-rendered MongoDB snapshot on the first paint.
+  // Once the background request finishes, the live provider data takes over.
+  const products = catalogStatus === 'ready'
+    ? catalogProducts
+    : initialCatalog?.products ?? catalogProducts;
+  const categories = catalogStatus === 'ready'
+    ? catalogCategories
+    : initialCatalog?.categories ?? catalogCategories;
+  const isCatalogLoading = catalogStatus === 'loading' && !initialCatalog;
+  const hasCatalogError = catalogStatus === 'error' && !initialCatalog;
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -130,7 +145,7 @@ export default function StoreHome() {
     <main className="store-home" id="home">
       <StoreBannerSlider />
       <div className="category-stream" id="categories">
-        {catalogStatus === 'loading' ? (
+        {isCatalogLoading ? (
           <div className="catalog-loading-skeleton" aria-hidden="true">
             <style jsx>{`
               .catalog-loading-skeleton { width: 100%; padding-bottom: 8px; }
@@ -238,7 +253,7 @@ export default function StoreHome() {
               </section>
             ))}
           </div>
-        ) : catalogStatus === 'error' ? (
+        ) : hasCatalogError ? (
           <div className="store-no-results" role="alert">
             <strong>تعذر تحميل المنتجات حاليًا</strong>
             <p>تحقق من اتصال قاعدة البيانات وحاول تحديث الصفحة.</p>
