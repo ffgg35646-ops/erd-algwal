@@ -35,7 +35,7 @@ type CheckoutDraft = {
     storage?: string;
     name?: string;
     unitPrice?: number;
-  >>;
+  }>;
 };
 
 type VerifyAmountResponse = {
