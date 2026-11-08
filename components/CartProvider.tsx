@@ -20,7 +20,8 @@ type CartContextValue = {
 };
 
 const STORAGE_KEY = 'erd-algwal-cart-v1';
-const CATALOG_STORAGE_KEY = 'erd-algwal-catalog-v1';
+const CATALOG_STORAGE_KEY = 'erd-algwal-catalog-qauara-clean-v3';
+const LEGACY_CATALOG_STORAGE_KEY = 'erd-algwal-catalog-v1';
 
 function decodeCartVariant(value: string) {
   try {
@@ -114,12 +115,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // Discard the previous catalogue cache: it may contain products from the
+      // old seed import and would otherwise reappear before the database refresh.
+      window.localStorage.removeItem(LEGACY_CATALOG_STORAGE_KEY);
       const cachedCatalog = window.localStorage.getItem(CATALOG_STORAGE_KEY);
       if (cachedCatalog) {
         const parsed = JSON.parse(cachedCatalog) as { products?: Product[]; categories?: StoreCategory[] };
-        // Keep built-in products on screen when an older cache contains an empty result.
-        if (Array.isArray(parsed.products) && parsed.products.length) setCatalogProducts(parsed.products);
-        if (Array.isArray(parsed.categories) && parsed.categories.length) setCatalogCategories(parsed.categories);
+        if (Array.isArray(parsed.products)) setCatalogProducts(parsed.products);
+        if (Array.isArray(parsed.categories)) setCatalogCategories(parsed.categories);
       }
     } catch {
       // Ignore a damaged cache and let the background request refresh the catalogue.
