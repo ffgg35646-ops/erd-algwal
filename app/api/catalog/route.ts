@@ -234,14 +234,15 @@ export async function GET() {
         ? redBarSettings.categoryIds
         : null,
       sources: { categories: categoryResult.source, products: 'database' }
-    }, { headers: CATALOG_CACHE_HEADERS });
+    }, { headers: NO_STORE_HEADERS });
   } catch (error) {
     console.error('Catalogue database connection failed:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({
-      categories: fallbackCategoryItems,
-      products: defaultStoreProducts,
+      error: 'Catalogue database connection failed',
+      categories: [],
+      products: [],
       redCategoryBarIds: null,
-      sources: { categories: 'fallback', products: 'fallback' }
-    }, { headers: NO_STORE_HEADERS });
+      sources: { categories: 'unavailable', products: 'unavailable' }
+    }, { status: 503, headers: NO_STORE_HEADERS });
   }
 }
