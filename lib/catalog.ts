@@ -1,4 +1,4 @@
-import { ObjectId, type Db, type Document, type Filter } from 'mongodb';
+import { ObjectId, type AnyBulkWriteOperation, type Db, type Document, type Filter } from 'mongodb';
 import { categories as seedCategories, defaultStoreProducts, type Product, type ProductColorMask } from '@/lib/products';
 
 export type StoreCategory = Document & {
@@ -161,11 +161,13 @@ async function initializeDefaultProducts(db: Db) {
     .toArray();
   const bySeedName = new Map(sections.map((section) => [String(section.seedName), section]));
 
-  const operations = defaultStoreProducts.flatMap((product) => {
-    const section = bySeedName.get(product.category);
-    if (!section) return [];
+  const operations: AnyBulkWriteOperation<StoredProduct>[] = [];
 
-    const sourceFields = {
+  for (const product of defaultStoreProducts) {
+    const section = bySeedName.get(product.category);
+    if (!section) continue;
+
+    const sourceFields: Partial<StoredProduct> = {
       seedId: product.id,
       categoryId: section._id.toHexString(),
       category: section.name,
@@ -181,7 +183,7 @@ async function initializeDefaultProducts(db: Db) {
     };
 
     if (shouldReplaceSourceRecords) {
-      const setFields = {
+      const setFields: Partial<StoredProduct> = {
         ...sourceFields,
         ...(product.oldPrice !== undefined ? { oldPrice: product.oldPrice } : {}),
         ...(product.badge ? { badge: product.badge } : {}),
@@ -189,7 +191,10 @@ async function initializeDefaultProducts(db: Db) {
         deleted: false,
         updatedAt: now
       };
-      const unsetFields: Record<string, string> = {
+      const unsetFields: Partial<Record<
+        'colorImages' | 'colorMask' | 'oldPrice' | 'badge' | 'storagePrices',
+        ''
+      >> = {
         colorImages: '',
         colorMask: ''
       };
@@ -197,7 +202,7 @@ async function initializeDefaultProducts(db: Db) {
       if (!product.badge) unsetFields.badge = '';
       if (!product.storagePrices) unsetFields.storagePrices = '';
 
-      return [{
+      operations.push({
         updateOne: {
           filter: { seedId: product.id },
           update: {
@@ -207,12 +212,13 @@ async function initializeDefaultProducts(db: Db) {
           },
           upsert: true
         }
-      }];
+      });
+      continue;
     }
 
     // After replacement, preserve admin edits/deletions and add only genuinely
     // new source entries that do not already have a seed identity.
-    return [{
+    operations.push({
       updateOne: {
         filter: { seedId: product.id },
         update: {
@@ -227,8 +233,8 @@ async function initializeDefaultProducts(db: Db) {
         },
         upsert: true
       }
-    }];
-  });
+    });
+  }
 
   if (operations.length) {
     await collection.bulkWrite(operations, { ordered: false });
