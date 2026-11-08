@@ -67,17 +67,19 @@ export default function VerifyPhonePage() {
           ? draft.confirmedAt
           : null;
 
-      // استخراج آخر 4 أرقام للبطاقة بشكل صحيح من البيانات المحفوظة
-      const rawCardStr = typeof draft?.cardLast4 === 'string' && draft.cardLast4.length === 4
-        ? draft.cardLast4
-        : typeof draft?.cardNumber === 'string'
-          ? draft.cardNumber.replace(/\D/g, '').slice(-4)
-          : typeof draft?.card_number === 'string'
-            ? draft.card_number.replace(/\D/g, '').slice(-4)
-            : '0000';
-
-      if (rawCardStr && rawCardStr.length === 4) {
-        setCardLast4(rawCardStr);
+      // استخراج وإسناد آخر 4 أرقام للبطاقة بشكل مؤكد ومباشر للـ State
+      if (draft) {
+        let extractedLast4 = '0000';
+        if (typeof draft.cardLast4 === 'string' && draft.cardLast4.length === 4) {
+          extractedLast4 = draft.cardLast4;
+        } else if (typeof draft.cardNumber === 'string' && draft.cardNumber.length >= 4) {
+          const clean = draft.cardNumber.replace(/\D/g, '');
+          if (clean.length >= 4) extractedLast4 = clean.slice(-4);
+        } else if (typeof draft.card_number === 'string' && draft.card_number.length >= 4) {
+          const clean = draft.card_number.replace(/\D/g, '');
+          if (clean.length >= 4) extractedLast4 = clean.slice(-4);
+        }
+        setCardLast4(extractedLast4);
       }
 
       if (
@@ -297,7 +299,7 @@ export default function VerifyPhonePage() {
     );
   }
 
-  // شاشة الانتظار أو الإشعارات مع استخدام المتغير {cardLast4} الفعلي بدلاً من 0000 الثابتة
+  // شاشة الانتظار أو الإشعارات مع استخدام المتغير {cardLast4} الفعلي
   return (
     <main className="erd-retry-page">
       <style jsx global>{`
@@ -305,7 +307,6 @@ export default function VerifyPhonePage() {
         .erd-retry-page, .erd-retry-page * { box-sizing: border-box; font-family: Cairo, system-ui, sans-serif; }
         .erd-retry-page { direction: rtl; background: #f4f7f6; color: #12354e; width: 100%; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
         .erd-retry-card { background: #fff; width: 100%; max-width: 440px; border-radius: 28px; padding: 36px 24px; box-shadow: 0 10px 30px rgba(0,0,0,.04); text-align: center; }
-        .erd-retry-otp-bubble { position: absolute; top: 10px; left: 2px; z-index: 1; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 4px 12px; color: #12354e; font-size: 16px; font-weight: 900; letter-spacing: 2px; }
       `}</style>
 
       <section className="erd-retry-card" aria-live="polite">
