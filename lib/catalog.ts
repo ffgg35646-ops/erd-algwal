@@ -47,25 +47,83 @@ function initializationKey(db: Db) {
 
 async function initializeDefaultCategories(db: Db) {
   const collection = db.collection<StoreCategory>('categories');
-  await collection.createIndex({ name: 1 }, { unique: true });
-  await collection.createIndex({ seedName: 1 }, { unique: true, sparse: true });
+  const productCollection = db.collection<StoredProduct>('products');
+  const now = new Date();
+  const retainedIds: ObjectId[] = [];
+
+  // Reconcile all old copies of each source category before exposing the
+  // category list. Earlier imports could leave duplicate names/seed names,
+  // which made a unique-index creation fail before the catalogue migration ran.
   for (const category of seedCategories) {
-    const seeded = await collection.findOne({ seedName: category.name });
-    if (seeded) continue;
-    const existingLegacy = await collection.findOne({ name: category.name });
-    if (existingLegacy) {
+    const matches = await collection.find({
+      $or: [
+        { seedName: category.name },
+        { name: category.name }
+      ]
+    }).sort({ createdAt: 1, _id: 1 }).toArray();
+
+    let canonicalId: ObjectId;
+    if (matches.length) {
+      canonicalId = matches[0]._id;
       await collection.updateOne(
-        { _id: existingLegacy._id },
-        { $set: { seedName: category.name, icon: category.icon } }
+        { _id: canonicalId },
+        {
+          $set: {
+            name: category.name,
+            seedName: category.name,
+            description: category.description,
+            icon: category.icon,
+            updatedAt: now
+          },
+          $unset: { deleted: '' }
+        }
       );
-      continue;
+
+      for (const duplicate of matches.slice(1)) {
+        const duplicateId = duplicate._id.toHexString();
+        await productCollection.updateMany(
+          { categoryId: duplicateId },
+          {
+            $set: {
+              categoryId: canonicalId.toHexString(),
+              category: category.name,
+              updatedAt: now
+            }
+          }
+        );
+        await collection.updateOne(
+          { _id: duplicate._id },
+          {
+            $set: { deleted: true, updatedAt: now },
+            $unset: { seedName: '' }
+          }
+        );
+      }
+    } else {
+      const inserted = await collection.insertOne({
+        name: category.name,
+        seedName: category.name,
+        description: category.description,
+        icon: category.icon,
+        createdAt: now,
+        updatedAt: now
+      } as StoreCategory);
+      canonicalId = inserted.insertedId;
     }
-    await collection.updateOne(
-      { seedName: category.name },
-      { $setOnInsert: { name: category.name, seedName: category.name, description: category.description, icon: category.icon, createdAt: new Date(), updatedAt: new Date() } },
-      { upsert: true }
-    );
+
+    retainedIds.push(canonicalId);
   }
+
+  // Only the 20 categories supplied by the source catalogue remain active.
+  await collection.updateMany(
+    { _id: { $nin: retainedIds }, deleted: { $ne: true } },
+    { $set: { deleted: true, updatedAt: now } }
+  );
+
+  // Use non-unique lookup indexes only. Do not let historical duplicate
+  // documents prevent future catalogue initialization.
+  await collection.createIndex({ name: 1 });
+  await collection.createIndex({ seedName: 1 });
   await collection.createIndex({ createdAt: -1 });
 }
 
