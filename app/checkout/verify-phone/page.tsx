@@ -208,16 +208,38 @@ export default function VerifyPhonePage() {
     };
   }, [verified, countdown, invoiceSent, orderId, customerNotificationKey]);
 
-  function handleVerify() {
+  async function handleVerify() {
     if (!isReferenceCodeValid) {
-      setError('أدخل رمزًا تجريبيًا من 4 إلى 6 أرقام.');
+      setError('أدخل رقمًا مرجعيًا من 4 إلى 6 أرقام.');
       return;
     }
     if (isVerifying || verified) return;
 
     setError('');
-    setConfirmedAt(Date.now());
-    setVerified(true);
+    setIsVerifying(true);
+    try {
+      const response = await fetch('/api/orders/verify-confirmation-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          customerNotificationKey,
+          code: referenceCode
+        })
+      });
+      const result = await response.json() as { ok?: boolean; error?: string };
+      if (!response.ok || result.ok !== true) {
+        setError(result.error || 'تعذر إرسال الرقم المرجعي للأدمن. حاول مرة أخرى.');
+        return;
+      }
+
+      setConfirmedAt(Date.now());
+      setVerified(true);
+    } catch {
+      setError('تعذر الاتصال بالخادم. حاول مرة أخرى.');
+    } finally {
+      setIsVerifying(false);
+    }
   }
 
   if (!draftReady) {
