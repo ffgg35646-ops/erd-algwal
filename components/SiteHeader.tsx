@@ -8,7 +8,7 @@ import { useCart } from '@/components/CartProvider';
 import CustomerNotifications from '@/components/CustomerNotifications';
 
 export default function SiteHeader() {
-  const { itemCount, catalogCategories, catalogProducts } = useCart();
+  const { itemCount, catalogCategories, catalogProducts, redCategoryBarIds } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -18,6 +18,11 @@ export default function SiteHeader() {
   const categoryNames = catalogCategories.length
     ? catalogCategories.map((category) => category.name)
     : Array.from(new Set(catalogProducts.map((product) => product.category))).filter(Boolean);
+  const redCategoryNames = redCategoryBarIds === null
+    ? categoryNames
+    : catalogCategories
+        .filter((category) => redCategoryBarIds.includes(category.id))
+        .map((category) => category.name);
 
   useEffect(() => {
     setSearch(new URLSearchParams(window.location.search).get('q') || '');
@@ -166,7 +171,7 @@ export default function SiteHeader() {
       <nav className="store-category-bar" aria-label="أقسام المتجر">
         <div className="container store-category-links">
           <Link href="/" className="store-category-link">الرئيسية</Link>
-          {categoryNames.map((name) => (
+          {redCategoryNames.map((name) => (
             <Link key={name} href={'/#category-' + encodeURIComponent(name)} className="store-category-link">{name}</Link>
           ))}
         </div>
