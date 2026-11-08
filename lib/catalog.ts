@@ -479,7 +479,8 @@ export async function listCategories(db: Db) {
 
 const BLOCKED_CATALOG_IMAGE_NAMES = new Set([
   'mtc3img_6a7a1945-3a12-4fac-82cc-e207d76bdee8.png',
-  '1793472237161236.png'
+  '1793472237161236.png',
+  'gjaaimG_fbc54b6d-bf6a-49e0-83c1-8c3551b1036c.png'
 ]);
 
 /** Exclude known broken source images wherever they appear in a product. */
