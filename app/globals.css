@@ -6042,12 +6042,12 @@ body.erd-verify-waiting-screen .erd-wait-main {
 }
 
 
-/* Checkout contact inputs: double the original field height. */
+/* Checkout contact inputs: set the requested field height. */
 .checkout-page.checkout-page .checkout-contact-fields .checkout-field input,
 .checkout-page.checkout-page .checkout-contact-fields .city-combobox input {
   box-sizing: border-box;
-  height: 58px !important;
-  min-height: 58px !important;
+  height: 52px !important;
+  min-height: 52px !important;
   padding: 18px !important;
   font-size: 16px !important;
 }
