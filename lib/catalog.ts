@@ -45,6 +45,56 @@ function initializationKey(db: Db) {
   return (process.env.MONGODB_URI || '') + ':' + db.databaseName;
 }
 
+
+/**
+ * Detect catalog data that is not owned by this module's hard-coded seed list.
+ * Imported/admin-managed records must never enter the legacy replacement path:
+ * that path only understands seedId/seedName and would otherwise archive them.
+ */
+async function hasExternallyManagedCatalog(db: Db) {
+  const categoryCollection = db.collection<StoreCategory>('categories');
+  const productCollection = db.collection<StoredProduct>('products');
+  const seedCategoryNames = seedCategories.map((category) => category.name);
+  const seedProductIds = defaultStoreProducts.map((product) => product.id);
+
+  const [externalCategory, externalProduct] = await Promise.all([
+    categoryCollection.findOne({
+      $or: [
+        { sourceStore: { $exists: true } },
+        { sourceCategorySlugs: { $exists: true } },
+        { sourceCategoryUrls: { $exists: true } },
+        { slug: { $exists: true } },
+        { name: { $nin: seedCategoryNames } }
+      ]
+    }),
+    productCollection.findOne({
+      $or: [
+        { sourceStore: { $exists: true } },
+        { seedId: { $regex: /^qauraa:/i } },
+        { sourceProductId: { $exists: true } },
+        { sourceProductUrl: { $exists: true } },
+        { sourceCategorySlug: { $exists: true } },
+        // $nin also matches missing seedId; preserve active records without
+        // a seed identity instead of treating them as obsolete demo products.
+        { seedId: { $nin: seedProductIds }, deleted: { $ne: true } },
+        {
+          $and: [
+            { seedId: { $nin: seedProductIds } },
+            {
+              $or: [
+                { imageUrl: { $regex: '^https?://', $options: 'i' } },
+                { images: { $elemMatch: { $regex: '^https?://', $options: 'i' } } }
+              ]
+            }
+          ]
+        }
+      ]
+    })
+  ]);
+
+  return Boolean(externalCategory || externalProduct);
+}
+
 async function ensureCategoryNameIndex(collection: Collection<StoreCategory>) {
   const indexes = await collection.listIndexes().toArray();
   const hasNameIndex = indexes.some((index) => {
@@ -63,11 +113,9 @@ async function initializeDefaultCategories(db: Db) {
   const productCollection = db.collection<StoredProduct>('products');
   const now = new Date();
 
-  // An externally imported QAURAA catalogue is managed through the Telegram
-  // admin bot. Do not reconcile it against the legacy hard-coded seed list:
-  // that would mark imported categories as deleted when the bot opens.
-  const hasQauraaCategories = await collection.countDocuments({ sourceStore: 'qauraa' });
-  if (hasQauraaCategories > 0) {
+  // Never run seed reconciliation when imported or admin-managed catalog
+  // records exist. Their IDs and category metadata are not legacy seed IDs.
+  if (await hasExternallyManagedCatalog(db)) {
     await ensureCategoryNameIndex(collection);
     await collection.createIndex({ sourceCategorySlugs: 1 });
     await collection.createIndex({ createdAt: -1 });
@@ -139,9 +187,14 @@ async function initializeDefaultCategories(db: Db) {
     retainedIds.push(canonicalId);
   }
 
-  // Only the 20 categories supplied by the source catalogue remain active.
+  // Archive only obsolete records that were explicitly tagged as legacy seeds.
+  // Categories without seedName belong to an importer or the admin bot.
   await collection.updateMany(
-    { _id: { $nin: retainedIds }, deleted: { $ne: true } },
+    {
+      _id: { $nin: retainedIds },
+      seedName: { $type: 'string', $nin: seedCategories.map((category) => category.name) },
+      deleted: { $ne: true }
+    },
     { $set: { deleted: true, updatedAt: now } }
   );
 
@@ -187,32 +240,9 @@ async function initializeDefaultProducts(db: Db) {
 
   const now = new Date();
 
-  // The imported QAURAA catalogue is authoritative. On the first startup
-  // after import, archive only legacy records; preserve every QAURAA product,
-  // its 4 imported image URLs, and its category links. Keep this cleanup
-  // one-time so products subsequently added by the Telegram admin remain live.
-  const hasQauraaCategories = await categoryCollection.countDocuments({ sourceStore: 'qauraa' });
-  const hasQauraaProducts = await collection.countDocuments({ sourceStore: 'qauraa' });
-  if (hasQauraaCategories > 0 && hasQauraaProducts > 0) {
-    const cleanupId = 'qauraa-legacy-catalog-cleanup-v1';
-    const cleanup = await settings.findOne({ _id: cleanupId });
-    if (!cleanup?.completedAt) {
-      await collection.updateMany(
-        { sourceStore: { $ne: 'qauraa' }, deleted: { $ne: true } },
-        { $set: { deleted: true, updatedAt: now } }
-      );
-      await categoryCollection.updateMany(
-        { sourceStore: { $ne: 'qauraa' }, deleted: { $ne: true } },
-        { $set: { deleted: true, updatedAt: now } }
-      );
-      await settings.updateOne(
-        { _id: cleanupId },
-        { $set: { completedAt: now } },
-        { upsert: true }
-      );
-    }
-    return;
-  }
+  // Imported and admin-managed catalog records may not use the old seedId
+  // convention. Exit before duplicate repair, indexes, or archive migrations.
+  if (await hasExternallyManagedCatalog(db)) return;
 
   // Repair duplicate seed identities left by earlier catalogue imports before
   // creating the unique index. Keep the newest record as the canonical one;
@@ -257,12 +287,13 @@ async function initializeDefaultProducts(db: Db) {
   // previous migration, this also archives demo/custom entries left active by
   // the earlier one-time seed, while retaining every document for order history.
   if (!migration?.archivedAt) {
+    // Never archive admin/imported products that do not carry a legacy seedId.
     await collection.updateMany(
-      { seedId: { $nin: productIds }, deleted: { $ne: true } },
+      { seedId: { $type: 'string', $nin: productIds }, deleted: { $ne: true } },
       { $set: { deleted: true, updatedAt: now } }
     );
     await categoryCollection.updateMany(
-      { seedName: { $nin: categoryNames }, deleted: { $ne: true } },
+      { seedName: { $type: 'string', $nin: categoryNames }, deleted: { $ne: true } },
       { $set: { deleted: true, updatedAt: now } }
     );
 
@@ -446,6 +477,16 @@ export async function listCategories(db: Db) {
   return db.collection<StoreCategory>('categories').find({ deleted: { $ne: true } }).sort({ createdAt: 1, name: 1 }).toArray();
 }
 
+function isHttpImageUrl(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  try {
+    const url = new URL(value);
+    return (url.protocol === 'https:' || url.protocol === 'http:') && !url.username && !url.password;
+  } catch {
+    return false;
+  }
+}
+
 export function serializeStoredProduct(product: StoredProduct, options: { includeColorMask?: boolean } = {}): Product & {
   categoryId: string;
   colors: string[];
@@ -456,7 +497,11 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
   const id = product._id.toHexString();
   const colorImageVersion = product.updatedAt instanceof Date ? product.updatedAt.getTime() : 0;
   const images = Array.isArray(product.images) ? product.images : [];
-  const storedImageUrls = images.map((_, index) => `/api/products/${id}/image?index=${index}`);
+  // Imported source-catalog images are ordinary URLs; Telegram file IDs need
+  // the image API proxy. Do not route every stored image through getFile.
+  const storedImageUrls = images.map((image, index) => (
+    isHttpImageUrl(image) ? image : `/api/products/${id}/image?index=${index}`
+  ));
   const displayImages = storedImageUrls.length ? storedImageUrls : product.imageUrl ? [product.imageUrl] : [];
   return {
     id: product.seedId || id,
@@ -474,7 +519,9 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
           colorImages: Object.fromEntries(
             Object.keys(product.colorImages || {}).map((color) => [
               color,
-              `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
+              isHttpImageUrl(product.colorImages?.[color])
+                ? product.colorImages[color]
+                : `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
             ])
           )
         }
