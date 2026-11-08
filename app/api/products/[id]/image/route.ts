@@ -46,7 +46,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const file = await telegramApi<TelegramFile>('getFile', { file_id: imageValue });
     if (!file.file_path) return new NextResponse('Image not available', { status: 404 });
 
-    const token = process.env.TELEGRAM_BOT_TOKEN;
     const telegramResponse = await fetch(`https://api.telegram.org/file/bot${token}/${file.file_path}`, {
       cache: 'force-cache',
       next: { revalidate: 3600 }
