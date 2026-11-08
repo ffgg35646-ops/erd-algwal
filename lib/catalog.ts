@@ -1,4 +1,4 @@
-import { ObjectId, type AnyBulkWriteOperation, type Db, type Document, type Filter } from 'mongodb';
+import { ObjectId, type AnyBulkWriteOperation, type Collection, type Db, type Document, type Filter } from 'mongodb';
 import { categories as seedCategories, defaultStoreProducts, type Product, type ProductColorMask } from '@/lib/products';
 
 export type StoreCategory = Document & {
@@ -45,6 +45,19 @@ function initializationKey(db: Db) {
   return (process.env.MONGODB_URI || '') + ':' + db.databaseName;
 }
 
+async function ensureCategoryNameIndex(collection: Collection<StoreCategory>) {
+  const indexes = await collection.listIndexes().toArray();
+  const hasNameIndex = indexes.some((index) => {
+    const keys = Object.entries(index.key || {});
+    return keys.length === 1 && keys[0][0] === 'name' && keys[0][1] === 1;
+  });
+
+  // An existing unique index on the same key also supports category-name lookups.
+  if (!hasNameIndex) {
+    await collection.createIndex({ name: 1 });
+  }
+}
+
 async function initializeDefaultCategories(db: Db) {
   const collection = db.collection<StoreCategory>('categories');
   const productCollection = db.collection<StoredProduct>('products');
@@ -55,7 +68,7 @@ async function initializeDefaultCategories(db: Db) {
   // that would mark imported categories as deleted when the bot opens.
   const hasQauraaCategories = await collection.countDocuments({ sourceStore: 'qauraa' });
   if (hasQauraaCategories > 0) {
-    await collection.createIndex({ name: 1 });
+    await ensureCategoryNameIndex(collection);
     await collection.createIndex({ sourceCategorySlugs: 1 });
     await collection.createIndex({ createdAt: -1 });
     return;
@@ -134,7 +147,7 @@ async function initializeDefaultCategories(db: Db) {
 
   // Use non-unique lookup indexes only. Do not let historical duplicate
   // documents prevent future catalogue initialization.
-  await collection.createIndex({ name: 1 });
+  await ensureCategoryNameIndex(collection);
   await collection.createIndex({ seedName: 1 });
   await collection.createIndex({ createdAt: -1 });
 }
