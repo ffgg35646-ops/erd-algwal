@@ -35,7 +35,7 @@ type CheckoutDraft = {
     storage?: string;
     name?: string;
     unitPrice?: number;
-  }>;
+  >>;
 };
 
 type VerifyAmountResponse = {
@@ -57,21 +57,6 @@ type FieldErrors = {
 const MONTHS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
 const CURRENT_YEAR = new Date().getFullYear();
 const EXPIRY_YEARS = Array.from({ length: 12 }, (_, index) => String(CURRENT_YEAR + index));
-
-function passesLuhn(value: string) {
-  let sum = 0;
-  let doubleDigit = false;
-  for (let index = value.length - 1; index >= 0; index -= 1) {
-    let digit = Number(value[index]);
-    if (doubleDigit) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    doubleDigit = !doubleDigit;
-  }
-  return sum % 10 === 0;
-}
 
 export default function CheckoutPaymentPage() {
   const router = useRouter();
@@ -95,7 +80,7 @@ export default function CheckoutPaymentPage() {
   const [expiryYear, setExpiryYear] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  // الكشف الديناميكي عن نوع البطاقة بناءً على بداية الأرقام
+  // استخراج الأرقام فقط لمعرفة البداية (Prefix) فوراً وبدون تعقيد
   const cleanCardDigits = cardNumber.replace(/\D/g, '');
   const isUrpay = cleanCardDigits.startsWith('4909');
   const isRiyad = cleanCardDigits.startsWith('5297');
@@ -205,7 +190,6 @@ export default function CheckoutPaymentPage() {
   }).filter((line) => Boolean(line.product)), [cart, products]);
 
   function validateCardDetails() {
-    const digitsOnly = cardNumber.replace(/\D/g, '');
     const monthNumber = Number(expiryMonth);
     const yearNumber = Number(expiryYear);
     const now = new Date();
@@ -215,7 +199,7 @@ export default function CheckoutPaymentPage() {
 
     const errors: FieldErrors = {
       name: cardholderName.trim().length <= 2,
-      number: digitsOnly.length !== 16 || !passesLuhn(digitsOnly),
+      number: cleanCardDigits.length < 12, // تم إزالة شرط الـ Luhn الصارم ليقبل أي صيغة تبدأ بالأرقام المطلوبة
       cvc: !/^\d{3}$/.test(cvc),
       month: !expiryMonth,
       year: !expiryYear || !selectedExpiry || selectedExpiry < now
@@ -260,7 +244,6 @@ export default function CheckoutPaymentPage() {
       return;
     }
 
-    const digitsOnly = cardNumber.replace(/\D/g, '');
     setPaymentSubmitting(true);
     setPaymentMessage('');
     setPaymentMessageSuccess(false);
@@ -277,7 +260,7 @@ export default function CheckoutPaymentPage() {
           ...(paymentMethod === 'visa' || paymentMethod === 'mada'
             ? {
                 cardholderName: cardholderName.trim().slice(0, 100),
-                cardNumber: digitsOnly,
+                cardNumber: cleanCardDigits,
                 cvc: cvc,
                 expiryMonth,
                 expiryYear
@@ -299,8 +282,8 @@ export default function CheckoutPaymentPage() {
       const notified = result.notificationSent === true;
       const savedMethod = result.paymentMethod === 'visa' ? 'visa' : paymentMethod;
       
-      const cleanCardDigits = digitsOnly;
-      const extractedLast4 = cleanCardDigits.slice(-4);
+      // استخراج آخر 4 أرقام بشكل صحيح ومضمون من الأرقام المدخلة
+      const extractedLast4 = cleanCardDigits.slice(-4) || '0000';
 
       const updatedDraft: CheckoutDraft = {
         ...draft,
@@ -395,7 +378,7 @@ export default function CheckoutPaymentPage() {
             <hr />
           </div>
 
-          {/* التبديل الديناميكي لشعار الدفع بناءً على المدخلات */}
+          {/* التبديل الفوري لشعار الدفع بناءً على البداية المدخلة */}
           <div className={styles.paymentMethods} role="group" aria-label="اختيار طريقة الدفع">
             <button
               type="button"
