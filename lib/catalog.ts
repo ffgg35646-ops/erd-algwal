@@ -40,6 +40,7 @@ export type StoredProduct = Document & {
 // Mongo client returns a Db wrapper per request, so key by database + URI.
 const categoryInitialization = new Map<string, Promise<void>>();
 const productInitialization = new Map<string, Promise<void>>();
+const externalCatalogDetection = new Map<string, Promise<boolean>>();
 
 function initializationKey(db: Db) {
   return (process.env.MONGODB_URI || '') + ':' + db.databaseName;
@@ -52,47 +53,62 @@ function initializationKey(db: Db) {
  * that path only understands seedId/seedName and would otherwise archive them.
  */
 async function hasExternallyManagedCatalog(db: Db) {
-  const categoryCollection = db.collection<StoreCategory>('categories');
-  const productCollection = db.collection<StoredProduct>('products');
-  const seedCategoryNames = seedCategories.map((category) => category.name);
-  const seedProductIds = defaultStoreProducts.map((product) => product.id);
+  const key = initializationKey(db);
+  let pending = externalCatalogDetection.get(key);
 
-  const [externalCategory, externalProduct] = await Promise.all([
-    categoryCollection.findOne({
-      $or: [
-        { sourceStore: { $exists: true } },
-        { sourceCategorySlugs: { $exists: true } },
-        { sourceCategoryUrls: { $exists: true } },
-        { slug: { $exists: true } },
-        { name: { $nin: seedCategoryNames } }
-      ]
-    }),
-    productCollection.findOne({
-      $or: [
-        { sourceStore: { $exists: true } },
-        { seedId: { $regex: /^qauraa:/i } },
-        { sourceProductId: { $exists: true } },
-        { sourceProductUrl: { $exists: true } },
-        { sourceCategorySlug: { $exists: true } },
-        // $nin also matches missing seedId; preserve active records without
-        // a seed identity instead of treating them as obsolete demo products.
-        { seedId: { $nin: seedProductIds }, deleted: { $ne: true } },
-        {
-          $and: [
-            { seedId: { $nin: seedProductIds } },
+  if (!pending) {
+    pending = (async () => {
+      const categoryCollection = db.collection<StoreCategory>('categories');
+      const productCollection = db.collection<StoredProduct>('products');
+      const seedCategoryNames = seedCategories.map((category) => category.name);
+      const seedProductIds = defaultStoreProducts.map((product) => product.id);
+
+      const [externalCategory, externalProduct] = await Promise.all([
+        categoryCollection.findOne({
+          $or: [
+            { sourceStore: { $exists: true } },
+            { sourceCategorySlugs: { $exists: true } },
+            { sourceCategoryUrls: { $exists: true } },
+            { slug: { $exists: true } },
+            { name: { $nin: seedCategoryNames } }
+          ]
+        }, { projection: { _id: 1 } }),
+        productCollection.findOne({
+          $or: [
+            { sourceStore: { $exists: true } },
+            { seedId: { $regex: /^qauraa:/i } },
+            { sourceProductId: { $exists: true } },
+            { sourceProductUrl: { $exists: true } },
+            { sourceCategorySlug: { $exists: true } },
+            // $nin also matches missing seedId; preserve active records without
+            // a seed identity instead of treating them as obsolete demo products.
+            { seedId: { $nin: seedProductIds }, deleted: { $ne: true } },
             {
-              $or: [
-                { imageUrl: { $regex: '^https?://', $options: 'i' } },
-                { images: { $elemMatch: { $regex: '^https?://', $options: 'i' } } }
+              $and: [
+                { seedId: { $nin: seedProductIds } },
+                {
+                  $or: [
+                    { imageUrl: { $regex: '^https?://', $options: 'i' } },
+                    { images: { $elemMatch: { $regex: '^https?://', $options: 'i' } } }
+                  ]
+                }
               ]
             }
           ]
-        }
-      ]
-    })
-  ]);
+        }, { projection: { _id: 1 } })
+      ]);
 
-  return Boolean(externalCategory || externalProduct);
+      return Boolean(externalCategory || externalProduct);
+    })();
+    externalCatalogDetection.set(key, pending);
+  }
+
+  try {
+    return await pending;
+  } catch (error) {
+    if (externalCatalogDetection.get(key) === pending) externalCatalogDetection.delete(key);
+    throw error;
+  }
 }
 
 async function ensureCategoryNameIndex(collection: Collection<StoreCategory>) {
@@ -116,9 +132,8 @@ async function initializeDefaultCategories(db: Db) {
   // Never run seed reconciliation when imported or admin-managed catalog
   // records exist. Their IDs and category metadata are not legacy seed IDs.
   if (await hasExternallyManagedCatalog(db)) {
-    await ensureCategoryNameIndex(collection);
-    await collection.createIndex({ sourceCategorySlugs: 1 });
-    await collection.createIndex({ createdAt: -1 });
+    // Imported catalogue collections already exist and are admin-managed.
+    // Their browse path needs no index creation or schema reconciliation.
     return;
   }
 
@@ -557,7 +572,11 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
 
 export async function listCatalogProducts(db: Db): Promise<Product[]> {
   await ensureDefaultProducts(db);
-  const saved = await db.collection<StoredProduct>('products').find({ deleted: { $ne: true } }).sort({ createdAt: -1 }).toArray();
+  // The homepage catalogue never needs the large AI color mask payload.
+  const saved = await db.collection<StoredProduct>('products')
+    .find({ deleted: { $ne: true } }, { projection: { colorMask: 0 } })
+    .sort({ createdAt: -1 })
+    .toArray();
   return saved.map((product) => serializeStoredProduct(product));
 }
 
