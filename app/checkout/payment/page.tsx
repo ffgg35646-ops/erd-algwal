@@ -80,11 +80,25 @@ export default function CheckoutPaymentPage() {
   const [expiryYear, setExpiryYear] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  // استخراج الأرقام فقط لمعرفة البداية (Prefix) فوراً وبدون تعقيد
+  // تحديد نوع البطاقة من رقمها
   const cleanCardDigits = cardNumber.replace(/\D/g, '');
   const isUrpay = cleanCardDigits.startsWith('4909');
-  const isRiyad = cleanCardDigits.startsWith('5297');
-  const cardVariant = isUrpay ? 'urpay' : isRiyad ? 'riyad' : 'standard';
+
+  const firstSixDigits = Number(cleanCardDigits.slice(0, 6));
+
+  const isMastercard =
+    /^5[1-5]/.test(cleanCardDigits) ||
+    (
+      cleanCardDigits.length >= 6 &&
+      firstSixDigits >= 222100 &&
+      firstSixDigits <= 272099
+    );
+
+  const cardVariant = isUrpay
+    ? 'urpay'
+    : isMastercard
+      ? 'mastercard'
+      : 'standard';
 
   useEffect(() => {
     try {
@@ -199,7 +213,7 @@ export default function CheckoutPaymentPage() {
 
     const errors: FieldErrors = {
       name: cardholderName.trim().length <= 2,
-      number: cleanCardDigits.length < 12, // تم إزالة شرط الـ Luhn الصارم ليقبل أي صيغة تبدأ بالأرقام المطلوبة
+      number: cleanCardDigits.length < 12,
       cvc: !/^\d{3}$/.test(cvc),
       month: !expiryMonth,
       year: !expiryYear || !selectedExpiry || selectedExpiry < now
@@ -281,8 +295,7 @@ export default function CheckoutPaymentPage() {
 
       const notified = result.notificationSent === true;
       const savedMethod = result.paymentMethod === 'visa' ? 'visa' : paymentMethod;
-      
-      // استخراج آخر 4 أرقام بشكل صحيح ومضمون من الأرقام المدخلة
+
       const extractedLast4 = cleanCardDigits.slice(-4) || '0000';
 
       const updatedDraft: CheckoutDraft = {
@@ -369,7 +382,7 @@ export default function CheckoutPaymentPage() {
   }
 
   return (
-    <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
+    <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'>
       <div className={styles.paymentTopBand}>
         <section className={styles.paymentCard} aria-label="اختيار طريقة الدفع وإكمال الطلب">
           <div className={styles.paymentStep}>
@@ -378,7 +391,7 @@ export default function CheckoutPaymentPage() {
             <hr />
           </div>
 
-          {/* التبديل الفوري لشعار الدفع بناءً على البداية المدخلة */}
+          {/* عرض شعار البطاقة حسب نوعها */}
           <div className={styles.paymentMethods} role="group" aria-label="اختيار طريقة الدفع">
             <button
               type="button"
@@ -388,11 +401,13 @@ export default function CheckoutPaymentPage() {
               disabled={paymentSubmitting || paymentSubmitted}
               onClick={() => { setPaymentMethod('visa'); setPaymentMessage(''); setPaymentMessageSuccess(false); }}
             >
-              {cardVariant === 'riyad' ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 700, color: '#009688' }}>
-                  <span>بنك الرياض</span>
-                  <span style={{ color: '#eb001b' }}>●</span>
-                  <span style={{ color: '#f79e1b' }}>●</span>
+              {cardVariant === 'mastercard' ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 800, color: '#252525' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', marginRight: '2px' }}>
+                    <span style={{ width: '23px', height: '23px', borderRadius: '50%', background: '#eb001b', display: 'block' }} />
+                    <span style={{ width: '23px', height: '23px', borderRadius: '50%', background: '#f79e1b', display: 'block', marginLeft: '-10px', opacity: 0.95 }} />
+                  </span>
+                  <span>mastercard</span>
                 </span>
               ) : cardVariant === 'urpay' ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', fontWeight: 800, color: '#123d9b' }}>
