@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
-import { findStoredProduct } from '@/lib/catalog';
+import { findStoredProduct, isBlockedCatalogImage } from '@/lib/catalog';
 import { telegramApi } from '@/lib/telegram';
 
 export const runtime = 'nodejs';
@@ -26,7 +26,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const db = await getDb();
     const product = await findStoredProduct(db, id);
     const imageValue = color !== null ? product?.colorImages?.[color] : product?.images?.[index];
-    if (!imageValue) return new NextResponse('Image not found', { status: 404 });
+    if (!imageValue || isBlockedCatalogImage(imageValue)) {
+      return new NextResponse('Image not found', { status: 404 });
+    }
 
     // Some importers store HTTP(S) image URLs instead of Telegram file IDs.
     // Redirect those to the public image host; only Telegram IDs use getFile.
