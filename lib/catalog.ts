@@ -49,6 +49,18 @@ async function initializeDefaultCategories(db: Db) {
   const collection = db.collection<StoreCategory>('categories');
   const productCollection = db.collection<StoredProduct>('products');
   const now = new Date();
+
+  // An externally imported QAURAA catalogue is managed through the Telegram
+  // admin bot. Do not reconcile it against the legacy hard-coded seed list:
+  // that would mark imported categories as deleted when the bot opens.
+  const hasQauraaCategories = await collection.countDocuments({ sourceStore: 'qauraa' });
+  if (hasQauraaCategories > 0) {
+    await collection.createIndex({ name: 1 });
+    await collection.createIndex({ sourceCategorySlugs: 1 });
+    await collection.createIndex({ createdAt: -1 });
+    return;
+  }
+
   const retainedIds: ObjectId[] = [];
 
   // Reconcile all old copies of each source category before exposing the
@@ -161,6 +173,15 @@ async function initializeDefaultProducts(db: Db) {
   }>('store_settings');
 
   const now = new Date();
+
+  // A QAURAA catalogue imported directly into MongoDB is the live catalogue.
+  // Keep it under Telegram admin control and skip the legacy static seed
+  // migration, which would otherwise archive imported products/categories.
+  const hasQauraaCategories = await categoryCollection.countDocuments({ sourceStore: 'qauraa' });
+  const hasQauraaProducts = await collection.countDocuments({ sourceStore: 'qauraa' });
+  if (hasQauraaCategories > 0 || hasQauraaProducts > 0) {
+    return;
+  }
 
   // Repair duplicate seed identities left by earlier catalogue imports before
   // creating the unique index. Keep the newest record as the canonical one;
