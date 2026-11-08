@@ -517,12 +517,15 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
     ...(Object.keys(product.colorImages || {}).length
       ? {
           colorImages: Object.fromEntries(
-            Object.keys(product.colorImages || {}).map((color) => [
-              color,
-              isHttpImageUrl(product.colorImages?.[color])
-                ? product.colorImages[color]
-                : `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
-            ])
+            Object.keys(product.colorImages || {}).map((color) => {
+              const colorImage = product.colorImages?.[color];
+              return [
+                color,
+                isHttpImageUrl(colorImage)
+                  ? colorImage
+                  : `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
+              ] as const;
+            })
           )
         }
       : {}),
