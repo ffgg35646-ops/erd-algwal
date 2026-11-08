@@ -104,7 +104,13 @@ async function hasExternallyManagedCatalog(db: Db) {
   }
 
   try {
-    return await pending;
+    const detected = await pending;
+    // Cache only a positive result: a catalog may be imported after a request
+    // that found no external records, and that later import must be detected.
+    if (!detected && externalCatalogDetection.get(key) === pending) {
+      externalCatalogDetection.delete(key);
+    }
+    return detected;
   } catch (error) {
     if (externalCatalogDetection.get(key) === pending) externalCatalogDetection.delete(key);
     throw error;
