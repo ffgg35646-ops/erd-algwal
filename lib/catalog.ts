@@ -556,11 +556,14 @@ async function removeRequestedCatalogImageReferences(db: Db) {
 
         if (!removeGalleryImage && !removeCoverImage && !removeVariantImage) continue;
 
-        const setFields: Document = { updatedAt: new Date() };
+        const setFields: Partial<StoredProduct> = { updatedAt: new Date() };
         if (removeGalleryImage) setFields.images = filteredImages;
         if (removeVariantImage) setFields.colorImages = filteredColorImages;
 
-        const update: Document = { $set: setFields };
+        const update: {
+          $set: Partial<StoredProduct>;
+          $unset?: { imageUrl: '' };
+        } = { $set: setFields };
         if (removeCoverImage) update.$unset = { imageUrl: '' };
         await collection.updateOne({ _id: product._id }, update);
       }
