@@ -41,6 +41,7 @@ export type StoredProduct = Document & {
 const categoryInitialization = new Map<string, Promise<void>>();
 const productInitialization = new Map<string, Promise<void>>();
 const externalCatalogDetection = new Map<string, Promise<boolean>>();
+const blockedCatalogImageCleanup = new Map<string, Promise<void>>();
 
 function initializationKey(db: Db) {
   return (process.env.MONGODB_URI || '') + ':' + db.databaseName;
@@ -498,21 +499,82 @@ export async function listCategories(db: Db) {
   return db.collection<StoreCategory>('categories').find({ deleted: { $ne: true } }).sort({ createdAt: 1, name: 1 }).toArray();
 }
 
+const REMOVED_CATALOG_IMAGE_NAME = 'GjaaIMG_fbc54b6d-bf6a-49e0-83c1-8c3551b1036c.png';
 const BLOCKED_CATALOG_IMAGE_NAMES = new Set([
   'mtc3img_6a7a1945-3a12-4fac-82cc-e207d76bdee8.png',
   '1793472237161236.png',
-  'GjaaIMG_fbc54b6d-bf6a-49e0-83c1-8c3551b1036c.png'
+  REMOVED_CATALOG_IMAGE_NAME
 ]);
 
-/** Exclude known broken source images wherever they appear in a product. */
-export function isBlockedCatalogImage(value: unknown): boolean {
-  if (typeof value !== 'string' || !value.trim()) return false;
+function catalogImageFilename(value: string) {
+  const path = value.trim().replace(/\\/g, '/').split(/[?#]/, 1)[0];
+  const filename = path.slice(path.lastIndexOf('/') + 1);
   try {
-    const pathname = new URL(value).pathname;
-    const filename = decodeURIComponent(pathname.slice(pathname.lastIndexOf('/') + 1));
-    return BLOCKED_CATALOG_IMAGE_NAMES.has(filename.toLowerCase());
+    return decodeURIComponent(filename).toLowerCase();
   } catch {
-    return false;
+    return filename.toLowerCase();
+  }
+}
+
+/** Exclude known broken source images from absolute URLs and relative paths. */
+export function isBlockedCatalogImage(value: unknown): boolean {
+  return typeof value === 'string'
+    && BLOCKED_CATALOG_IMAGE_NAMES.has(catalogImageFilename(value));
+}
+
+function isRemovedCatalogImage(value: unknown) {
+  return typeof value === 'string'
+    && catalogImageFilename(value) === REMOVED_CATALOG_IMAGE_NAME.toLowerCase();
+}
+
+/**
+ * Permanently remove the requested source image from product records once per
+ * database/runtime. This cleans the stored gallery, cover image, and variants,
+ * rather than relying only on presentation-time filtering.
+ */
+async function removeRequestedCatalogImageReferences(db: Db) {
+  const key = initializationKey(db);
+  let pending = blockedCatalogImageCleanup.get(key);
+
+  if (!pending) {
+    pending = (async () => {
+      const collection = db.collection<StoredProduct>('products');
+      const products = await collection.find({}, {
+        projection: { _id: 1, imageUrl: 1, images: 1, colorImages: 1 }
+      }).toArray();
+
+      for (const product of products) {
+        const originalImages = Array.isArray(product.images) ? product.images : [];
+        const filteredImages = originalImages.filter((image) => !isRemovedCatalogImage(image));
+        const originalColorImages = Object.entries(product.colorImages || {});
+        const filteredColorImages = Object.fromEntries(
+          originalColorImages.filter(([, image]) => !isRemovedCatalogImage(image))
+        );
+        const removeGalleryImage = filteredImages.length !== originalImages.length;
+        const removeCoverImage = isRemovedCatalogImage(product.imageUrl);
+        const removeVariantImage = Object.keys(filteredColorImages).length !== originalColorImages.length;
+
+        if (!removeGalleryImage && !removeCoverImage && !removeVariantImage) continue;
+
+        const setFields: Document = { updatedAt: new Date() };
+        if (removeGalleryImage) setFields.images = filteredImages;
+        if (removeVariantImage) setFields.colorImages = filteredColorImages;
+
+        const update: Document = { $set: setFields };
+        if (removeCoverImage) update.$unset = { imageUrl: '' };
+        await collection.updateOne({ _id: product._id }, update);
+      }
+    })();
+    blockedCatalogImageCleanup.set(key, pending);
+  }
+
+  try {
+    await pending;
+  } catch (error) {
+    if (blockedCatalogImageCleanup.get(key) === pending) {
+      blockedCatalogImageCleanup.delete(key);
+    }
+    throw error;
   }
 }
 
@@ -578,6 +640,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
 
 export async function listCatalogProducts(db: Db): Promise<Product[]> {
   await ensureDefaultProducts(db);
+  await removeRequestedCatalogImageReferences(db);
   // The homepage catalogue never needs the large AI color mask payload.
   const saved = await db.collection<StoredProduct>('products')
     .find({ deleted: { $ne: true } }, { projection: { colorMask: 0 } })
