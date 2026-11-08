@@ -174,12 +174,30 @@ async function initializeDefaultProducts(db: Db) {
 
   const now = new Date();
 
-  // A QAURAA catalogue imported directly into MongoDB is the live catalogue.
-  // Keep it under Telegram admin control and skip the legacy static seed
-  // migration, which would otherwise archive imported products/categories.
+  // The imported QAURAA catalogue is authoritative. On the first startup
+  // after import, archive only legacy records; preserve every QAURAA product,
+  // its 4 imported image URLs, and its category links. Keep this cleanup
+  // one-time so products subsequently added by the Telegram admin remain live.
   const hasQauraaCategories = await categoryCollection.countDocuments({ sourceStore: 'qauraa' });
   const hasQauraaProducts = await collection.countDocuments({ sourceStore: 'qauraa' });
-  if (hasQauraaCategories > 0 || hasQauraaProducts > 0) {
+  if (hasQauraaCategories > 0 && hasQauraaProducts > 0) {
+    const cleanupId = 'qauraa-legacy-catalog-cleanup-v1';
+    const cleanup = await settings.findOne({ _id: cleanupId });
+    if (!cleanup?.completedAt) {
+      await collection.updateMany(
+        { sourceStore: { $ne: 'qauraa' }, deleted: { $ne: true } },
+        { $set: { deleted: true, updatedAt: now } }
+      );
+      await categoryCollection.updateMany(
+        { sourceStore: { $ne: 'qauraa' }, deleted: { $ne: true } },
+        { $set: { deleted: true, updatedAt: now } }
+      );
+      await settings.updateOne(
+        { _id: cleanupId },
+        { $set: { completedAt: now } },
+        { upsert: true }
+      );
+    }
     return;
   }
 
