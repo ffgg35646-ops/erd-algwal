@@ -76,3 +76,4 @@ export default async function HomePage() {
   const initialCatalog = await loadInitialCatalog();
   return <StoreHome initialCatalog={initialCatalog} />;
 }
+
