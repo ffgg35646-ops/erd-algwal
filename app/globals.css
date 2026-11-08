@@ -6040,3 +6040,14 @@ body.erd-verify-waiting-screen .erd-wait-main {
     line-height: 1.5;
   }
 }
+
+
+/* Checkout contact inputs: double the original field height. */
+.checkout-page.checkout-page .checkout-contact-fields .checkout-field input,
+.checkout-page.checkout-page .checkout-contact-fields .city-combobox input {
+  box-sizing: border-box;
+  height: 88px !important;
+  min-height: 88px !important;
+  padding: 18px !important;
+  font-size: 16px !important;
+}
