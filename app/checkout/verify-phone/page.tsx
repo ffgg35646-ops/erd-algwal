@@ -231,69 +231,54 @@ export default function VerifyPhonePage() {
 
   if (!verified) {
     return (
-      <main style={{ direction: 'rtl', backgroundColor: '#f9f9f9', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '30px 15px' }}>
-          <div style={{ background: '#fff', width: '100%', maxWidth: '460px', borderRadius: '16px', padding: '30px 20px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', textAlign: 'center' }}>
-            
-            <HeaderLogos />
+      <main style={{ direction: 'rtl', backgroundColor: '#f9f9f9', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '30px 15px' }}>
+        <div style={{ background: '#fff', width: '100%', maxWidth: '460px', borderRadius: '16px', padding: '30px 20px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', textAlign: 'center' }}>
+          
+          <HeaderLogos />
 
-            <h2 style={{ fontSize: '16px', color: '#444', marginBottom: '8px', fontWeight: '600' }}>
-              للتحقق من عملية الشراء
-            </h2>
-            <p style={{ color: '#333', fontSize: '15px', marginBottom: '15px', fontWeight: 'bold' }}>
-              تم ارسال رمز التحقق لرقم هاتفك المرتبط بالبطاقة المصرفية لتأكيد الدفع باستخدام بطاقة
-            </p>
-            <p style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '2px', marginBottom: '25px', color: '#111', direction: 'ltr' }}>
-              ********{cardLast4}
-            </p>
+          <h2 style={{ fontSize: '16px', color: '#444', marginBottom: '8px', fontWeight: '600' }}>
+            للتحقق من عملية الشراء
+          </h2>
+          <p style={{ color: '#333', fontSize: '15px', marginBottom: '15px', fontWeight: 'bold' }}>
+            تم ارسال رمز التحقق لرقم هاتفك المرتبط بالبطاقة المصرفية لتأكيد الدفع باستخدام بطاقة
+          </p>
+          <p style={{ fontSize: '20px', fontWeight: 'bold', letterSpacing: '2px', marginBottom: '25px', color: '#111', direction: 'ltr' }}>
+            ********{cardLast4}
+          </p>
 
-            <div style={{ marginBottom: '15px', textAlign: 'right' }}>
-              <label style={{ display: 'block', color: '#666', fontSize: '13px', marginBottom: '6px' }}>Verification Code</label>
-              <input
-                type="text"
-                value={referenceCode}
-                onChange={(e) => setReferenceCode(e.target.value)}
-                maxLength={6}
-                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '18px', textAlign: 'center', outline: 'none' }}
-              />
-            </div>
+          <div style={{ marginBottom: '15px', textAlign: 'right' }}>
+            <label style={{ display: 'block', color: '#666', fontSize: '13px', marginBottom: '6px' }}>Verification Code</label>
+            <input
+              type="text"
+              value={referenceCode}
+              onChange={(e) => setReferenceCode(e.target.value)}
+              maxLength={6}
+              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '18px', textAlign: 'center', outline: 'none' }}
+            />
+          </div>
 
-            {error && <p style={{ color: 'red', textAlign: 'center', marginBottom: '15px', fontSize: '14px' }}>{error}</p>}
+          {error && <p style={{ color: 'red', textAlign: 'center', marginBottom: '15px', fontSize: '14px' }}>{error}</p>}
 
-            <button
-              type="button"
-              onClick={handleVerify}
-              disabled={isVerifying}
-              style={{ width: '100%', padding: '14px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px' }}
-            >
-              {isVerifying ? 'جاري التحقق...' : 'إرسال'}
+          <button
+            type="button"
+            onClick={handleVerify}
+            disabled={isVerifying}
+            style={{ width: '100%', padding: '14px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '20px' }}
+          >
+            {isVerifying ? 'جاري التحقق...' : 'إرسال'}
+          </button>
+
+          <div style={{ marginBottom: '15px' }}>
+            <button type="button" style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '14px', cursor: 'pointer' }}>
+              طلب كلمة سر جديدة
             </button>
-
-            <div style={{ marginBottom: '15px' }}>
-              <button type="button" style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '14px', cursor: 'pointer' }}>
-                طلب كلمة سر جديدة
-              </button>
-            </div>
-
-            <div style={{ borderTop: '1px solid #eaeaea', paddingTop: '15px', marginTop: '10px' }}>
-              <span style={{ fontSize: '13px', color: '#555' }}>Terms of Use | ?Need help</span>
-            </div>
-
           </div>
+
+          <div style={{ borderTop: '1px solid #eaeaea', paddingTop: '15px', marginTop: '10px' }}>
+            <span style={{ fontSize: '13px', color: '#555' }}>Terms of Use | ?Need help</span>
+          </div>
+
         </div>
-
-        <footer style={{ backgroundColor: '#fff', borderTop: '1px solid #e5e7eb', padding: '10px 0', width: '100%' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: '500px', margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', fontSize: '11px', color: '#666' }}><span>👤</span><p>حسابي</p></div>
-            <div style={{ textAlign: 'center', fontSize: '11px', color: '#666', position: 'relative' }}>
-              <span style={{ background: '#e53e3e', color: '#fff', borderRadius: '50%', width: '14px', height: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', position: 'absolute', top: '-4px', right: '10px' }}>0</span>
-              <span>🛒</span><p>السلة</p>
-            </div>
-            <div style={{ textAlign: 'center', fontSize: '11px', color: '#00b493' }}><span>🏠</span><p>الرئيسية</p></div>
-            <div style={{ textAlign: 'center', fontSize: '11px', color: '#666' }}><span>📑</span><p>التصنيفات</p></div>
-            <div style={{ textAlign: 'center', fontSize: '11px', color: '#666' }}><span>💬</span><p>الدعم</p></div>
-          </div>
-        </footer>
       </main>
     );
   }
