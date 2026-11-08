@@ -232,35 +232,6 @@ export default function VerifyPhonePage() {
   if (!verified) {
     return (
       <main style={{ direction: 'rtl', backgroundColor: '#f9f9f9', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <header style={{ backgroundColor: '#fff', borderBottom: '1px solid #e5e7eb', width: '100%' }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#00b493', display: 'inline-block' }} />
-                <span style={{ fontSize: '13px', color: '#333' }}>0</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <span style={{ background: '#e53e3e', color: '#fff', borderRadius: '50%', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px' }}>1</span>
-                <span style={{ fontSize: '13px', color: '#333' }}>🛒</span>
-              </div>
-              <span style={{ fontSize: '18px', cursor: 'pointer' }}>🔍</span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ textAlign: 'right', lineHeight: '1.1' }}>
-                <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#12354e', display: 'block' }}>أرض الجوال</span>
-              </div>
-              <div style={{ width: '32px', height: '32px', background: '#00b493', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '14px' }}>أ</span>
-              </div>
-            </div>
-
-            <div>
-              <span style={{ fontSize: '22px', cursor: 'pointer' }}>☰</span>
-            </div>
-          </div>
-        </header>
-
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '30px 15px' }}>
           <div style={{ background: '#fff', width: '100%', maxWidth: '460px', borderRadius: '16px', padding: '30px 20px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', textAlign: 'center' }}>
             
