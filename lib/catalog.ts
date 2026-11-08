@@ -86,7 +86,7 @@ export async function ensureDefaultCategories(db: Db) {
 
 // Replace the previous demo catalogue with the supplied source catalogue.
 // Old catalogue records are soft-deleted so historical orders remain intact.
-const SOURCE_CATALOG_MIGRATION_ID = 'source-catalog-replacement-qauara-v2';
+const SOURCE_CATALOG_MIGRATION_ID = 'source-catalog-replacement-qauara-v3';
 
 async function initializeDefaultProducts(db: Db) {
   await ensureDefaultCategories(db);
@@ -102,9 +102,34 @@ async function initializeDefaultProducts(db: Db) {
     categories?: string[];
   }>('store_settings');
 
-  await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
-
   const now = new Date();
+
+  // Repair duplicate seed identities left by earlier catalogue imports before
+  // creating the unique index. Keep the newest record as the canonical one;
+  // retain duplicate documents as archived records without their seed identity.
+  const duplicateSeedGroups = await collection.aggregate<{
+    _id: string;
+    documentIds: ObjectId[];
+  }>([
+    { $match: { seedId: { $type: 'string', $ne: '' } } },
+    { $sort: { updatedAt: -1, createdAt: 1, _id: 1 } },
+    { $group: { _id: '$seedId', documentIds: { $push: '$_id' } } },
+    { $match: { 'documentIds.1': { $exists: true } } }
+  ]).toArray();
+
+  for (const group of duplicateSeedGroups) {
+    const duplicateIds = group.documentIds.slice(1);
+    if (!duplicateIds.length) continue;
+    await collection.updateMany(
+      { _id: { $in: duplicateIds } },
+      {
+        $set: { deleted: true, updatedAt: now },
+        $unset: { seedId: '' }
+      }
+    );
+  }
+
+  await collection.createIndex({ seedId: 1 }, { unique: true, sparse: true });
   const productIds = defaultStoreProducts.map((product) => product.id);
   const categoryNames = seedCategories.map((category) => category.name);
 
