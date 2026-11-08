@@ -93,6 +93,7 @@ const MENU_SLIDER = 'السلايدر';
 const MENU_POLICIES = 'السياسات';
 const MENU_CUSTOMER_SERVICE = 'خدمات العملاء';
 const MENU_FOOTER_SETTINGS = 'تعديلات أخرى';
+const MENU_RED_BAR = 'الشريط الأحمر';
 const SAVE_FOOTER_TEXT = 'حفظ النص';
 const REWRITE_FOOTER_TEXT = 'إعادة الكتابة';
 const MAIN_MENU_TEXT = 'رجوع إلى القائمة الرئيسية';
@@ -1335,6 +1336,46 @@ async function showFooterSettings(db: Db, chatId: number) {
   );
 }
 
+async function showRedCategoryBarMenu(db: Db, chatId: number, notice = '') {
+  const [sections, settings] = await Promise.all([
+    db.collection<StoreCategory>('categories')
+      .find({ deleted: { $ne: true } })
+      .sort({ createdAt: 1, name: 1 })
+      .limit(80)
+      .toArray(),
+    db.collection<{ _id: string; categoryIds?: string[] }>('store_settings')
+      .findOne({ _id: 'red-category-bar' })
+  ]);
+
+  const selectedIds = new Set(
+    Array.isArray(settings?.categoryIds)
+      ? settings.categoryIds.map(String)
+      : sections.map((section) => section._id.toHexString())
+  );
+  const selectedCount = sections.filter((section) => selectedIds.has(section._id.toHexString())).length;
+  const rows = sections.map((section) => {
+    const id = section._id.toHexString();
+    const isSelected = selectedIds.has(id);
+    return [{
+      text: (isSelected ? '🔴 إزالة من الشريط: ' : '➕ إضافة للشريط: ') + section.name.slice(0, 38),
+      callback_data: (isSelected ? 'red-bar-remove:' : 'red-bar-add:') + id
+    }];
+  });
+  rows.push([{ text: '↩ رجوع إلى القائمة الرئيسية', callback_data: 'main-menu' }]);
+
+  const message = [
+    notice,
+    '🔴 إدارة الشريط الأحمر',
+    'الأقسام الظاهرة حاليًا: ' + selectedCount + ' من ' + sections.length,
+    'اضغط على القسم لإزالته من الشريط أو إضافته إليه.',
+    'الإزالة هنا تخفي القسم من الشريط فقط؛ ولا تحذف القسم أو منتجاته من قاعدة البيانات.'
+  ].filter(Boolean).join('\n\n');
+
+  await sendTelegramMessage(chatId, message, {
+    reply_markup: { inline_keyboard: rows }
+  });
+}
+
 async function showFooterBarcodeMenu(db: Db, chatId: number) {
   const settings = await db.collection<{ _id: string; barcodeFileId?: string }>('store_settings')
     .findOne({ _id: 'footer' });
@@ -1364,6 +1405,62 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   const chatId = chat?.id;
   if (!chatId || chat.type !== 'private' || chatId !== callback.from.id || !callback.data) return;
   const [action, id, field] = callback.data.split(':');
+
+  if (action === 'red-bar-add' || action === 'red-bar-remove') {
+    if (!isObjectId(id || '')) {
+      await sendTelegramMessage(chatId, 'معرّف القسم غير صالح.');
+      return;
+    }
+
+    const [section, settings, activeSections] = await Promise.all([
+      db.collection<StoreCategory>('categories').findOne({
+        _id: new ObjectId(id),
+        deleted: { $ne: true }
+      }),
+      db.collection<{ _id: string; categoryIds?: string[] }>('store_settings')
+        .findOne({ _id: 'red-category-bar' }),
+      db.collection<StoreCategory>('categories')
+        .find({ deleted: { $ne: true } })
+        .project({ _id: 1 })
+        .toArray()
+    ]);
+
+    if (!section) {
+      await showRedCategoryBarMenu(db, chatId, 'القسم لم يعد موجودًا أو تم حذفه من إدارة الأقسام.');
+      return;
+    }
+
+    const categoryIds = Array.isArray(settings?.categoryIds)
+      ? [...new Set(settings.categoryIds.map(String))]
+      : activeSections.map((category) => category._id.toHexString());
+    const sectionId = section._id.toHexString();
+    const alreadySelected = categoryIds.includes(sectionId);
+    const nextCategoryIds = action === 'red-bar-add'
+      ? (alreadySelected ? categoryIds : [...categoryIds, sectionId])
+      : categoryIds.filter((categoryId) => categoryId !== sectionId);
+
+    await db.collection('store_settings').updateOne(
+      { _id: 'red-category-bar' },
+      {
+        $set: {
+          categoryIds: nextCategoryIds,
+          configured: true,
+          updatedAt: new Date(),
+          updatedByTelegramId: callback.from.id
+        }
+      },
+      { upsert: true }
+    );
+
+    await showRedCategoryBarMenu(
+      db,
+      chatId,
+      action === 'red-bar-add'
+        ? '✅ تمت إضافة «' + section.name + '» إلى الشريط الأحمر.'
+        : '✅ تمت إزالة «' + section.name + '» من الشريط فقط. القسم ومنتجاته ما زالت محفوظة.'
+    );
+    return;
+  }
 
   if (
     action === 'product-storage-add'
@@ -2850,6 +2947,11 @@ async function handleUpdate(db: Db, update: TelegramUpdate) {
   }
   if (value === MENU_ADD_SECTION) {
     await startFlow(db, from.id, chatId, 'add_section', 'section_name', {}, 'إضافة قسم جديد\n\nأرسل الاسم فقط. اكتب /cancel للإلغاء.');
+    return;
+  }
+  if (value === MENU_RED_BAR) {
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: from.id });
+    await showRedCategoryBarMenu(db, chatId);
     return;
   }
   if (value === MENU_EDIT_SECTION) {
