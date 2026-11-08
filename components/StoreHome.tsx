@@ -131,8 +131,112 @@ export default function StoreHome() {
       <StoreBannerSlider />
       <div className="category-stream" id="categories">
         {catalogStatus === 'loading' ? (
-          <div className="store-no-results" role="status" aria-live="polite">
-            <strong>جارٍ تحميل الكتالوج الحالي...</strong>
+          <div className="catalog-loading-skeleton" aria-hidden="true">
+            <style jsx>{`
+              .catalog-loading-skeleton { width: 100%; padding-bottom: 8px; }
+              .catalog-loading-section {
+                width: 100%;
+                margin: 0 0 20px;
+                padding: 0 max(15px, calc((100% - 1160px) / 2));
+              }
+              .catalog-loading-heading {
+                display: flex;
+                align-items: center;
+                gap: 11px;
+                margin-bottom: 10px;
+              }
+              .catalog-loading-heading-icon {
+                display: block;
+                flex: 0 0 40px;
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+              }
+              .catalog-loading-heading-lines {
+                display: flex;
+                flex-direction: column;
+                gap: 7px;
+                width: 150px;
+              }
+              .catalog-loading-heading-lines i,
+              .catalog-loading-image,
+              .catalog-loading-copy i {
+                display: block;
+                background: linear-gradient(90deg, #f0f0f2 20%, #fafafa 48%, #f0f0f2 76%);
+                background-size: 220% 100%;
+                animation: catalog-loading-shimmer 1.35s ease-in-out infinite;
+              }
+              .catalog-loading-heading-lines i {
+                height: 9px;
+                border-radius: 99px;
+              }
+              .catalog-loading-heading-lines i:first-child { width: 112px; }
+              .catalog-loading-heading-lines i:last-child { width: 66px; height: 7px; }
+              .catalog-loading-rail {
+                display: flex;
+                gap: 10px;
+                overflow: hidden;
+                padding: 1px 1px 9px;
+              }
+              .catalog-loading-card {
+                display: flex;
+                align-items: center;
+                flex: 0 0 238px;
+                width: 238px;
+                height: 104px;
+                gap: 10px;
+                padding: 8px;
+                border: 1px solid #e5e5ea;
+                border-radius: 16px;
+                background: #fff;
+              }
+              .catalog-loading-image {
+                flex: 0 0 82px;
+                width: 82px;
+                height: 82px;
+                border-radius: 10px;
+              }
+              .catalog-loading-copy {
+                display: flex;
+                flex: 1;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 9px;
+                min-width: 0;
+              }
+              .catalog-loading-copy i {
+                height: 8px;
+                border-radius: 99px;
+              }
+              .catalog-loading-copy i:nth-child(1) { width: 76%; }
+              .catalog-loading-copy i:nth-child(2) { width: 94%; }
+              .catalog-loading-copy i:nth-child(3) { width: 43%; margin-top: 8px; }
+              @keyframes catalog-loading-shimmer {
+                0% { background-position: 100% 0; }
+                100% { background-position: -120% 0; }
+              }
+              @media (prefers-reduced-motion: reduce) {
+                .catalog-loading-heading-lines i,
+                .catalog-loading-image,
+                .catalog-loading-copy i { animation: none; }
+              }
+            `}</style>
+            {Array.from({ length: 3 }, (_, sectionIndex) => (
+              <section className="catalog-loading-section" key={sectionIndex}>
+                <div className="catalog-loading-heading">
+                  <span className="catalog-loading-heading-icon" />
+                  <span className="catalog-loading-heading-lines"><i /><i /></span>
+                </div>
+                <div className="catalog-loading-rail">
+                  {Array.from({ length: 4 }, (_, cardIndex) => (
+                    <div className="catalog-loading-card" key={cardIndex}>
+                      <span className="catalog-loading-image" />
+                      <span className="catalog-loading-copy"><i /><i /><i /></span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
           </div>
         ) : catalogStatus === 'error' ? (
           <div className="store-no-results" role="alert">
