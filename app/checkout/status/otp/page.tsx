@@ -9,7 +9,7 @@ export default function OtpStatusPage() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justify: 'center',
+        justifyContent: 'center',
         padding: '20px 16px',
         backgroundColor: '#ffffff',
         color: '#1a2b3c',
@@ -56,7 +56,7 @@ export default function OtpStatusPage() {
         </p>
 
         {/* الصندوق السفلي */}
-        <div style={{ backgroundColor: '#eef9f6', border: '1px solid #bcece0', borderRadius: '20px', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', textDirection: 'rtl' }}>
+        <div style={{ backgroundColor: '#eef9f6', border: '1px solid #bcece0', borderRadius: '20px', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', direction: 'rtl' }}>
           <div style={{ position: 'relative', width: '110px', height: '70px', backgroundColor: '#1e293b', borderRadius: '10px', padding: '8px', flexShrink: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div style={{ width: '16px', height: '12px', backgroundColor: '#fbbf24', borderRadius: '2px' }} />
             <div style={{ display: 'flex', gap: '3px' }}>
