@@ -1091,7 +1091,7 @@ async function updateOrderStatus(
   if (
     statusChanged
     && order.customerNotificationKey
-    && ['shipped', 'completed', 'cancelled'].includes(nextStatus)
+    && ['shipped', 'cancelled'].includes(nextStatus)
   ) {
     await db.collection('customer_notifications').insertOne({
       customerNotificationKey: order.customerNotificationKey,
@@ -2177,7 +2177,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
         customerNotificationKey: order.customerNotificationKey,
         orderId: order._id.toHexString(),
         orderNumber: order.orderNumber || '#' + order._id.toString().slice(-6),
-        status: 'invoice_documents',
+        status: 'completed',
         statusLabel: order.installment ? 'تم اعتماد طلب التقسيط وإرسال مستنداته' : 'تم اعتماد الطلب وإرسال مستنداته',
         documents,
         createdAt: new Date(),
