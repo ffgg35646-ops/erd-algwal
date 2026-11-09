@@ -167,19 +167,15 @@ export default function VerifyPhonePage() {
       }
     };
 
-    void checkAdminDecision();
+  void checkAdminDecision();
     const interval = window.setInterval(() => {
       updateTimer();
       void checkAdminDecision();
     }, 1000);
-    const timeout = window.setTimeout(() => {
-      if (active && !redirecting) router.replace('/checkout/status/timeout');
-    }, Math.max(0, total * 1000 - (Date.now() - verificationTime)));
 
     return () => {
       active = false;
       clearInterval(interval);
-      clearTimeout(timeout);
     };
   }, [verified, confirmedAt, customerNotificationKey, orderId, router]);
 
