@@ -361,8 +361,8 @@ export default function CheckoutPaymentPage() {
         ? selectedDownPayment
         : null
       : displayTotal;
-
-  if (!draft || !draft.fullName || !draft.acceptedPolicies || (!lines.length && !paymentSubmitted)) {
+  
+if (!draft || !draft.fullName || !draft.acceptedPolicies) {
     return (
       <main className={styles.checkoutShell + ' ' + styles.paymentPageShell + ' payment-design-page'}>
         <div className={styles.paymentTopBand}>
