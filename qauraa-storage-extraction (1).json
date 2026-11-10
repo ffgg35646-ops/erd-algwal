@@ -1,0 +1,3140 @@
+{
+  "sourceFile": "qauraa-variants-scan(1).json",
+  "scannedAt": "2026-11-10T00:30:17.246Z",
+  "totalProducts": 185,
+  "counts": {
+    "selector_options_selected_price_only": 28,
+    "fixed_capacity_sku": 139,
+    "no_storage_evidence": 18
+  },
+  "importantLimit": "في صفحات خيارات المساحة، الملف يحتوي قائمة السعات والسعة المختارة والسعر الحالي فقط، ولا يحتوي سعر كل خيار غير محدد. لم يتم تخمين الأسعار.",
+  "products": [
+    {
+      "mongoId": "6aefe03409c2a7181c882b0b",
+      "sourceProductId": "192",
+      "name": "سامسونج جالكسي S24 Ultra 256GB - تيتانيوم رمادي",
+      "sourceUrl": "https://www.qauraa.store/product2/192",
+      "priceShownOnPage": 5399.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5399.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b0a",
+      "sourceProductId": "193",
+      "name": "سامسونج جالكسي S24 Ultra 256GB - تيتانيوم أصفر",
+      "sourceUrl": "https://www.qauraa.store/product2/193",
+      "priceShownOnPage": 5399.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5399.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b09",
+      "sourceProductId": "194",
+      "name": "سامسونج جالكسي S24 Ultra 256GB - تيتانيوم أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/194",
+      "priceShownOnPage": 5399.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5399.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b08",
+      "sourceProductId": "195",
+      "name": "سامسونج جالكسي S24 Ultra 256GB - تيتانيوم أخضر",
+      "sourceUrl": "https://www.qauraa.store/product2/195",
+      "priceShownOnPage": 5399.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5399.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b07",
+      "sourceProductId": "196",
+      "name": "سامسونج جالكسي S24 Ultra 256GB - تيتانيوم بنفسجي",
+      "sourceUrl": "https://www.qauraa.store/product2/196",
+      "priceShownOnPage": 5399.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5399.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b06",
+      "sourceProductId": "197",
+      "name": "سامسونج جالكسي S24 Ultra 512GB - تيتانيوم رمادي",
+      "sourceUrl": "https://www.qauraa.store/product2/197",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b05",
+      "sourceProductId": "198",
+      "name": "سامسونج جالكسي S24 Ultra 512GB - تيتانيوم أصفر",
+      "sourceUrl": "https://www.qauraa.store/product2/198",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b04",
+      "sourceProductId": "199",
+      "name": "سامسونج جالكسي S24 Ultra 512GB - تيتانيوم أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/199",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b03",
+      "sourceProductId": "200",
+      "name": "سامسونج جالكسي S24 Ultra 512GB - تيتانيوم أخضر",
+      "sourceUrl": "https://www.qauraa.store/product2/200",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b02",
+      "sourceProductId": "201",
+      "name": "سامسونج جالكسي S24 Ultra 512GB - تيتانيوم بنفسجي",
+      "sourceUrl": "https://www.qauraa.store/product2/201",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b01",
+      "sourceProductId": "203",
+      "name": "سامسونج جالكسي S24 Ultra 1TB - تيتانيوم أصفر",
+      "sourceUrl": "https://www.qauraa.store/product2/203",
+      "priceShownOnPage": 6899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 6899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882b00",
+      "sourceProductId": "202",
+      "name": "سامسونج جالكسي S24 Ultra 1TB - تيتانيوم رمادي",
+      "sourceUrl": "https://www.qauraa.store/product2/202",
+      "priceShownOnPage": 6899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 6899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aff",
+      "sourceProductId": "205",
+      "name": "سامسونج جالكسي S24 Ultra 1TB - تيتانيوم أخضر",
+      "sourceUrl": "https://www.qauraa.store/product2/205",
+      "priceShownOnPage": 6899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 6899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882afe",
+      "sourceProductId": "204",
+      "name": "سامسونج جالكسي S24 Ultra 1TB - تيتانيوم أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/204",
+      "priceShownOnPage": 6899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 6899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882afd",
+      "sourceProductId": "206",
+      "name": "سامسونج جالكسي S24 Ultra 1TB - تيتانيوم بنفسجي",
+      "sourceUrl": "https://www.qauraa.store/product2/206",
+      "priceShownOnPage": 6899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 6899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882afc",
+      "sourceProductId": "150",
+      "name": "سامسونج جالكسي S26 256GB - بنفسجي غامق",
+      "sourceUrl": "https://www.qauraa.store/product2/150",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882afb",
+      "sourceProductId": "151",
+      "name": "سامسونج جالكسي S26 256GB - أزرق سماوي",
+      "sourceUrl": "https://www.qauraa.store/product2/151",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882afa",
+      "sourceProductId": "152",
+      "name": "سامسونج جالكسي S26 256GB - أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/152",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af9",
+      "sourceProductId": "157",
+      "name": "سامسونج جالكسي S26 512GB - أزرق سماوي",
+      "sourceUrl": "https://www.qauraa.store/product2/157",
+      "priceShownOnPage": 4599.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4599.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af8",
+      "sourceProductId": "153",
+      "name": "سامسونج جالكسي S26 256GB - أبيض",
+      "sourceUrl": "https://www.qauraa.store/product2/153",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af7",
+      "sourceProductId": "155",
+      "name": "سامسونج جالكسي S26 256GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/155",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af6",
+      "sourceProductId": "154",
+      "name": "سامسونج جالكسي S26 256GB - فضي داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/154",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af5",
+      "sourceProductId": "156",
+      "name": "سامسونج جالكسي S26 512GB - بنفسجي غامق",
+      "sourceUrl": "https://www.qauraa.store/product2/156",
+      "priceShownOnPage": 4599.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4599.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af4",
+      "sourceProductId": "158",
+      "name": "سامسونج جالكسي S26 512GB - أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/158",
+      "priceShownOnPage": 4599.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4599.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af3",
+      "sourceProductId": "159",
+      "name": "سامسونج جالكسي S26 512GB - أبيض",
+      "sourceUrl": "https://www.qauraa.store/product2/159",
+      "priceShownOnPage": 4599.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4599.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af2",
+      "sourceProductId": "160",
+      "name": "سامسونج جالكسي S26 512GB - فضي داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/160",
+      "priceShownOnPage": 4599.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4599.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af1",
+      "sourceProductId": "161",
+      "name": "سامسونج جالكسي S26 512GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/161",
+      "priceShownOnPage": 4599.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4599.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882af0",
+      "sourceProductId": "163",
+      "name": "سامسونج جالكسي S26 Plus 256GB - أزرق سماوي",
+      "sourceUrl": "https://www.qauraa.store/product2/163",
+      "priceShownOnPage": 3999.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3999.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aef",
+      "sourceProductId": "162",
+      "name": "سامسونج جالكسي S26 Plus 256GB - بنفسجي غامق",
+      "sourceUrl": "https://www.qauraa.store/product2/162",
+      "priceShownOnPage": 3999.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3999.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aee",
+      "sourceProductId": "164",
+      "name": "سامسونج جالكسي S26 Plus 256GB - أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/164",
+      "priceShownOnPage": 3999.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3999.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aed",
+      "sourceProductId": "165",
+      "name": "سامسونج جالكسي S26 Plus 256GB - أبيض",
+      "sourceUrl": "https://www.qauraa.store/product2/165",
+      "priceShownOnPage": 3999.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3999.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aec",
+      "sourceProductId": "166",
+      "name": "سامسونج جالكسي S26 Plus 256GB - فضي داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/166",
+      "priceShownOnPage": 3999.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3999.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aeb",
+      "sourceProductId": "167",
+      "name": "سامسونج جالكسي S26 Plus 256GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/167",
+      "priceShownOnPage": 3999.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3999.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aea",
+      "sourceProductId": "168",
+      "name": "سامسونج جالكسي S26 Plus 512GB - بنفسجي غامق",
+      "sourceUrl": "https://www.qauraa.store/product2/168",
+      "priceShownOnPage": 4799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae9",
+      "sourceProductId": "169",
+      "name": "سامسونج جالكسي S26 Plus 512GB - أزرق سماوي",
+      "sourceUrl": "https://www.qauraa.store/product2/169",
+      "priceShownOnPage": 4799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae8",
+      "sourceProductId": "170",
+      "name": "سامسونج جالكسي S26 Plus 512GB - أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/170",
+      "priceShownOnPage": 4799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae7",
+      "sourceProductId": "171",
+      "name": "سامسونج جالكسي S26 Plus 512GB - أبيض",
+      "sourceUrl": "https://www.qauraa.store/product2/171",
+      "priceShownOnPage": 4799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae6",
+      "sourceProductId": "172",
+      "name": "سامسونج جالكسي S26 Plus 512GB - فضي داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/172",
+      "priceShownOnPage": 4799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae5",
+      "sourceProductId": "173",
+      "name": "سامسونج جالكسي S26 Plus 512GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/173",
+      "priceShownOnPage": 4799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae4",
+      "sourceProductId": "174",
+      "name": "سامسونج جالكسي S26 Ultra 256GB - بنفسجي غامق",
+      "sourceUrl": "https://www.qauraa.store/product2/174",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae3",
+      "sourceProductId": "175",
+      "name": "سامسونج جالكسي S26 Ultra 256GB - أزرق سماوي",
+      "sourceUrl": "https://www.qauraa.store/product2/175",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae2",
+      "sourceProductId": "176",
+      "name": "سامسونج جالكسي S26 Ultra 256GB - أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/176",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae1",
+      "sourceProductId": "177",
+      "name": "سامسونج جالكسي S26 Ultra 256GB - أبيض",
+      "sourceUrl": "https://www.qauraa.store/product2/177",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ae0",
+      "sourceProductId": "178",
+      "name": "سامسونج جالكسي S26 Ultra 256GB - فضي داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/178",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882adf",
+      "sourceProductId": "179",
+      "name": "سامسونج جالكسي S26 Ultra 256GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/179",
+      "priceShownOnPage": 5899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ade",
+      "sourceProductId": "180",
+      "name": "سامسونج جالكسي S26 Ultra 512GB - بنفسجي غامق",
+      "sourceUrl": "https://www.qauraa.store/product2/180",
+      "priceShownOnPage": 6699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 6699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882add",
+      "sourceProductId": "181",
+      "name": "سامسونج جالكسي S26 Ultra 512GB - أزرق سماوي",
+      "sourceUrl": "https://www.qauraa.store/product2/181",
+      "priceShownOnPage": 6699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 6699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882adc",
+      "sourceProductId": "182",
+      "name": "سامسونج جالكسي S26 Ultra 512GB - أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/182",
+      "priceShownOnPage": 6699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 6699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882adb",
+      "sourceProductId": "183",
+      "name": "سامسونج جالكسي S26 Ultra 512GB - أبيض",
+      "sourceUrl": "https://www.qauraa.store/product2/183",
+      "priceShownOnPage": 6699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 6699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ada",
+      "sourceProductId": "184",
+      "name": "سامسونج جالكسي S26 Ultra 512GB - فضي داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/184",
+      "priceShownOnPage": 6699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 6699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad9",
+      "sourceProductId": "185",
+      "name": "سامسونج جالكسي S26 Ultra 512GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/185",
+      "priceShownOnPage": 6699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 6699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad8",
+      "sourceProductId": "186",
+      "name": "سامسونج جالكسي S26 Ultra 1TB - بنفسجي غامق",
+      "sourceUrl": "https://www.qauraa.store/product2/186",
+      "priceShownOnPage": 8299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 8299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad7",
+      "sourceProductId": "187",
+      "name": "سامسونج جالكسي S26 Ultra 1TB - أزرق سماوي",
+      "sourceUrl": "https://www.qauraa.store/product2/187",
+      "priceShownOnPage": 8299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 8299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad6",
+      "sourceProductId": "188",
+      "name": "سامسونج جالكسي S26 Ultra 1TB - أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/188",
+      "priceShownOnPage": 8299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 8299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad5",
+      "sourceProductId": "189",
+      "name": "سامسونج جالكسي S26 Ultra 1TB - أبيض",
+      "sourceUrl": "https://www.qauraa.store/product2/189",
+      "priceShownOnPage": 8299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 8299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad4",
+      "sourceProductId": "190",
+      "name": "سامسونج جالكسي S26 Ultra 1TB - فضي داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/190",
+      "priceShownOnPage": 8299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 8299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad3",
+      "sourceProductId": "94",
+      "name": "سامسونج جالكسي S25 128GB - أزرق ثلجي",
+      "sourceUrl": "https://www.qauraa.store/product2/94",
+      "priceShownOnPage": 2199.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2199.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad2",
+      "sourceProductId": "97",
+      "name": "سامسونج جالكسي S25 128GB - كحلي",
+      "sourceUrl": "https://www.qauraa.store/product2/97",
+      "priceShownOnPage": 2199.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2199.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad1",
+      "sourceProductId": "99",
+      "name": "سامسونج جالكسي S25 128GB - أحمر مرجاني",
+      "sourceUrl": "https://www.qauraa.store/product2/99",
+      "priceShownOnPage": 2199.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2199.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ad0",
+      "sourceProductId": "95",
+      "name": "سامسونج جالكسي S25 128GB - فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/95",
+      "priceShownOnPage": 2199.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2199.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882acf",
+      "sourceProductId": "96",
+      "name": "سامسونج جالكسي S25 128GB - نعناعي",
+      "sourceUrl": "https://www.qauraa.store/product2/96",
+      "priceShownOnPage": 2199.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2199.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ace",
+      "sourceProductId": "98",
+      "name": "سامسونج جالكسي S25 128GB - أزرق داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/98",
+      "priceShownOnPage": 2199.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2199.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882acd",
+      "sourceProductId": "100",
+      "name": "سامسونج جالكسي S25 128GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/100",
+      "priceShownOnPage": 2199.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2199.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882acc",
+      "sourceProductId": "101",
+      "name": "سامسونج جالكسي S25 256GB - أزرق ثلجي",
+      "sourceUrl": "https://www.qauraa.store/product2/101",
+      "priceShownOnPage": 2299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882acb",
+      "sourceProductId": "102",
+      "name": "سامسونج جالكسي S25 256GB - فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/102",
+      "priceShownOnPage": 2299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aca",
+      "sourceProductId": "103",
+      "name": "سامسونج جالكسي S25 256GB - نعناعي",
+      "sourceUrl": "https://www.qauraa.store/product2/103",
+      "priceShownOnPage": 2299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac9",
+      "sourceProductId": "104",
+      "name": "سامسونج جالكسي S25 256GB - كحلي",
+      "sourceUrl": "https://www.qauraa.store/product2/104",
+      "priceShownOnPage": 2299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac8",
+      "sourceProductId": "105",
+      "name": "سامسونج جالكسي S25 256GB - أزرق داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/105",
+      "priceShownOnPage": 2299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac7",
+      "sourceProductId": "106",
+      "name": "سامسونج جالكسي S25 256GB - أحمر مرجاني",
+      "sourceUrl": "https://www.qauraa.store/product2/106",
+      "priceShownOnPage": 2299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac6",
+      "sourceProductId": "107",
+      "name": "سامسونج جالكسي S25 256GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/107",
+      "priceShownOnPage": 2299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac5",
+      "sourceProductId": "108",
+      "name": "سامسونج جالكسي S25 512GB - أزرق ثلجي",
+      "sourceUrl": "https://www.qauraa.store/product2/108",
+      "priceShownOnPage": 2899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 2899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac4",
+      "sourceProductId": "109",
+      "name": "سامسونج جالكسي S25 512GB - فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/109",
+      "priceShownOnPage": 2899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 2899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac3",
+      "sourceProductId": "110",
+      "name": "سامسونج جالكسي S25 512GB - نعناعي",
+      "sourceUrl": "https://www.qauraa.store/product2/110",
+      "priceShownOnPage": 2899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 2899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac2",
+      "sourceProductId": "111",
+      "name": "سامسونج جالكسي S25 512GB - كحلي",
+      "sourceUrl": "https://www.qauraa.store/product2/111",
+      "priceShownOnPage": 2899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 2899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac1",
+      "sourceProductId": "112",
+      "name": "سامسونج جالكسي S25 512GB - أزرق داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/112",
+      "priceShownOnPage": 2899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 2899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ac0",
+      "sourceProductId": "114",
+      "name": "سامسونج جالكسي S25 512GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/114",
+      "priceShownOnPage": 2899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 2899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882abf",
+      "sourceProductId": "113",
+      "name": "سامسونج جالكسي S25 512GB - أحمر مرجاني",
+      "sourceUrl": "https://www.qauraa.store/product2/113",
+      "priceShownOnPage": 2899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 2899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882abe",
+      "sourceProductId": "115",
+      "name": "سامسونج جالكسي S25 Plus 256GB - أزرق ثلجي",
+      "sourceUrl": "https://www.qauraa.store/product2/115",
+      "priceShownOnPage": 2799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882abd",
+      "sourceProductId": "117",
+      "name": "سامسونج جالكسي S25 Plus 256GB - نعناعي",
+      "sourceUrl": "https://www.qauraa.store/product2/117",
+      "priceShownOnPage": 2799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882abc",
+      "sourceProductId": "116",
+      "name": "سامسونج جالكسي S25 Plus 256GB - فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/116",
+      "priceShownOnPage": 2799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882abb",
+      "sourceProductId": "118",
+      "name": "سامسونج جالكسي S25 Plus 256GB - كحلي",
+      "sourceUrl": "https://www.qauraa.store/product2/118",
+      "priceShownOnPage": 2799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aba",
+      "sourceProductId": "119",
+      "name": "سامسونج جالكسي S25 Plus 256GB - أزرق داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/119",
+      "priceShownOnPage": 2799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab9",
+      "sourceProductId": "121",
+      "name": "سامسونج جالكسي S25 Plus 256GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/121",
+      "priceShownOnPage": 2799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab8",
+      "sourceProductId": "120",
+      "name": "سامسونج جالكسي S25 Plus 256GB - أحمر مرجاني",
+      "sourceUrl": "https://www.qauraa.store/product2/120",
+      "priceShownOnPage": 2799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab7",
+      "sourceProductId": "122",
+      "name": "سامسونج جالكسي S25 Plus 512GB - أزرق ثلجي",
+      "sourceUrl": "https://www.qauraa.store/product2/122",
+      "priceShownOnPage": 3299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab6",
+      "sourceProductId": "123",
+      "name": "سامسونج جالكسي S25 Plus 512GB - فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/123",
+      "priceShownOnPage": 3299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab5",
+      "sourceProductId": "125",
+      "name": "سامسونج جالكسي S25 Plus 512GB - كحلي",
+      "sourceUrl": "https://www.qauraa.store/product2/125",
+      "priceShownOnPage": 3299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab4",
+      "sourceProductId": "124",
+      "name": "سامسونج جالكسي S25 Plus 512GB - نعناعي",
+      "sourceUrl": "https://www.qauraa.store/product2/124",
+      "priceShownOnPage": 3299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab3",
+      "sourceProductId": "126",
+      "name": "سامسونج جالكسي S25 Plus 512GB - أزرق داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/126",
+      "priceShownOnPage": 3299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab2",
+      "sourceProductId": "128",
+      "name": "سامسونج جالكسي S25 Plus 512GB - ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/128",
+      "priceShownOnPage": 3299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab1",
+      "sourceProductId": "127",
+      "name": "سامسونج جالكسي S25 Plus 512GB - أحمر مرجاني",
+      "sourceUrl": "https://www.qauraa.store/product2/127",
+      "priceShownOnPage": 3299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882ab0",
+      "sourceProductId": "129",
+      "name": "سامسونج جالكسي S25 Ultra 256GB - تيتانيوم أزرق فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/129",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aaf",
+      "sourceProductId": "130",
+      "name": "سامسونج جالكسي S25 Ultra 256GB - تيتانيوم رمادي",
+      "sourceUrl": "https://www.qauraa.store/product2/130",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aae",
+      "sourceProductId": "132",
+      "name": "سامسونج جالكسي S25 Ultra 256GB - تيتانيوم أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/132",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aad",
+      "sourceProductId": "133",
+      "name": "سامسونج جالكسي S25 Ultra 256GB - تيتانيوم أسود داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/133",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aac",
+      "sourceProductId": "131",
+      "name": "سامسونج جالكسي S25 Ultra 256GB - تيتانيوم أبيض فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/131",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aab",
+      "sourceProductId": "134",
+      "name": "سامسونج جالكسي S25 Ultra 256GB - تيتانيوم أخضر",
+      "sourceUrl": "https://www.qauraa.store/product2/134",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aaa",
+      "sourceProductId": "135",
+      "name": "سامسونج جالكسي S25 Ultra 256GB - تيتانيوم ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/135",
+      "priceShownOnPage": 3499.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3499.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa9",
+      "sourceProductId": "137",
+      "name": "سامسونج جالكسي S25 Ultra 512GB - تيتانيوم رمادي",
+      "sourceUrl": "https://www.qauraa.store/product2/137",
+      "priceShownOnPage": 3799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa8",
+      "sourceProductId": "136",
+      "name": "سامسونج جالكسي S25 Ultra 512GB - تيتانيوم أزرق فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/136",
+      "priceShownOnPage": 3799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa7",
+      "sourceProductId": "139",
+      "name": "سامسونج جالكسي S25 Ultra 512GB - تيتانيوم أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/139",
+      "priceShownOnPage": 3799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa6",
+      "sourceProductId": "140",
+      "name": "سامسونج جالكسي S25 Ultra 512GB - تيتانيوم أسود داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/140",
+      "priceShownOnPage": 3799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa5",
+      "sourceProductId": "138",
+      "name": "سامسونج جالكسي S25 Ultra 512GB - تيتانيوم أبيض فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/138",
+      "priceShownOnPage": 3799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa4",
+      "sourceProductId": "141",
+      "name": "سامسونج جالكسي S25 Ultra 512GB - تيتانيوم أخضر",
+      "sourceUrl": "https://www.qauraa.store/product2/141",
+      "priceShownOnPage": 3799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa3",
+      "sourceProductId": "142",
+      "name": "سامسونج جالكسي S25 Ultra 512GB - تيتانيوم ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/142",
+      "priceShownOnPage": 3799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa2",
+      "sourceProductId": "143",
+      "name": "سامسونج جالكسي S25 Ultra 1TB - تيتانيوم أزرق فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/143",
+      "priceShownOnPage": 5299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 5299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa1",
+      "sourceProductId": "144",
+      "name": "سامسونج جالكسي S25 Ultra 1TB - تيتانيوم رمادي",
+      "sourceUrl": "https://www.qauraa.store/product2/144",
+      "priceShownOnPage": 5299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 5299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882aa0",
+      "sourceProductId": "145",
+      "name": "سامسونج جالكسي S25 Ultra 1TB - تيتانيوم أبيض فضي",
+      "sourceUrl": "https://www.qauraa.store/product2/145",
+      "priceShownOnPage": 5299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 5299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a9f",
+      "sourceProductId": "146",
+      "name": "سامسونج جالكسي S25 Ultra 1TB - تيتانيوم أسود",
+      "sourceUrl": "https://www.qauraa.store/product2/146",
+      "priceShownOnPage": 5299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 5299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a9e",
+      "sourceProductId": "147",
+      "name": "سامسونج جالكسي S25 Ultra 1TB - تيتانيوم أسود داكن",
+      "sourceUrl": "https://www.qauraa.store/product2/147",
+      "priceShownOnPage": 5299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 5299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a9d",
+      "sourceProductId": "149",
+      "name": "سامسونج جالكسي S25 Ultra 1TB - تيتانيوم ذهبي وردي",
+      "sourceUrl": "https://www.qauraa.store/product2/149",
+      "priceShownOnPage": 5299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 5299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a9c",
+      "sourceProductId": "148",
+      "name": "سامسونج جالكسي S25 Ultra 1TB - تيتانيوم أخضر",
+      "sourceUrl": "https://www.qauraa.store/product2/148",
+      "priceShownOnPage": 5299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 5299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a9b",
+      "sourceProductId": "78",
+      "name": "آيفون 18 ديو",
+      "sourceUrl": "https://www.qauraa.store/product2/78",
+      "priceShownOnPage": 9499.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 9499.0
+      },
+      "rawStorageOptionsFromPage": "256GB 512GB 1TB 2TB",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a9a",
+      "sourceProductId": "77",
+      "name": "آيفون 18 برو",
+      "sourceUrl": "https://www.qauraa.store/product2/77",
+      "priceShownOnPage": 5699.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5699.0
+      },
+      "rawStorageOptionsFromPage": "256GB 512GB 1TB 2TB",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a99",
+      "sourceProductId": "76",
+      "name": "آيفون 18 برو ماكس",
+      "sourceUrl": "https://www.qauraa.store/product2/76",
+      "priceShownOnPage": 5799.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 5799.0
+      },
+      "rawStorageOptionsFromPage": "256GB 512GB 1TB 2TB",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a98",
+      "sourceProductId": "75",
+      "name": "ايفون 16 برو",
+      "sourceUrl": "https://www.qauraa.store/product2/75",
+      "priceShownOnPage": 3200.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3200.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a97",
+      "sourceProductId": "74",
+      "name": "ايفون 16 برو",
+      "sourceUrl": "https://www.qauraa.store/product2/74",
+      "priceShownOnPage": 3200.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3200.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a96",
+      "sourceProductId": "67",
+      "name": "ايفون 13 256جيجا",
+      "sourceUrl": "https://www.qauraa.store/product2/67",
+      "priceShownOnPage": 2150.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2150.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a95",
+      "sourceProductId": "73",
+      "name": "ايفون 16 برو",
+      "sourceUrl": "https://www.qauraa.store/product2/73",
+      "priceShownOnPage": 3200.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3200.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a94",
+      "sourceProductId": "68",
+      "name": "ايفون 13 128 جيجا",
+      "sourceUrl": "https://www.qauraa.store/product2/68",
+      "priceShownOnPage": 1950.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 1950.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a93",
+      "sourceProductId": "69",
+      "name": "ايفون 13 برو ماكس 128 جيجا",
+      "sourceUrl": "https://www.qauraa.store/product2/69",
+      "priceShownOnPage": 2699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a92",
+      "sourceProductId": "70",
+      "name": "ايفون 13 برو ماكس 256 جيجا",
+      "sourceUrl": "https://www.qauraa.store/product2/70",
+      "priceShownOnPage": 2999.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2999.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a91",
+      "sourceProductId": "72",
+      "name": "ايفون 13 برو 256جيجا",
+      "sourceUrl": "https://www.qauraa.store/product2/72",
+      "priceShownOnPage": 2699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a90",
+      "sourceProductId": "71",
+      "name": "ايفون 13 برو ماكس 512 جيجا",
+      "sourceUrl": "https://www.qauraa.store/product2/71",
+      "priceShownOnPage": 3699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a8f",
+      "sourceProductId": "56",
+      "name": "ايفون 14 256 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/56",
+      "priceShownOnPage": 3299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a8e",
+      "sourceProductId": "55",
+      "name": "ايفون 14 512 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/55",
+      "priceShownOnPage": 4299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a8d",
+      "sourceProductId": "54",
+      "name": "ايفون 13 برو ماكس مطلي ذهب كامل | iPhone 13 Pro Max Full Gold Plated",
+      "sourceUrl": "https://www.qauraa.store/product2/54",
+      "priceShownOnPage": 6250.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a8c",
+      "sourceProductId": "57",
+      "name": "ايفون 14 128 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/57",
+      "priceShownOnPage": 2899.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2899.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a8b",
+      "sourceProductId": "58",
+      "name": "ايفون 14 بلس 512 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/58",
+      "priceShownOnPage": 3800.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3800.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a8a",
+      "sourceProductId": "59",
+      "name": "ايفون 14 بلس 256 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/59",
+      "priceShownOnPage": 2900.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 2900.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a89",
+      "sourceProductId": "60",
+      "name": "ايفون 14 بلس 128 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/60",
+      "priceShownOnPage": 2500.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2500.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a88",
+      "sourceProductId": "62",
+      "name": "ايفون 14 برو 512 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/62",
+      "priceShownOnPage": 4400.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4400.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a87",
+      "sourceProductId": "61",
+      "name": "ايفون 14 برو 1 تيرابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/61",
+      "priceShownOnPage": 4500.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 4500.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a86",
+      "sourceProductId": "65",
+      "name": "ايفون 14 برو ماكس 128 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/65",
+      "priceShownOnPage": 3100.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 3100.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a85",
+      "sourceProductId": "63",
+      "name": "ايفون 14 برو 256 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/63",
+      "priceShownOnPage": 3799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a84",
+      "sourceProductId": "64",
+      "name": "ايفون 14 برو ماكس 1 تيرابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/64",
+      "priceShownOnPage": 5200.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 5200.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a83",
+      "sourceProductId": "66",
+      "name": "ايفون 14 برو ماكس 256 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/66",
+      "priceShownOnPage": 3800.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3800.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a82",
+      "sourceProductId": "51",
+      "name": "ايفون 15 بلس 512 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/51",
+      "priceShownOnPage": 4799.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4799.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a81",
+      "sourceProductId": "52",
+      "name": "ايفون 15 بلس 256 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/52",
+      "priceShownOnPage": 3500.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3500.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a80",
+      "sourceProductId": "45",
+      "name": "ايفون 15 برو 1تيرابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/45",
+      "priceShownOnPage": 4900.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 4900.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a7f",
+      "sourceProductId": "53",
+      "name": "ايفون 15 بلس 128 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/53",
+      "priceShownOnPage": 3300.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 3300.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a7e",
+      "sourceProductId": "49",
+      "name": "ايفون 15 برو ماكس 512 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/49",
+      "priceShownOnPage": 4300.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "512GB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 4300.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a7d",
+      "sourceProductId": "46",
+      "name": "ايفون 15 برو 256 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/46",
+      "priceShownOnPage": 3608.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3608.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a7c",
+      "sourceProductId": "47",
+      "name": "ايفون 15 برو 128 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/47",
+      "priceShownOnPage": 2908.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "128GB"
+      ],
+      "selectedStorage": "128GB",
+      "storagePricesKnown": {
+        "128GB": 2908.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a7b",
+      "sourceProductId": "48",
+      "name": "ايفون 15 برو ماكس 1 تيرابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/48",
+      "priceShownOnPage": 5299.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": "1TB",
+      "storagePricesKnown": {
+        "1TB": 5299.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a7a",
+      "sourceProductId": "50",
+      "name": "ايفون 15 برو ماكس 256 جيجابايت",
+      "sourceUrl": "https://www.qauraa.store/product2/50",
+      "priceShownOnPage": 3699.0,
+      "storageType": "fixed_capacity_sku",
+      "storageOptions": [
+        "256GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3699.0
+      },
+      "rawStorageOptionsFromPage": "",
+      "note": "السعة من اسم المنتج وسعرها هو السعر الظاهر في صفحة هذا المنتج."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a79",
+      "sourceProductId": "41",
+      "name": "ايفون 16 بلس",
+      "sourceUrl": "https://www.qauraa.store/product2/41",
+      "priceShownOnPage": 3300.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3300.0
+      },
+      "rawStorageOptionsFromPage": "512 1T 2T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a78",
+      "sourceProductId": "42",
+      "name": "ايفون 16 بلس",
+      "sourceUrl": "https://www.qauraa.store/product2/42",
+      "priceShownOnPage": 3300.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3300.0
+      },
+      "rawStorageOptionsFromPage": "512 1T 2T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a77",
+      "sourceProductId": "40",
+      "name": "ايفون 16 برو ماكس",
+      "sourceUrl": "https://www.qauraa.store/product2/40",
+      "priceShownOnPage": 3800.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3800.0
+      },
+      "rawStorageOptionsFromPage": "512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a76",
+      "sourceProductId": "44",
+      "name": "ايفون 16 بلس",
+      "sourceUrl": "https://www.qauraa.store/product2/44",
+      "priceShownOnPage": 3800.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3800.0
+      },
+      "rawStorageOptionsFromPage": "512 1T 2T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a75",
+      "sourceProductId": "38",
+      "name": "ايفون 16 برو ماكس",
+      "sourceUrl": "https://www.qauraa.store/product2/38",
+      "priceShownOnPage": 3800.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "1TB"
+      ],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "4900 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص. قيم تحتاج مراجعة في خيارات المصدر: 4900"
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a74",
+      "sourceProductId": "43",
+      "name": "ايفون 16 بلس",
+      "sourceUrl": "https://www.qauraa.store/product2/43",
+      "priceShownOnPage": 3800.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3800.0
+      },
+      "rawStorageOptionsFromPage": "512 1T 2T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a73",
+      "sourceProductId": "39",
+      "name": "ايفون 16 برو ماكس",
+      "sourceUrl": "https://www.qauraa.store/product2/39",
+      "priceShownOnPage": 3800.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "512GB",
+      "storagePricesKnown": {
+        "512GB": 3800.0
+      },
+      "rawStorageOptionsFromPage": "512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a72",
+      "sourceProductId": "34",
+      "name": "ايفون أير",
+      "sourceUrl": "https://www.qauraa.store/product2/34",
+      "priceShownOnPage": 3400.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3400.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a71",
+      "sourceProductId": "27",
+      "name": "سامسونج هاتف جالاكسي S22",
+      "sourceUrl": "https://www.qauraa.store/product2/27",
+      "priceShownOnPage": 3300.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a70",
+      "sourceProductId": "35",
+      "name": "ايفون أير",
+      "sourceUrl": "https://www.qauraa.store/product2/35",
+      "priceShownOnPage": 3400.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3400.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a6f",
+      "sourceProductId": "36",
+      "name": "ايفون أير",
+      "sourceUrl": "https://www.qauraa.store/product2/36",
+      "priceShownOnPage": 3400.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3400.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a6e",
+      "sourceProductId": "37",
+      "name": "ايفون أير",
+      "sourceUrl": "https://www.qauraa.store/product2/37",
+      "priceShownOnPage": 3400.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3400.0
+      },
+      "rawStorageOptionsFromPage": "256 GB 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a6d",
+      "sourceProductId": "26",
+      "name": "سامسونج هاتف جالاكسي S21",
+      "sourceUrl": "https://www.qauraa.store/product2/26",
+      "priceShownOnPage": 2800.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a6c",
+      "sourceProductId": "28",
+      "name": "سامسونج هاتف جالاكسي S23",
+      "sourceUrl": "https://www.qauraa.store/product2/28",
+      "priceShownOnPage": 3500.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a6b",
+      "sourceProductId": "19",
+      "name": "Rocket League Collector's Edition - Nintendo Switch",
+      "sourceUrl": "https://www.qauraa.store/product2/19",
+      "priceShownOnPage": 180.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a6a",
+      "sourceProductId": "20",
+      "name": "1-2-Switch",
+      "sourceUrl": "https://www.qauraa.store/product2/20",
+      "priceShownOnPage": 189.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a69",
+      "sourceProductId": "22",
+      "name": "Crash Bandicoot 4",
+      "sourceUrl": "https://www.qauraa.store/product2/22",
+      "priceShownOnPage": 189.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a68",
+      "sourceProductId": "21",
+      "name": "1-2-Switch",
+      "sourceUrl": "https://www.qauraa.store/product2/21",
+      "priceShownOnPage": 189.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a67",
+      "sourceProductId": "23",
+      "name": "Life is Strange",
+      "sourceUrl": "https://www.qauraa.store/product2/23",
+      "priceShownOnPage": 160.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a66",
+      "sourceProductId": "24",
+      "name": "Tony Hawk Pro Skater 1 and 2",
+      "sourceUrl": "https://www.qauraa.store/product2/24",
+      "priceShownOnPage": 120.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a65",
+      "sourceProductId": "14",
+      "name": "بلايستيشن 5 نسخة اقراص مع وحدة تحكم اضافية و لعبة GT7",
+      "sourceUrl": "https://www.qauraa.store/product2/14",
+      "priceShownOnPage": 2550.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a64",
+      "sourceProductId": "25",
+      "name": "Shin Megami Tensei V",
+      "sourceUrl": "https://www.qauraa.store/product2/25",
+      "priceShownOnPage": 189.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a63",
+      "sourceProductId": "13",
+      "name": "جهاز نينتندو سويتش نسخة ممتدة البطارية (احمر ازرق)",
+      "sourceUrl": "https://www.qauraa.store/product2/13",
+      "priceShownOnPage": 1259.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a62",
+      "sourceProductId": "15",
+      "name": "بلايستيشن 5 نسخة اقراص مع وحدة تحكم اضافية",
+      "sourceUrl": "https://www.qauraa.store/product2/15",
+      "priceShownOnPage": 2299.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a61",
+      "sourceProductId": "16",
+      "name": "بلايستيشن 5 نسخة ديجيتال",
+      "sourceUrl": "https://www.qauraa.store/product2/16",
+      "priceShownOnPage": 1899.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a60",
+      "sourceProductId": "17",
+      "name": "جهاز بلايستيشن 5 نسخة اقراص",
+      "sourceUrl": "https://www.qauraa.store/product2/17",
+      "priceShownOnPage": 2125.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a5f",
+      "sourceProductId": "29",
+      "name": "ايفون 17",
+      "sourceUrl": "https://www.qauraa.store/product2/29",
+      "priceShownOnPage": 3300.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3300.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T 2T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a5e",
+      "sourceProductId": "18",
+      "name": "جهاز نينتندو سويتش اوليد ابيض",
+      "sourceUrl": "https://www.qauraa.store/product2/18",
+      "priceShownOnPage": 1520.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a5d",
+      "sourceProductId": "33",
+      "name": "ايفون 17",
+      "sourceUrl": "https://www.qauraa.store/product2/33",
+      "priceShownOnPage": 3300.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3300.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T 2T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a5c",
+      "sourceProductId": "31",
+      "name": "ايفون 17",
+      "sourceUrl": "https://www.qauraa.store/product2/31",
+      "priceShownOnPage": 3300.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3300.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T 2T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a5b",
+      "sourceProductId": "30",
+      "name": "ايفون 17",
+      "sourceUrl": "https://www.qauraa.store/product2/30",
+      "priceShownOnPage": 3300.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3300.0
+      },
+      "rawStorageOptionsFromPage": "256 1T 2T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a5a",
+      "sourceProductId": "7",
+      "name": "iPhone 17 Pro",
+      "sourceUrl": "https://www.qauraa.store/product2/7",
+      "priceShownOnPage": 3990.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3990.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a59",
+      "sourceProductId": "12",
+      "name": "ايفون 17 برو ماكس",
+      "sourceUrl": "https://www.qauraa.store/product2/12",
+      "priceShownOnPage": 4499.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 4499.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a58",
+      "sourceProductId": "9",
+      "name": "ايفون 17 برو ماكس",
+      "sourceUrl": "https://www.qauraa.store/product2/9",
+      "priceShownOnPage": 4499.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 4499.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a57",
+      "sourceProductId": "3",
+      "name": "ايفون ١٧ برو",
+      "sourceUrl": "https://www.qauraa.store/product2/3",
+      "priceShownOnPage": 3990.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3990.0
+      },
+      "rawStorageOptionsFromPage": "256 512",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a56",
+      "sourceProductId": "11",
+      "name": "ايفون 17 برو ماكس",
+      "sourceUrl": "https://www.qauraa.store/product2/11",
+      "priceShownOnPage": 4499.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB",
+        "1TB",
+        "2TB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 4499.0
+      },
+      "rawStorageOptionsFromPage": "256 512 1T 2T",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a55",
+      "sourceProductId": "4",
+      "name": "ايفون ١٧ برو",
+      "sourceUrl": "https://www.qauraa.store/product2/4",
+      "priceShownOnPage": 3990.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3990.0
+      },
+      "rawStorageOptionsFromPage": "256 512",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a54",
+      "sourceProductId": "8",
+      "name": "ايفون ١٧ برو",
+      "sourceUrl": "https://www.qauraa.store/product2/8",
+      "priceShownOnPage": 3990.0,
+      "storageType": "selector_options_selected_price_only",
+      "storageOptions": [
+        "256GB",
+        "512GB"
+      ],
+      "selectedStorage": "256GB",
+      "storagePricesKnown": {
+        "256GB": 3990.0
+      },
+      "rawStorageOptionsFromPage": "256 512",
+      "note": "السعر المتاح هو سعر السعة المحددة فقط؛ أسعار بقية السعات غير موجودة في ملف الفحص."
+    },
+    {
+      "mongoId": "6aefe03409c2a7181c882a53",
+      "sourceProductId": "2",
+      "name": "ايفون 17 برو",
+      "sourceUrl": "https://www.qauraa.store/product2/2",
+      "priceShownOnPage": 3990.0,
+      "storageType": "no_storage_evidence",
+      "storageOptions": [],
+      "selectedStorage": null,
+      "storagePricesKnown": {},
+      "rawStorageOptionsFromPage": "",
+      "note": "لم يظهر حقل مساحة تخزين ولا سعة في اسم المنتج داخل ملف الفحص."
+    }
+  ]
+}
