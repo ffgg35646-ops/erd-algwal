@@ -593,37 +593,11 @@ function isHttpImageUrl(value: unknown): value is string {
   }
 }
 
-function isQauraaImportedProduct(product: Pick<StoredProduct, 'sourceStore' | 'sourceProductUrl'>) {
-  return String(product.sourceStore || '').toLowerCase() === 'qauraa'
-    || String(product.sourceProductUrl || '').toLowerCase().includes('qauraa.store');
-}
-
-function parseQauraaStorageFromName(name: string) {
-  const normalized = name
-    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
-    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
-  const match = /(\d+(?:\.\d+)?)\s*(TB|GB|تيرابايت|تيرا(?:بايت)?|جيجابايت|جيجا(?:بايت)?)/iu.exec(normalized);
-  if (!match) return null;
-  const amount = Number(match[1]);
-  if (!Number.isFinite(amount) || amount <= 0) return null;
-  const unit = /^(?:TB|تيرا)/iu.test(match[2]) ? 'TB' : 'GB';
-  return {
-    label: String(amount) + unit,
-    rank: amount * (unit === 'TB' ? 1024 : 1),
-    matchedText: match[0]
-  };
-}
-
 export function getStoredProductStorage(
-  product: Pick<StoredProduct, 'name' | 'price' | 'storageOptions' | 'storagePrices' | 'sourceStore' | 'sourceProductUrl'>
+  product: Pick<StoredProduct, 'storageOptions' | 'storagePrices'>
 ) {
-  const capacity = isQauraaImportedProduct(product) ? parseQauraaStorageFromName(product.name) : null;
-  if (capacity) {
-    return {
-      storageOptions: [capacity.label],
-      storagePrices: { [capacity.label]: product.price }
-    };
-  }
+  // The imported product document already stores its exact available choices
+  // and per-capacity prices. Never reduce them based on the capacity in its name.
   return {
     storageOptions: product.storageOptions || [],
     storagePrices: product.storagePrices || {}
