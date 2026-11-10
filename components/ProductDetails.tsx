@@ -45,7 +45,16 @@ export default function ProductDetails({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const availableColors = product.colors?.filter(Boolean) || [];
-  const availableStorage = product.storageOptions?.filter(Boolean) || [];
+  // A capacity is selectable when it has a valid saved price, even if an older
+  // catalogue record omitted it from storageOptions. Keep explicit option order
+  // and append any additional priced capacities without inventing new choices.
+  const pricedStorageOptions = Object.entries(product.storagePrices || {})
+    .filter(([, price]) => typeof price === 'number' && Number.isFinite(price) && price > 0)
+    .map(([storage]) => storage);
+  const availableStorage = Array.from(new Set([
+    ...(product.storageOptions || []),
+    ...pricedStorageOptions
+  ].filter((storage) => typeof storage === 'string' && storage.trim())));
   const imageSourceColor = product.colorMask?.sourceColor || availableColors[0] || '';
   const initialColor = availableColors.includes(imageSourceColor) ? imageSourceColor : (availableColors[0] || '');
   const [selectedColor, setSelectedColor] = useState(initialColor);
