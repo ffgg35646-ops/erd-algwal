@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export const metadata = { title: 'رمز المصادقة رقم 2 | أرض الجوال' };
-
 export default function OtpStatusPage() {
   const router = useRouter();
   const [countdown, setCountdown] = useState(5);
