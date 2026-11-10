@@ -593,7 +593,7 @@ function isHttpImageUrl(value: unknown): value is string {
   }
 }
 
-function isQauraaImportedProduct(product: StoredProduct) {
+function isQauraaImportedProduct(product: Pick<StoredProduct, 'sourceStore' | 'sourceProductUrl'>) {
   return String(product.sourceStore || '').toLowerCase() === 'qauraa'
     || String(product.sourceProductUrl || '').toLowerCase().includes('qauraa.store');
 }
