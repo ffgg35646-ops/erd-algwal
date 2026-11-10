@@ -1199,31 +1199,42 @@ async function showBannersForDelete(db: Db, chatId: number) {
   const banners = await db.collection<StoreBannerRecord>('store_banners').find({})
     .sort({ createdAt: 1, _id: 1 }).limit(12).toArray();
 
+  const navigationRows = [
+    [{ text: '↩ رجوع إلى السلايدر', callback_data: 'slider-menu' }],
+    [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]
+  ];
+
   if (!banners.length) {
     await sendTelegramMessage(chatId, 'لا توجد صور في السلايدر لحذفها.', {
-      reply_markup: { inline_keyboard: [[{ text: '↩ رجوع إلى السلايدر', callback_data: 'slider-menu' }], [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]] }
+      reply_markup: { inline_keyboard: navigationRows }
     });
     return;
   }
 
-  await sendTelegramMessage(chatId, 'اضغط «حذف هذه الصورة» أسفل الصورة التي تريد إزالتها من واجهة المتجر. الحذف يتم مباشرة.');
-  for (let index = 0; index < banners.length; index += 1) {
-    const banner = banners[index];
-    await telegramApi('sendPhoto', {
-      chat_id: chatId,
-      photo: banner.fileId || banner.imageUrl || '',
-      caption: 'صورة السلايدر رقم ' + (index + 1),
-      reply_markup: {
-        inline_keyboard: [[{
-          text: '🗑 حذف هذه الصورة',
-          callback_data: 'delete-banner:' + banner._id.toHexString()
-        }]]
-      }
-    });
-  }
-  await sendTelegramMessage(chatId, 'انتهت قائمة الصور.', {
-    reply_markup: { inline_keyboard: [[{ text: '↩ رجوع إلى السلايدر', callback_data: 'slider-menu' }], [{ text: 'القائمة الرئيسية', callback_data: 'main-menu' }]] }
+  const imageRows = banners.map((banner, index) => {
+    const description = typeof banner.alt === 'string' && banner.alt.trim()
+      ? banner.alt.trim()
+      : 'صورة مضافة للسلايدر';
+    return [{
+      text: ('🗑 حذف الصورة ' + (index + 1) + ' — ' + description).slice(0, 64),
+      callback_data: 'delete-banner:' + banner._id.toHexString()
+    }];
   });
+
+  await sendTelegramMessage(
+    chatId,
+    [
+      'اختر الصورة التي تريد حذفها من السلايدر.',
+      'الترقيم مطابق لترتيب الصور الظاهر في واجهة المتجر من الأولى إلى الأخيرة:',
+      ...banners.map((banner, index) => {
+        const description = typeof banner.alt === 'string' && banner.alt.trim()
+          ? banner.alt.trim()
+          : 'صورة مضافة للسلايدر';
+        return (index + 1) + ') ' + description;
+      })
+    ].join('\\n'),
+    { reply_markup: { inline_keyboard: [...imageRows, ...navigationRows] } }
+  );
 }
 
 async function showFooterPages(chatId: number, group: 'policies' | 'customer-service') {
