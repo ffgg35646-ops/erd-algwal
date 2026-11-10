@@ -143,6 +143,59 @@ type TelegramFile = { file_path?: string };
 
 const MAX_SLIDER_IMAGE_BYTES = 8 * 1024 * 1024;
 
+function detectSliderImageContentType(imageBytes: Buffer): string | null {
+  // Telegram may serve file downloads as application/octet-stream even when
+  // the downloaded bytes are a valid image. Trust the file signature instead.
+  if (
+    imageBytes.length >= 3 &&
+    imageBytes[0] === 0xff &&
+    imageBytes[1] === 0xd8 &&
+    imageBytes[2] === 0xff
+  ) {
+    return 'image/jpeg';
+  }
+
+  const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  if (imageBytes.length >= pngSignature.length && imageBytes.subarray(0, 8).equals(pngSignature)) {
+    return 'image/png';
+  }
+
+  const gifSignature = imageBytes.toString('ascii', 0, 6);
+  if (gifSignature === 'GIF87a' || gifSignature === 'GIF89a') {
+    return 'image/gif';
+  }
+
+  if (
+    imageBytes.length >= 12 &&
+    imageBytes.toString('ascii', 0, 4) === 'RIFF' &&
+    imageBytes.toString('ascii', 8, 12) === 'WEBP'
+  ) {
+    return 'image/webp';
+  }
+
+  if (imageBytes.length >= 2 && imageBytes.toString('ascii', 0, 2) === 'BM') {
+    return 'image/bmp';
+  }
+
+  if (
+    imageBytes.length >= 16 &&
+    imageBytes.toString('ascii', 4, 8) === 'ftyp'
+  ) {
+    const brands = [
+      imageBytes.toString('ascii', 8, 12),
+      ...Array.from(
+        { length: Math.floor(Math.max(0, Math.min(imageBytes.length, 64) - 16) / 4) },
+        (_, index) => imageBytes.toString('ascii', 16 + index * 4, 20 + index * 4)
+      )
+    ];
+    if (brands.includes('avif') || brands.includes('avis')) {
+      return 'image/avif';
+    }
+  }
+
+  return null;
+}
+
 async function downloadSliderImage(fileId: string) {
   const telegramFile = await telegramApi<TelegramFile>('getFile', { file_id: fileId });
   if (!telegramFile.file_path) {
@@ -160,14 +213,15 @@ async function downloadSliderImage(fileId: string) {
     throw new Error(`Telegram slider image download failed: ${response.status}`);
   }
 
-  const contentType = response.headers.get('content-type') || 'image/jpeg';
-  if (!contentType.startsWith('image/')) {
-    throw new Error('Telegram returned a non-image file for the slider');
-  }
-
+  const declaredContentType = response.headers.get('content-type') || 'غير محدد';
   const imageBytes = Buffer.from(await response.arrayBuffer());
   if (!imageBytes.length || imageBytes.length > MAX_SLIDER_IMAGE_BYTES) {
     throw new Error('صورة السلايدر فارغة أو أكبر من 8 ميجابايت. أرسل صورة أصغر.');
+  }
+
+  const contentType = detectSliderImageContentType(imageBytes);
+  if (!contentType) {
+    throw new Error(`Telegram download is not a supported image (content-type: ${declaredContentType})`);
   }
 
   return {
