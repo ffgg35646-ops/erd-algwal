@@ -105,14 +105,21 @@ export default function CheckoutPaymentPage() {
       const raw = window.sessionStorage.getItem('erd-algwal-checkout-draft-v1');
       if (raw) {
         const saved = JSON.parse(raw) as CheckoutDraft;
+        
+        // لو راجع من صفحات الخطأ، نصفر علامة الإرسال ونحفظها في السشن
+        const isFromStatus = typeof window !== 'undefined' && document.referrer.includes('/checkout/status/');
+        if (isFromStatus) {
+          saved.paymentNotificationSent = false;
+          try {
+            window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(saved));
+          } catch {}
+        }
+
         setDraft(saved);
         if (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa') {
           setPaymentMethod(saved.paymentMethod);
         }
-        const isFromStatus = typeof window !== 'undefined' && document.referrer.includes('/checkout/status/');
-        if (isFromStatus) {
-          saved.paymentNotificationSent = false;
-        }
+
         if (!isFromStatus && saved.paymentNotificationSent === true && (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa')) {
           setPaymentSubmitted(true);
           setPaymentMessage('تم إرسال طلبك.');
@@ -323,7 +330,6 @@ export default function CheckoutPaymentPage() {
       if (notified) {
         setCardNumber('');
         setCvc('');
-        clearCart();
       }
       setFieldErrors({});
       setPaymentSubmitted(notified);
