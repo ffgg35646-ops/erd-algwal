@@ -2,7 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
-import { ensureDefaultProducts, findStoredProduct } from '@/lib/catalog';
+import { ensureDefaultProducts, findStoredProduct, getStoredProductStorage } from '@/lib/catalog';
 import { makeOrderNumber, type StoreOrder } from '@/lib/orders';
 import { ensureTelegramIndexes } from '@/lib/telegram';
 
@@ -201,14 +201,15 @@ export async function POST(request: NextRequest) {
       const selectedColor = text(line?.color, 60);
       const selectedStorage = text(line?.storage, 60);
       const stored = await findStoredProduct(db, productId);
+      const storage = stored ? getStoredProductStorage(stored) : null;
       if (selectedColor && !stored?.colors?.includes(selectedColor)) {
         return NextResponse.json({ ok: false, error: 'اللون المختار غير متاح لهذا المنتج. حدّث السلة واختر لونًا متاحًا.' }, { status: 400 });
       }
-      if (selectedStorage && !stored?.storageOptions?.includes(selectedStorage)) {
+      if (selectedStorage && !storage?.storageOptions.includes(selectedStorage)) {
         return NextResponse.json({ ok: false, error: 'مساحة التخزين المختارة غير متاحة لهذا المنتج. حدّث السلة واختر مساحة متاحة.' }, { status: 400 });
       }
 
-      const storagePrice = selectedStorage ? stored?.storagePrices?.[selectedStorage] : undefined;
+      const storagePrice = selectedStorage ? storage?.storagePrices[selectedStorage] : undefined;
       const unitPrice = typeof storagePrice === 'number' && Number.isFinite(storagePrice) && storagePrice > 0
         ? storagePrice
         : stored?.price;

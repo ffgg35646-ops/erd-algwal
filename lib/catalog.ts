@@ -614,23 +614,20 @@ function parseQauraaStorageFromName(name: string) {
   };
 }
 
-function qauraaStorageBaseName(name: string) {
-  const normalized = name
-    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
-    .replace(/[۰-۹]/g, (digit) => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)));
-  const match = /(\d+(?:\.\d+)?)\s*(TB|GB|تيرابايت|تيرا(?:بايت)?|جيجابايت|جيجا(?:بايت)?)/iu.exec(normalized);
-  if (!match || match.index === undefined) return name.trim();
-  return (normalized.slice(0, match.index) + ' ' + normalized.slice(match.index + match[0].length))
-    .replace(/\s+/g, ' ')
-    .replace(/\s*[-–—]\s*$/u, '')
-    .trim();
-}
-
-function qauraaStorageGroupKey(product: StoredProduct) {
-  if (!isQauraaImportedProduct(product) || (product.storageOptions || []).length < 2) return null;
-  if (!parseQauraaStorageFromName(product.name)) return null;
-  const baseName = qauraaStorageBaseName(product.name).toLocaleLowerCase();
-  return String(product.categoryId || product.category || '') + '::' + baseName;
+export function getStoredProductStorage(
+  product: Pick<StoredProduct, 'name' | 'price' | 'storageOptions' | 'storagePrices' | 'sourceStore' | 'sourceProductUrl'>
+) {
+  const capacity = isQauraaImportedProduct(product) ? parseQauraaStorageFromName(product.name) : null;
+  if (capacity) {
+    return {
+      storageOptions: [capacity.label],
+      storagePrices: { [capacity.label]: product.price }
+    };
+  }
+  return {
+    storageOptions: product.storageOptions || [],
+    storagePrices: product.storagePrices || {}
+  };
 }
 
 export function serializeStoredProduct(product: StoredProduct, options: { includeColorMask?: boolean } = {}): Product & {
@@ -652,6 +649,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
   ));
   const fallbackImage = isBlockedCatalogImage(product.imageUrl) ? '' : product.imageUrl || '';
   const displayImages = storedImageUrls.length ? storedImageUrls : fallbackImage ? [fallbackImage] : [];
+  const storage = getStoredProductStorage(product);
   const colorImages = Object.fromEntries(
     Object.entries(product.colorImages || {})
       .filter(([, image]) => !isBlockedCatalogImage(image))
@@ -664,9 +662,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
   );
   return {
     id: product.seedId || id,
-    name: isQauraaImportedProduct(product) && (product.storageOptions || []).length > 1
-      ? qauraaStorageBaseName(product.name)
-      : product.name,
+    name: product.name,
     category: product.category,
     categoryId: product.categoryId,
     price: product.price,
@@ -676,8 +672,10 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
     ...(product.badge ? { badge: product.badge } : {}),
     colors: product.colors || [],
     ...(Object.keys(colorImages).length ? { colorImages } : {}),
-    storageOptions: product.storageOptions || [],
-    storagePrices: product.storagePrices || {},
+    // Qauraa imports represent each source product URL as one sellable SKU.
+    // Do not inherit capacities merged from similarly named sibling products.
+    storageOptions: storage.storageOptions,
+    storagePrices: storage.storagePrices,
     shortDescription: product.shortDescription || product.details,
     description: product.details,
     specifications: product.specifications || [],
@@ -694,43 +692,10 @@ export async function listCatalogProducts(db: Db): Promise<Product[]> {
     .sort({ createdAt: -1 })
     .toArray();
 
-  // A source product can have one database row per storage size. Once those
-  // rows carry the shared storageOptions/storagePrices map, show only the
-  // smallest-capacity row as the catalogue card for that model and colour.
-  const groups = new Map<string, StoredProduct[]>();
-  for (const product of saved) {
-    const key = qauraaStorageGroupKey(product);
-    if (!key) continue;
-    const group = groups.get(key) || [];
-    group.push(product);
-    groups.set(key, group);
-  }
+  // Keep every imported source product as its own catalogue entry.
+  // Storage capacities from separate Qauraa product URLs must never be merged.
+  return saved.map((product) => serializeStoredProduct(product));
 
-  const canonicalByGroup = new Map<string, StoredProduct>();
-  for (const [key, group] of groups) {
-    const canonical = [...group].sort((a, b) => {
-      const left = parseQauraaStorageFromName(a.name)?.rank ?? Number.MAX_SAFE_INTEGER;
-      const right = parseQauraaStorageFromName(b.name)?.rank ?? Number.MAX_SAFE_INTEGER;
-      return left - right;
-    })[0];
-    if (canonical) canonicalByGroup.set(key, canonical);
-  }
-
-  const emittedGroups = new Set<string>();
-  const result: Product[] = [];
-  for (const product of saved) {
-    const key = qauraaStorageGroupKey(product);
-    if (!key) {
-      result.push(serializeStoredProduct(product));
-      continue;
-    }
-    if (emittedGroups.has(key)) continue;
-    emittedGroups.add(key);
-    const canonical = canonicalByGroup.get(key) || product;
-    result.push(serializeStoredProduct(canonical));
-  }
-
-  return result;
 }
 
 export async function findStoredProduct(db: Db, id: string) {
