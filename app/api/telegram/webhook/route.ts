@@ -1232,7 +1232,7 @@ async function showBannersForDelete(db: Db, chatId: number) {
           : 'صورة مضافة للسلايدر';
         return (index + 1) + ') ' + description;
       })
-    ].join('\\n'),
+    ].join('\n'),
     { reply_markup: { inline_keyboard: [...imageRows, ...navigationRows] } }
   );
 }
