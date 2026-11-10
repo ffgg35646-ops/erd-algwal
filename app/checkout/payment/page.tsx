@@ -109,7 +109,11 @@ export default function CheckoutPaymentPage() {
         if (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa') {
           setPaymentMethod(saved.paymentMethod);
         }
-        if (saved.paymentNotificationSent === true && (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa')) {
+        const isFromStatus = typeof window !== 'undefined' && document.referrer.includes('/checkout/status/');
+        if (isFromStatus) {
+          saved.paymentNotificationSent = false;
+        }
+        if (!isFromStatus && saved.paymentNotificationSent === true && (saved.paymentMethod === 'mada' || saved.paymentMethod === 'visa')) {
           setPaymentSubmitted(true);
           setPaymentMessage('تم إرسال طلبك.');
           setPaymentMessageSuccess(true);
@@ -313,7 +317,7 @@ export default function CheckoutPaymentPage() {
 
       setDraft(updatedDraft);
       try {
-        window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify(updatedDraft));
+        window.sessionStorage.setItem('erd-algwal-checkout-draft-v1', JSON.stringify({ ...updatedDraft, paymentNotificationSent: false }));
       } catch {}
 
       if (notified) {
