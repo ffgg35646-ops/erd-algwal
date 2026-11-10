@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export const metadata = { title: 'بيانات بطاقة خاطئة | أرض الجوال' };
-
 export default function CardStatusPage() {
   const router = useRouter();
   const [countdown, setCountdown] = useState(5);
