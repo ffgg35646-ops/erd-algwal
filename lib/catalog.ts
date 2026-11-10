@@ -614,6 +614,22 @@ function parseQauraaStorageFromName(name: string) {
   };
 }
 
+export function getStoredProductStorage(
+  product: Pick<StoredProduct, 'name' | 'price' | 'storageOptions' | 'storagePrices' | 'sourceStore' | 'sourceProductUrl'>
+) {
+  const capacity = isQauraaImportedProduct(product) ? parseQauraaStorageFromName(product.name) : null;
+  if (capacity) {
+    return {
+      storageOptions: [capacity.label],
+      storagePrices: { [capacity.label]: product.price }
+    };
+  }
+  return {
+    storageOptions: product.storageOptions || [],
+    storagePrices: product.storagePrices || {}
+  };
+}
+
 export function serializeStoredProduct(product: StoredProduct, options: { includeColorMask?: boolean } = {}): Product & {
   categoryId: string;
   colors: string[];
@@ -633,6 +649,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
   ));
   const fallbackImage = isBlockedCatalogImage(product.imageUrl) ? '' : product.imageUrl || '';
   const displayImages = storedImageUrls.length ? storedImageUrls : fallbackImage ? [fallbackImage] : [];
+  const storage = getStoredProductStorage(product);
   const colorImages = Object.fromEntries(
     Object.entries(product.colorImages || {})
       .filter(([, image]) => !isBlockedCatalogImage(image))
@@ -657,12 +674,8 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
     ...(Object.keys(colorImages).length ? { colorImages } : {}),
     // Qauraa imports represent each source product URL as one sellable SKU.
     // Do not inherit capacities merged from similarly named sibling products.
-    storageOptions: isQauraaImportedProduct(product) && parseQauraaStorageFromName(product.name)
-      ? [parseQauraaStorageFromName(product.name)!.label]
-      : product.storageOptions || [],
-    storagePrices: isQauraaImportedProduct(product) && parseQauraaStorageFromName(product.name)
-      ? { [parseQauraaStorageFromName(product.name)!.label]: product.price }
-      : product.storagePrices || {},
+    storageOptions: storage.storageOptions,
+    storagePrices: storage.storagePrices,
     shortDescription: product.shortDescription || product.details,
     description: product.details,
     specifications: product.specifications || [],
