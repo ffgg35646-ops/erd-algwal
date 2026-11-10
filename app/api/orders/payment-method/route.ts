@@ -128,15 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
     // The final order notification is sent only once, after payment method selection.
-    if (order.adminNotificationSentAt) {
-      return NextResponse.json({
-        ok: true,
-        notificationSent: true,
-        paymentMethod: order.paymentMethod || paymentMethod,
-        paymentStatus: order.paymentStatus || 'pending',
-        alreadySubmitted: true
-      });
-    }
+    adminNotificationSentAt: undefined,
 
     const now = new Date();
     const cardLast4 = cardNumber.slice(-4);
