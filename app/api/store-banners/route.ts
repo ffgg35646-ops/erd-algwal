@@ -49,14 +49,7 @@ function isHttpsImageUrl(value: unknown): value is string {
 export async function GET() {
   const noStore = { 'cache-control': 'no-store, max-age=0' };
   if (!process.env.MONGODB_URI) {
-    return NextResponse.json({
-      banners: DEFAULT_ONLINE_BANNERS.map((banner, index) => ({
-        id: 'default-' + (index + 1),
-        imageUrl: banner.imageUrl,
-        alt: banner.alt
-      })),
-      managed: false
-    }, { headers: noStore });
+    return NextResponse.json({ banners: [], managed: true }, { headers: noStore });
   }
 
   try {
@@ -101,13 +94,10 @@ export async function GET() {
     }, { headers: noStore });
   } catch (error) {
     console.error('Store banners load failed:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json({
-      banners: DEFAULT_ONLINE_BANNERS.map((banner, index) => ({
-        id: 'default-' + (index + 1),
-        imageUrl: banner.imageUrl,
-        alt: banner.alt
-      })),
-      managed: false
-    }, { headers: noStore });
+    // Do not serve hard-coded old banners when the live database cannot be read.
+    return NextResponse.json(
+      { error: 'تعذر تحميل صور السلايدر الحالية.' },
+      { status: 503, headers: noStore }
+    );
   }
 }
