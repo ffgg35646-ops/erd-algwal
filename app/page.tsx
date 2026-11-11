@@ -2,6 +2,7 @@ import StoreHome, { type InitialStoreCatalog } from '@/components/StoreHome';
 import { getDb } from '@/lib/mongodb';
 import { ensureDefaultProducts, listCatalogProducts, listCategories } from '@/lib/catalog';
 import type { StoreCategory } from '@/components/CartProvider';
+import { listStoreBanners, type StoreBanner } from '@/lib/store-banners';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,8 +73,26 @@ async function loadInitialCatalog(): Promise<InitialStoreCatalog | null> {
   }
 }
 
+async function loadInitialBanners(): Promise<StoreBanner[] | null> {
+  if (!process.env.MONGODB_URI) return null;
+
+  try {
+    const db = await getDb();
+    return await listStoreBanners(db);
+  } catch (error) {
+    console.error(
+      'Homepage initial slider load failed:',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
+    return null;
+  }
+}
+
 export default async function HomePage() {
-  const initialCatalog = await loadInitialCatalog();
-  return <StoreHome initialCatalog={initialCatalog} />;
+  const [initialCatalog, initialBanners] = await Promise.all([
+    loadInitialCatalog(),
+    loadInitialBanners()
+  ]);
+  return <StoreHome initialCatalog={initialCatalog} initialBanners={initialBanners} />;
 }
 
