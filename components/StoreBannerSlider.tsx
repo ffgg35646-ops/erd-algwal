@@ -1,18 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import type { StoreBanner } from '@/lib/store-banners';
 
-type StoreBanner = {
-  id: string;
-  imageUrl: string;
-  alt: string;
-};
-
-export default function StoreBannerSlider() {
-  // Start empty so hard-coded/previous banners never flash before the live list loads.
-  const [banners, setBanners] = useState<StoreBanner[]>([]);
-  const [hasLoaded, setHasLoaded] = useState(false);
-  const bannerSignatureRef = useRef<string | null>(null);
+export default function StoreBannerSlider({ initialBanners }: { initialBanners: StoreBanner[] }) {
+  // The current MongoDB banners arrive with the server-rendered page, so they are visible immediately.
+  const [banners, setBanners] = useState<StoreBanner[]>(initialBanners);
+  const bannerSignatureRef = useRef<string>(JSON.stringify(initialBanners));
   const [activeIndex, setActiveIndex] = useState(0);
   const [trackIndex, setTrackIndex] = useState(1);
   const [trackTransitionEnabled, setTrackTransitionEnabled] = useState(true);
@@ -38,8 +32,6 @@ export default function StoreBannerSlider() {
         }
       } catch {
         // Keep the last successfully loaded list during a brief connection failure.
-      } finally {
-        if (alive) setHasLoaded(true);
       }
     };
 
@@ -75,11 +67,7 @@ export default function StoreBannerSlider() {
 
   if (!banners.length) return (
     <section className="store-promo-slider container" aria-label="العروض والإعلانات">
-      {hasLoaded ? (
-        <div className="store-promo-empty" role="status"><span>عروض المتجر</span><strong>مساحة العروض والإعلانات</strong><p>تظهر صور السلايدر هنا بمجرد إضافتها من البوت: تعديلات أخرى ← السلايدر ← إضافة صورة.</p></div>
-      ) : (
-        <div className="store-promo-empty" role="status"><span>عروض المتجر</span><strong>جارٍ تحميل الصور الحالية</strong></div>
-      )}
+      <div className="store-promo-empty" role="status"><span>عروض المتجر</span><strong>مساحة العروض والإعلانات</strong><p>تظهر صور السلايدر هنا بمجرد إضافتها من البوت: تعديلات أخرى ← السلايدر ← إضافة صورة.</p></div>
     </section>
   );
   const active = banners[activeIndex];
