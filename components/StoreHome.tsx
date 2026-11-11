@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useCart, type StoreCategory } from '@/components/CartProvider';
 import { formatPrice, type Product } from '@/lib/products';
 import StoreBannerSlider from '@/components/StoreBannerSlider';
+import type { StoreBanner } from '@/lib/store-banners';
 import CustomerReviews from '@/components/CustomerReviews';
 
 const categorySymbols: Record<string, string> = {
@@ -82,7 +83,13 @@ export type InitialStoreCatalog = {
   categories: StoreCategory[];
 };
 
-export default function StoreHome({ initialCatalog = null }: { initialCatalog?: InitialStoreCatalog | null }) {
+export default function StoreHome({
+  initialCatalog = null,
+  initialBanners = null
+}: {
+  initialCatalog?: InitialStoreCatalog | null;
+  initialBanners?: StoreBanner[] | null;
+}) {
   const { catalogProducts, catalogCategories, catalogStatus } = useCart();
   // Prefer the fresh server-rendered MongoDB snapshot on the first paint.
   // Once the background request finishes, the live provider data takes over.
@@ -145,7 +152,7 @@ export default function StoreHome({ initialCatalog = null }: { initialCatalog?: 
 
   return (
     <main className="store-home" id="home">
-      <StoreBannerSlider />
+      <StoreBannerSlider initialBanners={initialBanners ?? []} />
       <div className="category-stream" id="categories">
         {isCatalogLoading ? (
           <div className="catalog-loading-skeleton" aria-hidden="true">
