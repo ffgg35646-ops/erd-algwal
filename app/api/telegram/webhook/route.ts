@@ -525,7 +525,7 @@ async function showCategoryProductsForEdit(
 }
 
 function normalizeProductColorName(color: string) {
-  return color.trim().normalize('NFKC').replace(/^تايتانيوم(?=\\s)/, 'تيتانيوم').replace(/\\s+/g, ' ');
+  return color.trim().normalize('NFKC').replace(/^تايتانيوم /, 'تيتانيوم ').replace(/ +/g, ' ');
 }
 
 function productColorKeyboard(selectedColors: string[] = []) {
