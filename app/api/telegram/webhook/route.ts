@@ -2607,9 +2607,35 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       return;
     }
     const photo = message.photo[message.photo.length - 1];
-    await db.collection<{ _id: string; barcodeFileId?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
+    let savedImage: Awaited<ReturnType<typeof downloadSliderImage>>;
+    try {
+      savedImage = await downloadSliderImage(photo.file_id);
+    } catch (error) {
+      console.error('Footer barcode image download failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر حفظ صورة الباركود من تيليجرام. أعد إرسال الصورة مرة أخرى، وتأكد ألا يتجاوز حجمها 8 ميجابايت.');
+      return;
+    }
+    await db.collection<{
+      _id: string;
+      barcodeFileId?: string;
+      imageDataBase64?: string;
+      contentType?: string;
+      imageSize?: number;
+      updatedAt?: Date;
+      updatedByTelegramId?: number;
+    }>('store_settings').updateOne(
       { _id: 'footer' },
-      { $set: { barcodeFileId: photo.file_id, updatedAt: new Date(), updatedByTelegramId: session.telegramUserId }, $unset: { barcodeRemoved: '' } },
+      {
+        $set: {
+          barcodeFileId: photo.file_id,
+          imageDataBase64: savedImage.imageDataBase64,
+          contentType: savedImage.contentType,
+          imageSize: savedImage.imageSize,
+          updatedAt: new Date(),
+          updatedByTelegramId: session.telegramUserId
+        },
+        $unset: { barcodeRemoved: '' }
+      },
       { upsert: true }
     );
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
