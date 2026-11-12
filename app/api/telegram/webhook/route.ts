@@ -114,6 +114,8 @@ const PRODUCT_COLOR_OPTIONS = [
   { key: 'gold', name: 'ذهبي', icon: '🟨' },
   { key: 'silver', name: 'فضي', icon: '🔘' },
   { key: 'natural-titanium', name: 'تيتانيوم طبيعي', icon: '◻️' },
+  { key: 'titanium-black', name: 'تيتانيوم أسود', icon: '⚫' },
+  { key: 'titanium-desert', name: 'تيتانيوم صحراوي', icon: '🟤' },
   { key: 'ice', name: 'جليدي', icon: '🧊' }
 ] as const;
 const CANCEL_TEXT = '/cancel';
