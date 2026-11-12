@@ -30,10 +30,19 @@ const COLOR_HEX: Record<string, string> = {
   'برتقالي كوني': '#e87932', 'أزرق ضبابي': '#a9c4dd',
   'أخضر مريمي': '#97aa92', 'أبيض سحابي': '#f5f5f0',
   'ذهبي فاتح': '#d9c59e', 'وردي ناعم': '#f4cbd5',
-  'أسود فضائي': '#292d37', 'تيتانيوم أسود': '#55565a', 'تايتانيوم أسود': '#55565a',
-  'تيتانيوم أبيض': '#e6e4df', 'تيتانيوم صحراوي': '#bfa58b', 'تايتانيوم صحراوي': '#bfa58b',
+  'أسود فضائي': '#292d37',
+  'التيتانيوم أسود': '#55565a', 'تيتانيوم أسود': '#55565a', 'تايتانيوم أسود': '#55565a',
+  'التيتانيوم صحراوي': '#bfa58b', 'تيتانيوم صحراوي': '#bfa58b', 'تايتانيوم صحراوي': '#bfa58b',
+  'تيتانيوم أبيض': '#e6e4df',
   'أزرق سماوي': '#9dc8e9'
 };
+
+function normalizeProductColorName(color: string) {
+  const normalized = color.trim().normalize('NFKC').replace(/\\s+/g, ' ');
+  const titaniumMatch = normalized.match(/^(?:ال)?(?:تيتانيوم|تايتانيوم)\\s+(أسود|اسود|صحراوي)$/);
+  if (titaniumMatch) return titaniumMatch[1] === 'صحراوي' ? 'التيتانيوم صحراوي' : 'التيتانيوم أسود';
+  return normalized;
+}
 
 function getColorHex(color: string) {
   const key = color.trim().toLocaleLowerCase('ar');
@@ -46,7 +55,7 @@ export default function ProductDetails({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const availableColors = product.colors?.filter(Boolean) || [];
+  const availableColors = Array.from(new Set((product.colors || []).filter(Boolean).map(normalizeProductColorName)));
   // A capacity is selectable when it has a valid saved price, even if an older
   // catalogue record omitted it from storageOptions. Keep explicit option order
   // and append any additional priced capacities without inventing new choices.
@@ -57,12 +66,14 @@ export default function ProductDetails({ product }: { product: Product }) {
     ...(product.storageOptions || []),
     ...pricedStorageOptions
   ].filter((storage) => typeof storage === 'string' && storage.trim())));
-  const imageSourceColor = product.colorMask?.sourceColor || availableColors[0] || '';
+  const imageSourceColor = normalizeProductColorName(product.colorMask?.sourceColor || availableColors[0] || '');
   const initialColor = availableColors.includes(imageSourceColor) ? imageSourceColor : (availableColors[0] || '');
   const [selectedColor, setSelectedColor] = useState(initialColor);
   const [selectedStorage, setSelectedStorage] = useState(availableStorage[0] || '');
   const baseGallery = product.images?.length ? product.images : [product.image];
-  const selectedColorImage = selectedColor ? product.colorImages?.[selectedColor] || '' : '';
+  const selectedColorImage = selectedColor
+    ? product.colorImages?.[selectedColor] || Object.entries(product.colorImages || {}).find(([color]) => normalizeProductColorName(color) === normalizeProductColorName(selectedColor))?.[1] || ''
+    : '';
   const gallery = selectedColorImage
     ? [selectedColorImage, ...baseGallery.slice(1)]
     : baseGallery;
