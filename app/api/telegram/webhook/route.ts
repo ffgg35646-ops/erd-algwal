@@ -1647,9 +1647,9 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     const color = product?.colors?.[Number(field)];
     if (!product || !color) return void await sendTelegramMessage(chatId, 'لم يتم العثور على اللون أو المنتج.');
 
-    const hasImage = Boolean(product.colorImages?.[color]);
+    const hasImage = Boolean(getProductColorImage(product.colorImages || {}, color));
     if (action === 'product-color-image' && hasImage) {
-      await sendTelegramMessage(chatId, color, {
+      await sendTelegramMessage(chatId, normalizeProductColorName(color), {
         reply_markup: {
           inline_keyboard: [
             [
