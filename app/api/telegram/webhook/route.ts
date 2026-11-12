@@ -114,8 +114,8 @@ const PRODUCT_COLOR_OPTIONS = [
   { key: 'gold', name: 'ذهبي', icon: '🟨' },
   { key: 'silver', name: 'فضي', icon: '🔘' },
   { key: 'natural-titanium', name: 'تيتانيوم طبيعي', icon: '◻️' },
-  { key: 'titanium-black', name: 'تيتانيوم أسود', icon: '⚫' },
-  { key: 'titanium-desert', name: 'تيتانيوم صحراوي', icon: '🟤' },
+  { key: 'titanium-black', name: 'تايتانيوم أسود', icon: '⚫' },
+  { key: 'titanium-desert', name: 'تايتانيوم صحراوي', icon: '🟤' },
   { key: 'ice', name: 'جليدي', icon: '🧊' }
 ] as const;
 const CANCEL_TEXT = '/cancel';
@@ -524,9 +524,13 @@ async function showCategoryProductsForEdit(
   await sendTelegramMessage(chatId, text, { reply_markup: { inline_keyboard: keyboard } });
 }
 
+function normalizeProductColorName(color: string) {
+  return color.trim().normalize('NFKC').replace(/^تايتانيوم(?=\\s)/, 'تيتانيوم').replace(/\\s+/g, ' ');
+}
+
 function productColorKeyboard(selectedColors: string[] = []) {
   const options = PRODUCT_COLOR_OPTIONS.map((option) => ({
-    text: (selectedColors.includes(option.name) ? '✓ ' : '') + option.icon + ' ' + option.name,
+    text: (selectedColors.some((color) => normalizeProductColorName(color) === normalizeProductColorName(option.name)) ? '✓ ' : '') + option.icon + ' ' + option.name,
     callback_data: 'product-color:toggle:' + option.key
   }));
   const rows: Array<Array<{ text: string; callback_data: string }>> = [];
@@ -1534,8 +1538,8 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     if (id === 'toggle' && field) {
       const option = PRODUCT_COLOR_OPTIONS.find((entry) => entry.key === field);
       if (!option) return void await sendTelegramMessage(chatId, 'اللون المحدد غير معروف.');
-      session.data.colors = selectedColors.includes(option.name)
-        ? selectedColors.filter((color) => color !== option.name)
+      session.data.colors = selectedColors.some((color) => normalizeProductColorName(color) === normalizeProductColorName(option.name))
+        ? selectedColors.filter((color) => normalizeProductColorName(color) !== normalizeProductColorName(option.name))
         : [...selectedColors, option.name];
       await saveSession(db, session);
       await refreshProductColorMessage(chatId, callback.message?.message_id, session.data.colors || []);
