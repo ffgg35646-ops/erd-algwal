@@ -114,8 +114,8 @@ const PRODUCT_COLOR_OPTIONS = [
   { key: 'gold', name: 'ذهبي', icon: '🟨' },
   { key: 'silver', name: 'فضي', icon: '🔘' },
   { key: 'natural-titanium', name: 'تيتانيوم طبيعي', icon: '◻️' },
-  { key: 'titanium-black', name: 'تايتانيوم أسود', icon: '⚫' },
-  { key: 'titanium-desert', name: 'تايتانيوم صحراوي', icon: '🟤' },
+  { key: 'titanium-black', name: 'التيتانيوم أسود', icon: '⚫' },
+  { key: 'titanium-desert', name: 'التيتانيوم صحراوي', icon: '🟤' },
   { key: 'ice', name: 'جليدي', icon: '🧊' }
 ] as const;
 const CANCEL_TEXT = '/cancel';
@@ -525,7 +525,18 @@ async function showCategoryProductsForEdit(
 }
 
 function normalizeProductColorName(color: string) {
-  return color.trim().normalize('NFKC').replace(/^تايتانيوم /, 'تيتانيوم ').replace(/ +/g, ' ');
+  const normalized = color.trim().normalize('NFKC').replace(/\\s+/g, ' ');
+  const titaniumMatch = normalized.match(/^(?:ال)?(?:تيتانيوم|تايتانيوم)\\s+(أسود|اسود|صحراوي)$/);
+  if (titaniumMatch) return titaniumMatch[1] === 'صحراوي' ? 'التيتانيوم صحراوي' : 'التيتانيوم أسود';
+  return normalized;
+}
+
+function normalizeProductColorList(colors: string[] = []) {
+  return Array.from(new Set(colors.filter((color) => typeof color === 'string' && color.trim()).map(normalizeProductColorName)));
+}
+
+function getProductColorImage(colorImages: Record<string, string>, color: string) {
+  return colorImages[color] || Object.entries(colorImages).find(([name]) => normalizeProductColorName(name) === normalizeProductColorName(color))?.[1] || '';
 }
 
 function productColorKeyboard(selectedColors: string[] = []) {
@@ -546,7 +557,7 @@ function productColorKeyboard(selectedColors: string[] = []) {
 }
 
 function productColorPrompt(selectedColors: string[] = []) {
-  return '🎨 اختر الألوان المتوفرة للمنتج بالضغط على دوائر الألوان. يمكنك تحديد أكثر من لون، ثم اضغط «حفظ الألوان».\n\nمهم لمعاينة تغيير اللون: .\n\nالألوان المختارة: ' + (selectedColors.join('، ') || 'لم يتم اختيار ألوان بعد.');
+  return '🎨 اختر الألوان المتوفرة للمنتج بالضغط على دوائر الألوان. يمكنك تحديد أكثر من لون، ثم اضغط «حفظ الألوان».\n\nمهم لمعاينة تغيير اللون: .\n\nالألوان المختارة: ' + (normalizeProductColorList(selectedColors).join('، ') || 'لم يتم اختيار ألوان بعد.');
 }
 
 async function refreshProductColorMessage(chatId: number, messageId: number | undefined, selectedColors: string[]) {
@@ -695,8 +706,10 @@ async function showProductColorImagesMenu(db: Db, chatId: number, id: string, no
 
   const colors = product.colors || [];
   const colorImages = product.colorImages || {};
-  const keyboard: Array<Array<{ text: string; callback_data: string }>> = colors.map((color, index) => [{
-    text: (colorImages[color] ? '✓ ' : '') + color,
+  const displayedColors = colors.map((color, index) => ({ color: normalizeProductColorName(color), index }))
+    .filter((entry, index, all) => all.findIndex((candidate) => candidate.color === entry.color) === index);
+  const keyboard: Array<Array<{ text: string; callback_data: string }>> = displayedColors.map(({ color, index }) => [{
+    text: (getProductColorImage(colorImages, color) ? '✓ ' : '') + color,
     callback_data: 'product-color-image:' + id + ':' + index
   }]);
   keyboard.push([{ text: 'تعديل الألوان', callback_data: 'product-color-edit-list:' + id }]);
@@ -1534,7 +1547,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       await sendTelegramMessage(chatId, 'انتهت جلسة اختيار الألوان. افتح تعديل المنتج وادخل إلى الألوان مرة أخرى.');
       return;
     }
-    const selectedColors = Array.isArray(session.data.colors) ? [...session.data.colors] : [];
+    const selectedColors = normalizeProductColorList(Array.isArray(session.data.colors) ? session.data.colors : []);
     if (id === 'toggle' && field) {
       const option = PRODUCT_COLOR_OPTIONS.find((entry) => entry.key === field);
       if (!option) return void await sendTelegramMessage(chatId, 'اللون المحدد غير معروف.');
@@ -1552,7 +1565,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       return;
     }
     if (id === 'done') {
-      const savedColors = session.data.colors || [];
+      const savedColors = normalizeProductColorList(session.data.colors || []);
       try {
         if (callback.message?.message_id) {
           await telegramApi('editMessageText', {
@@ -1578,7 +1591,9 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
         const productId = new ObjectId(session.data.productId);
         const existingProduct = await db.collection<StoredProduct>('products').findOne({ _id: productId });
         const retainedColorImages = Object.fromEntries(
-          Object.entries(existingProduct?.colorImages || {}).filter(([color]) => savedColors.includes(color))
+          Object.entries(existingProduct?.colorImages || {})
+            .filter(([color]) => savedColors.includes(normalizeProductColorName(color)))
+            .map(([color, image]) => [normalizeProductColorName(color), image])
         );
         const result = await db.collection<StoredProduct>('products').updateOne(
           { _id: productId },
