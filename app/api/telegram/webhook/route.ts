@@ -113,7 +113,8 @@ const PRODUCT_COLOR_OPTIONS = [
   { key: 'gray', name: 'رمادي', icon: '🩶' },
   { key: 'gold', name: 'ذهبي', icon: '🟨' },
   { key: 'silver', name: 'فضي', icon: '🔘' },
-  { key: 'natural-titanium', name: 'تيتانيوم طبيعي', icon: '◻️' }
+  { key: 'natural-titanium', name: 'تيتانيوم طبيعي', icon: '◻️' },
+  { key: 'ice', name: 'جليدي', icon: '🧊' }
 ] as const;
 const CANCEL_TEXT = '/cancel';
 
@@ -1406,11 +1407,17 @@ async function showFooterBarcodeMenu(db: Db, chatId: number) {
   const settings = await db.collection<{ _id: string; barcodeFileId?: string }>('store_settings')
     .findOne({ _id: 'footer' });
   if (settings?.barcodeFileId) {
-    await telegramApi('sendPhoto', {
-      chat_id: chatId,
-      photo: settings.barcodeFileId,
-      caption: 'هذه صورة الباركود الحالية الظاهرة في فوتر المتجر.'
-    });
+    try {
+      await telegramApi('sendPhoto', {
+        chat_id: chatId,
+        photo: settings.barcodeFileId,
+        caption: 'هذه صورة الباركود الحالية الظاهرة في فوتر المتجر.'
+      });
+    } catch (error) {
+      // A stale Telegram file_id must not block the admin from replacing or deleting the barcode.
+      console.warn('Footer barcode preview failed; keeping management actions available:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر عرض معاينة الباركود الحالي، لكن يمكنك استبداله أو حذفه من الخيارات التالية.');
+    }
   } else {
     await sendTelegramMessage(chatId, 'لم تتم إضافة صورة باركود للفوتر حتى الآن.');
   }
@@ -1803,15 +1810,9 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     return;
   }
   if (action === 'footer-barcode-replace') {
-    const settings = await db.collection<{ _id: string; barcodeFileId?: string }>('store_settings')
-      .findOne({ _id: 'footer' });
-    if (settings?.barcodeFileId) {
-      await telegramApi('sendPhoto', {
-        chat_id: chatId,
-        photo: settings.barcodeFileId,
-        caption: 'الباركود الحالي. أرسل صورة جديدة لاستبداله.'
-      });
-    }
+    // Do not resend the old Telegram photo here: expired file_ids can fail
+    // and prevent the upload session from starting. The admin can send the new
+    // photo directly; the existing barcode stays saved until that upload succeeds.
     await startFlow(
       db,
       callback.from.id,
@@ -1819,7 +1820,7 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       'footer_settings',
       'footer_barcode_image',
       { footerSettingKey: 'barcode' },
-      'أرسل صورة الباركود الجديد . اكتب /cancel للإلغاء.'
+      'أرسل صورة الباركود الجديدة مباشرة لاستبدال الحالية. ستظل الصورة الحالية محفوظة حتى نجاح رفع البديلة. اكتب /cancel للإلغاء.'
     );
     return;
   }
