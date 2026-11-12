@@ -77,11 +77,17 @@ export default function StoreFooter() {
           if (alive && Array.isArray(data.pages)) setPages(data.pages);
         }
         if (settingsResponse.ok) {
-          const data = await settingsResponse.json() as { whatsappNumber?: string; vatNumber?: string; barcodeImageUrl?: string; barcodeRemoved?: boolean };
+          const data = await settingsResponse.json() as { whatsappNumber?: string; vatNumber?: string; barcodeImageUrl?: string; barcodeConfigured?: boolean; barcodeRemoved?: boolean };
           if (alive && typeof data.whatsappNumber === 'string') setWhatsappNumber(data.whatsappNumber);
           if (alive && typeof data.vatNumber === 'string') setVatNumber(data.vatNumber);
-          if (alive && typeof data.barcodeImageUrl === 'string') setBarcodeImageUrl(data.barcodeImageUrl);
-          if (alive) setBarcodeRemoved(data.barcodeRemoved === true);
+          // A successful settings response may explicitly report a removed/missing barcode.
+          // Failed requests are ignored above, preserving the last working image URL.
+          if (alive && data.barcodeConfigured === true && typeof data.barcodeImageUrl === 'string' && data.barcodeImageUrl) {
+            setBarcodeImageUrl(data.barcodeImageUrl);
+          } else if (alive && data.barcodeConfigured === false) {
+            setBarcodeImageUrl('');
+          }
+          if (alive && typeof data.barcodeRemoved === 'boolean') setBarcodeRemoved(data.barcodeRemoved);
         }
       } catch {
         // Keep the fallback links working if settings cannot be loaded.

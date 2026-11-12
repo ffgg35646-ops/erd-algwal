@@ -23,9 +23,10 @@ export async function GET() {
     if (!file.file_path) return new NextResponse('Barcode image not available', { status: 404 });
 
     const token = process.env.TELEGRAM_BOT_TOKEN;
+    // Resolve and fetch the current Telegram file path for each image request.
+    // Telegram download paths are temporary; avoid retaining an expired path in Next.js data cache.
     const response = await fetch(`https://api.telegram.org/file/bot${token}/${file.file_path}`, {
-      cache: 'force-cache',
-      next: { revalidate: 3600 }
+      cache: 'no-store'
     });
     if (!response.ok || !response.body) {
       return new NextResponse('Unable to load barcode image', { status: 502 });
@@ -33,7 +34,7 @@ export async function GET() {
 
     const headers = new Headers();
     headers.set('content-type', response.headers.get('content-type') || 'image/jpeg');
-    headers.set('cache-control', 'public, max-age=3600, stale-while-revalidate=86400');
+    headers.set('cache-control', 'private, no-store, max-age=0');
     return new NextResponse(response.body, { status: 200, headers });
   } catch (error) {
     console.error('Footer barcode load failed:', error instanceof Error ? error.message : 'Unknown error');

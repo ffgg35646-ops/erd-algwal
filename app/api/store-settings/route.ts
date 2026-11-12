@@ -20,10 +20,7 @@ const DEFAULT_VAT_NUMBER = '4353454564';
 export async function GET() {
   const headers = { 'cache-control': 'no-store, max-age=0' };
   if (!process.env.MONGODB_URI) {
-    return NextResponse.json(
-      { whatsappNumber: DEFAULT_WHATSAPP_NUMBER, vatNumber: DEFAULT_VAT_NUMBER, barcodeImageUrl: '', barcodeRemoved: false },
-      { headers }
-    );
+    return NextResponse.json({ error: 'Store settings are temporarily unavailable' }, { status: 503, headers });
   }
 
   try {
@@ -38,18 +35,24 @@ export async function GET() {
     const vatNumber = footer?.vatNumberRemoved
       ? ''
       : typeof footer?.vatNumber === 'string' ? footer.vatNumber : DEFAULT_VAT_NUMBER;
-    const barcodeImageUrl = typeof footer?.barcodeFileId === 'string' && footer.barcodeFileId
+    const barcodeConfigured = typeof footer?.barcodeFileId === 'string' && footer.barcodeFileId.length > 0;
+    const barcodeImageUrl = barcodeConfigured
       ? '/api/store-footer-assets/barcode/image?v=' + String(
-          footer.updatedAt instanceof Date ? footer.updatedAt.getTime() : 0
+          footer?.updatedAt instanceof Date ? footer.updatedAt.getTime() : 0
         )
       : '';
 
-    return NextResponse.json({ whatsappNumber, vatNumber, barcodeImageUrl, barcodeRemoved: footer?.barcodeRemoved === true }, { headers });
+    return NextResponse.json({
+      whatsappNumber,
+      vatNumber,
+      barcodeImageUrl,
+      barcodeConfigured,
+      barcodeRemoved: footer?.barcodeRemoved === true
+    }, { headers });
   } catch (error) {
     console.error('Store settings read failed:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json(
-      { whatsappNumber: DEFAULT_WHATSAPP_NUMBER, vatNumber: DEFAULT_VAT_NUMBER, barcodeImageUrl: '', barcodeRemoved: false },
-      { headers }
-    );
+    // Do not turn a temporary database failure into a successful empty settings payload.
+    // The footer keeps its last known barcode until a later request succeeds.
+    return NextResponse.json({ error: 'Store settings are temporarily unavailable' }, { status: 503, headers });
   }
 }
