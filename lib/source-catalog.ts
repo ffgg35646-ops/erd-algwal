@@ -302,14 +302,14 @@ add('qauara-galaxy-s25-ultra', 'سامسونج جالكسي S25 Ultra', 'سام�
   'فئة Ultra مع قلم S Pen وكاميرا رئيسية 200MP.',
   'هاتف Samsung Galaxy S25 Ultra بشاشة Dynamic AMOLED 2X مقاس 6.9 بوصة، وقلم S Pen، ونظام كاميرات يتضمن كاميرا رئيسية 200MP. السعات والأسعار مطابقة لقائمة المصدر.',
   ['شاشة Dynamic AMOLED 2X مقاس 6.9 بوصة', 'كاميرا رئيسية 200MP', 'قلم S Pen', 'خيارات 256GB و512GB و1TB'],
-  { colors: ['تيتانيوم ذهبي وردي', 'تيتانيوم أخضر', 'تيتانيوم أسود داكن', 'تيتانيوم أسود', 'تيتانيوم أبيض فضي', 'تيتانيوم رمادي', 'تيتانيوم أزرق فضي'], storageOptions: ['256GB', '512GB', '1TB'], storagePrices: { '512GB': 3799, '1TB': 5299 } });
+  { colors: ['تيتانيوم ذهبي وردي', 'تيتانيوم أخضر', 'تيتانيوم أسود داكن', 'التيتانيوم أسود', 'تيتانيوم أبيض فضي', 'تيتانيوم رمادي', 'تيتانيوم أزرق فضي'], storageOptions: ['256GB', '512GB', '1TB'], storagePrices: { '512GB': 3799, '1TB': 5299 } });
 
 // Samsung Galaxy S24
 add('qauara-galaxy-s24-ultra', 'سامسونج جالكسي S24 Ultra', 'سامسونج S24', 5399, images.samsungS24,
   'هاتف Galaxy S24 Ultra مع قلم S Pen وسعات متعددة.',
   'هاتف Samsung Galaxy S24 Ultra بشاشة Dynamic AMOLED 2X مقاس 6.8 بوصة، وقلم S Pen، وكاميرات متعددة مع تقريب بصري. السعات والأسعار مطابقة لقائمة المصدر.',
   ['شاشة Dynamic AMOLED 2X مقاس 6.8 بوصة', 'قلم S Pen', 'كاميرا رئيسية 200MP', 'خيارات 256GB و512GB و1TB'],
-  { colors: ['تيتانيوم بنفسجي', 'تيتانيوم أخضر', 'تيتانيوم أسود', 'تيتانيوم أصفر', 'تيتانيوم رمادي'], storageOptions: ['256GB', '512GB', '1TB'], storagePrices: { '512GB': 5899, '1TB': 6899 } });
+  { colors: ['تيتانيوم بنفسجي', 'تيتانيوم أخضر', 'التيتانيوم أسود', 'تيتانيوم أصفر', 'تيتانيوم رمادي'], storageOptions: ['256GB', '512GB', '1TB'], storagePrices: { '512GB': 5899, '1TB': 6899 } });
 
 // The source lists these colours and storage capacities as separate product cards.
 // Expand only the combinations explicitly shown in the source catalogue so every
