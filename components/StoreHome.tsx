@@ -38,10 +38,19 @@ const PRODUCT_COLOR_HEX: Record<string, string> = {
   'برتقالي كوني': '#e87932', 'أزرق ضبابي': '#a9c4dd',
   'أخضر مريمي': '#97aa92', 'أبيض سحابي': '#f5f5f0',
   'ذهبي فاتح': '#d9c59e', 'وردي ناعم': '#f4cbd5',
-  'أسود فضائي': '#292d37', 'تيتانيوم أسود': '#55565a', 'تايتانيوم أسود': '#55565a',
-  'تيتانيوم أبيض': '#e6e4df', 'تيتانيوم صحراوي': '#bfa58b', 'تايتانيوم صحراوي': '#bfa58b',
+  'أسود فضائي': '#292d37',
+  'التيتانيوم أسود': '#55565a', 'تيتانيوم أسود': '#55565a', 'تايتانيوم أسود': '#55565a',
+  'التيتانيوم صحراوي': '#bfa58b', 'تيتانيوم صحراوي': '#bfa58b', 'تايتانيوم صحراوي': '#bfa58b',
+  'تيتانيوم أبيض': '#e6e4df',
   'أزرق سماوي': '#9dc8e9'
 };
+
+function normalizeProductColorName(color: string) {
+  const normalized = color.trim().normalize('NFKC').replace(/\\s+/g, ' ');
+  const titaniumMatch = normalized.match(/^(?:ال)?(?:تيتانيوم|تايتانيوم)\\s+(أسود|اسود|صحراوي)$/);
+  if (titaniumMatch) return titaniumMatch[1] === 'صحراوي' ? 'التيتانيوم صحراوي' : 'التيتانيوم أسود';
+  return normalized;
+}
 
 function getProductColorHex(color: string) {
   const normalized = color.trim().toLocaleLowerCase('ar');
@@ -481,7 +490,9 @@ function AutoProductSlider({ categoryName, products }: { categoryName: string; p
 function StripProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const [added, setAdded] = useState(false);
-  const availableProductColors = product.colors?.filter((color) => typeof color === 'string' && color.trim()) || [];
+  const availableProductColors = Array.from(new Set((product.colors || [])
+    .filter((color) => typeof color === 'string' && color.trim())
+    .map(normalizeProductColorName)));
 
   function handleAdd() {
     addToCart(product.id);
