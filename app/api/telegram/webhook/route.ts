@@ -526,7 +526,7 @@ async function showCategoryProductsForEdit(
 
 function normalizeProductColorName(color: string) {
   const normalized = color.trim().normalize('NFKC').replace(/\s+/g, ' ');
-  const titaniumMatch = normalized.match(/^(?:ال)?(?:تيتانيوم|تايتانيوم)\\s+(أسود|اسود|صحراوي)$/);
+  const titaniumMatch = normalized.match(/^(?:ال)?(?:تيتانيوم|تايتانيوم)\s+(أسود|اسود|صحراوي)$/);
   if (titaniumMatch) return titaniumMatch[1] === 'صحراوي' ? 'التيتانيوم صحراوي' : 'التيتانيوم أسود';
   return normalized;
 }
