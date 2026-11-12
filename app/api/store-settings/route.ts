@@ -9,6 +9,7 @@ type FooterSettings = {
   _id: string;
   vatNumber?: string;
   barcodeFileId?: string;
+  imageDataBase64?: string;
   vatNumberRemoved?: boolean;
   barcodeRemoved?: boolean;
   updatedAt?: Date;
@@ -35,7 +36,7 @@ export async function GET() {
     const vatNumber = footer?.vatNumberRemoved
       ? ''
       : typeof footer?.vatNumber === 'string' ? footer.vatNumber : DEFAULT_VAT_NUMBER;
-    const barcodeConfigured = typeof footer?.barcodeFileId === 'string' && footer.barcodeFileId.length > 0;
+    const barcodeConfigured = (typeof footer?.imageDataBase64 === 'string' && footer.imageDataBase64.length > 0) || (typeof footer?.barcodeFileId === 'string' && footer.barcodeFileId.length > 0);
     const barcodeImageUrl = barcodeConfigured
       ? '/api/store-footer-assets/barcode/image?v=' + String(
           footer?.updatedAt instanceof Date ? footer.updatedAt.getTime() : 0
