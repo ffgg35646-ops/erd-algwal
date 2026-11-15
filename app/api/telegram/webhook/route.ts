@@ -59,7 +59,12 @@ type FlowData = {
   orderId?: string;
   bannerId?: string;
   footerKey?: string;
-  footerSettingKey?: 'vat' | 'barcode';
+  footerSettingKey?: 'vat' | 'barcode' | 'icon-one' | 'icon-two';
+  footerIconSlot?: 'one' | 'two';
+  footerIconImageUrl?: string;
+  footerIconImageDataBase64?: string;
+  footerIconContentType?: string;
+  footerIconImageSize?: number;
   content?: string;
   searchQuery?: string;
   searchMessageId?: number;
@@ -72,7 +77,7 @@ type FlowStep =
   | 'edit_product_name' | 'edit_product_colors' | 'edit_product_storage' | 'edit_product_price' | 'edit_product_details' | 'edit_product_images' | 'edit_product_color_image'
   | 'edit_product_storage_add' | 'edit_product_storage_select_edit' | 'edit_product_storage_edit_value' | 'edit_product_storage_select_delete'
   | 'contact_whatsapp' | 'cancel_reason' | 'slider_image' | 'footer_edit_text' | 'footer_confirm_save'
-  | 'footer_vat_number' | 'footer_barcode_image' | 'store_logo_image' | 'search_products';
+  | 'footer_vat_number' | 'footer_barcode_image' | 'footer_icon_image' | 'footer_icon_link' | 'store_logo_image' | 'search_products';
 
 type AdminSession = {
   telegramUserId: number;
@@ -1399,18 +1404,37 @@ async function showStoreLogoMenu(db: Db, chatId: number) {
 
 async function showFooterSettings(db: Db, chatId: number) {
   const [settings, reviewCount] = await Promise.all([
-    db.collection<{ _id: string; vatNumber?: string; vatNumberRemoved?: boolean; barcodeFileId?: string; barcodeRemoved?: boolean }>('store_settings')
-      .findOne({ _id: 'footer' }),
+    db.collection<{
+      _id: string;
+      vatNumber?: string;
+      vatNumberRemoved?: boolean;
+      barcodeFileId?: string;
+      barcodeRemoved?: boolean;
+      imageDataBase64?: string;
+      iconOneImageUrl?: string;
+      iconOneImageDataBase64?: string;
+      iconTwoImageUrl?: string;
+      iconTwoImageDataBase64?: string;
+    }>('store_settings').findOne({ _id: 'footer' }),
     db.collection('customer_reviews').countDocuments({})
   ]);
   const vatNumber = settings?.vatNumberRemoved ? 'محذوف' : settings?.vatNumber || '4353454564';
-  const barcodeStatus = settings?.barcodeFileId ? 'تمت إضافته' : settings?.barcodeRemoved ? 'محذوف' : 'باركود تصميمي مؤقت ظاهر في المتجر';
+  const barcodeStatus = settings?.barcodeFileId || settings?.imageDataBase64
+    ? 'تمت إضافته'
+    : settings?.barcodeRemoved ? 'محذوف' : 'غير مضاف';
+  const iconOneStatus = settings?.iconOneImageUrl || settings?.iconOneImageDataBase64 ? 'مضافة' : 'غير مضافة';
+  const iconTwoStatus = settings?.iconTwoImageUrl || settings?.iconTwoImageDataBase64 ? 'مضافة' : 'غير مضافة';
   await sendTelegramMessage(chatId,
-    'تعديلات أخرى — إعدادات المتجر والفوتر\n\nالرقم الضريبي: ' + vatNumber + '\nالباركود: ' + barcodeStatus + '\n\nاختر العنصر الذي تريد تعديله:',
+    'تعديلات أخرى — إعدادات المتجر والفوتر\n\nالرقم الضريبي: ' + vatNumber +
+    '\nالباركود: ' + barcodeStatus +
+    '\nالأيقونة الأولى: ' + iconOneStatus +
+    '\nالأيقونة الثانية: ' + iconTwoStatus +
+    '\n\nاختر العنصر الذي تريد تعديله:',
     {
       reply_markup: {
         inline_keyboard: [
           [{ text: 'الرقم الضريبي', callback_data: 'footer-setting:vat' }, { text: 'الباركود', callback_data: 'footer-setting:barcode' }],
+          [{ text: 'الأيقونة الأولى', callback_data: 'footer-setting:icon-one' }, { text: 'الأيقونة الثانية', callback_data: 'footer-setting:icon-two' }],
           [{ text: '🖼️ تعديل الشعار', callback_data: 'footer-setting:logo' }, { text: '🖼️ السلايدر', callback_data: 'footer-setting:slider' }],
           [{ text: 'السياسات', callback_data: 'footer-setting:policies' }, { text: 'خدمات العملاء', callback_data: 'footer-setting:customer-service' }],
           [{ text: '📞 الاتصال', callback_data: 'footer-setting:contact' }],
@@ -1754,6 +1778,35 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     await showFooterBarcodeMenu(db, chatId);
     return;
   }
+  if (action === 'footer-setting' && (id === 'icon-one' || id === 'icon-two')) {
+    const slot = id === 'icon-one' ? 'one' : 'two';
+    const label = slot === 'one' ? 'الأيقونة الأولى' : 'الأيقونة الثانية';
+    const footer = await db.collection<{
+      _id: string;
+      iconOneImageUrl?: string;
+      iconOneLinkUrl?: string;
+      iconOneImageDataBase64?: string;
+      iconTwoImageUrl?: string;
+      iconTwoLinkUrl?: string;
+      iconTwoImageDataBase64?: string;
+    }>('store_settings').findOne({ _id: 'footer' });
+    const currentImage = slot === 'one'
+      ? footer?.iconOneImageUrl || (footer?.iconOneImageDataBase64 ? 'صورة محفوظة' : '')
+      : footer?.iconTwoImageUrl || (footer?.iconTwoImageDataBase64 ? 'صورة محفوظة' : '');
+    const currentLink = slot === 'one' ? footer?.iconOneLinkUrl : footer?.iconTwoLinkUrl;
+    await startFlow(
+      db,
+      callback.from.id,
+      chatId,
+      'footer_settings',
+      'footer_icon_image',
+      { footerIconSlot: slot },
+      label + '\\n\\nالصورة الحالية: ' + (currentImage || 'غير مضافة') +
+      '\\nالرابط الحالي: ' + (currentLink || 'غير مضاف') +
+      '\\n\\nأرسل صورة الأيقونة كصورة في تيليجرام أو رابط صورة يبدأ بـ https://. أرسل «مسح» لحذفها. اكتب /cancel للإلغاء.'
+    );
+    return;
+  }
   if (action === 'footer-setting' && id === 'reviews') {
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: callback.from.id });
     await showReviewPage(db, chatId, 0);
@@ -1846,9 +1899,20 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
     return;
   }
   if (action === 'footer-barcode-delete') {
-    const result = await db.collection<{ _id: string; barcodeFileId?: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
+    const result = await db.collection<{
+      _id: string;
+      barcodeFileId?: string;
+      imageDataBase64?: string;
+      contentType?: string;
+      imageSize?: number;
+      updatedAt?: Date;
+      updatedByTelegramId?: number;
+    }>('store_settings').updateOne(
       { _id: 'footer' },
-      { $unset: { barcodeFileId: '' }, $set: { barcodeRemoved: true, updatedAt: new Date(), updatedByTelegramId: callback.from.id } }
+      {
+        $unset: { barcodeFileId: '', imageDataBase64: '', contentType: '', imageSize: '' },
+        $set: { barcodeRemoved: true, updatedAt: new Date(), updatedByTelegramId: callback.from.id }
+      }
     );
     await sendTelegramMessage(chatId,
       result.modifiedCount ? '✅ تم حذف الباركود .' : 'لا يوجد باركود محفوظ لحذفه.'
@@ -2619,6 +2683,124 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     );
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
     await sendMainMenu(db, chatId, '✅ تم حفظ الرقم الضريبي وسيظهر أسفل اسم المتجر في الفوتر.');
+    return;
+  }
+
+  if (session.workflow === 'footer_settings' && session.step === 'footer_icon_image') {
+    const slot = session.data.footerIconSlot;
+    if (slot !== 'one' && slot !== 'two') {
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId, 'انتهت جلسة تعديل الأيقونة. ابدأ من «تعديلات أخرى».');
+      return;
+    }
+    const imageField = slot === 'one' ? 'iconOneImageUrl' : 'iconTwoImageUrl';
+    const dataField = slot === 'one' ? 'iconOneImageDataBase64' : 'iconTwoImageDataBase64';
+    const contentTypeField = slot === 'one' ? 'iconOneContentType' : 'iconTwoContentType';
+    const sizeField = slot === 'one' ? 'iconOneImageSize' : 'iconTwoImageSize';
+    const linkField = slot === 'one' ? 'iconOneLinkUrl' : 'iconTwoLinkUrl';
+
+    if (value === 'مسح' || value === 'حذف') {
+      await db.collection<{ _id: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
+        { _id: 'footer' },
+        {
+          $unset: { [imageField]: '', [dataField]: '', [contentTypeField]: '', [sizeField]: '', [linkField]: '' },
+          $set: { updatedAt: new Date(), updatedByTelegramId: session.telegramUserId }
+        },
+        { upsert: true }
+      );
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId, '✅ تم حذف الأيقونة من الفوتر.');
+      return;
+    }
+
+    let imageUrl = '';
+    let imageDataBase64 = '';
+    let contentType = '';
+    let imageSize = 0;
+    if (message.photo?.length) {
+      const photo = message.photo[message.photo.length - 1];
+      try {
+        const savedImage = await downloadSliderImage(photo.file_id);
+        if (savedImage.imageSize > 1024 * 1024) {
+          await sendTelegramMessage(chatId, 'حجم أيقونة الفوتر يجب ألا يتجاوز 1 ميجابايت. أرسل صورة أصغر.');
+          return;
+        }
+        imageDataBase64 = savedImage.imageDataBase64;
+        contentType = savedImage.contentType;
+        imageSize = savedImage.imageSize;
+      } catch (error) {
+        console.error('Footer icon image download failed:', error instanceof Error ? error.message : 'Unknown error');
+        await sendTelegramMessage(chatId, 'تعذر حفظ صورة الأيقونة. أرسل صورة أصغر من 8 ميجابايت أو أرسل رابط صورة يبدأ بـ https://.');
+        return;
+      }
+    } else {
+      let parsedUrl: URL | null = null;
+      try { parsedUrl = new URL(value.trim()); } catch { /* Invalid URL is handled below. */ }
+      if (!parsedUrl || parsedUrl.protocol !== 'https:' || value.trim().length > 1500) {
+        await sendTelegramMessage(chatId, 'أرسل صورة الأيقونة كصورة في تيليجرام أو رابط صورة يبدأ بـ https://. أو أرسل «مسح».');
+        return;
+      }
+      imageUrl = parsedUrl.toString();
+    }
+
+    session.step = 'footer_icon_link';
+    session.data = {
+      ...session.data,
+      footerIconImageUrl: imageUrl,
+      footerIconImageDataBase64: imageDataBase64,
+      footerIconContentType: contentType,
+      footerIconImageSize: imageSize
+    };
+    await saveSession(db, session);
+    await sendTelegramMessage(chatId, 'تم استلام صورة الأيقونة. أرسل الآن رابط الصفحة أو الموقع الذي يفتح عند الضغط عليها (يجب أن يبدأ بـ https://).');
+    return;
+  }
+
+  if (session.workflow === 'footer_settings' && session.step === 'footer_icon_link') {
+    const slot = session.data.footerIconSlot;
+    const imageUrl = session.data.footerIconImageUrl || '';
+    const imageDataBase64 = session.data.footerIconImageDataBase64 || '';
+    if ((slot !== 'one' && slot !== 'two') || (!imageUrl && !imageDataBase64)) {
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendMainMenu(db, chatId, 'تعذر إكمال إعداد الأيقونة. ابدأ مرة أخرى من «تعديلات أخرى».');
+      return;
+    }
+    let linkUrl: URL | null = null;
+    try { linkUrl = new URL(value.trim()); } catch { /* Invalid URL is handled below. */ }
+    if (!linkUrl || linkUrl.protocol !== 'https:' || value.trim().length > 1500) {
+      await sendTelegramMessage(chatId, 'رابط الوجهة غير صالح. أرسل رابطًا يبدأ بـ https://.');
+      return;
+    }
+
+    const imageField = slot === 'one' ? 'iconOneImageUrl' : 'iconTwoImageUrl';
+    const dataField = slot === 'one' ? 'iconOneImageDataBase64' : 'iconTwoImageDataBase64';
+    const contentTypeField = slot === 'one' ? 'iconOneContentType' : 'iconTwoContentType';
+    const sizeField = slot === 'one' ? 'iconOneImageSize' : 'iconTwoImageSize';
+    const linkField = slot === 'one' ? 'iconOneLinkUrl' : 'iconTwoLinkUrl';
+    const setFields: Record<string, unknown> = {
+      [linkField]: linkUrl.toString(),
+      updatedAt: new Date(),
+      updatedByTelegramId: session.telegramUserId
+    };
+    const unsetFields: Record<string, ''> = {};
+    if (imageDataBase64) {
+      setFields[dataField] = imageDataBase64;
+      setFields[contentTypeField] = session.data.footerIconContentType || 'image/jpeg';
+      setFields[sizeField] = session.data.footerIconImageSize || 0;
+      unsetFields[imageField] = '';
+    } else {
+      setFields[imageField] = imageUrl;
+      unsetFields[dataField] = '';
+      unsetFields[contentTypeField] = '';
+      unsetFields[sizeField] = '';
+    }
+    await db.collection<{ _id: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
+      { _id: 'footer' },
+      { $set: setFields, $unset: unsetFields },
+      { upsert: true }
+    );
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await sendMainMenu(db, chatId, '✅ تم حفظ الأيقونة ورابطها في الفوتر.');
     return;
   }
 
