@@ -24,6 +24,8 @@ function FooterLinkIcon({ name }: { name: FooterLinkIconName }) {
   }
 }
 
+type FooterIcon = { imageUrl: string; linkUrl: string; label: string };
+
 type StorePage = {
   key: string;
   title: string;
@@ -31,6 +33,20 @@ type StorePage = {
   content: string;
   updatedAt: string | null;
 };
+
+function safeHttpsUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function safeImageUrl(value: string) {
+  if (value.startsWith('/') && !value.startsWith('//')) return value;
+  return safeHttpsUrl(value);
+}
 
 const PAGE_LINKS = {
   policies: [
@@ -62,7 +78,10 @@ export default function StoreFooter() {
   const [whatsappNumber, setWhatsappNumber] = useState('201090466376');
   const [vatNumber, setVatNumber] = useState('4353454564');
   const [barcodeImageUrl, setBarcodeImageUrl] = useState('');
-  const [barcodeRemoved, setBarcodeRemoved] = useState(false);
+  const [footerIcons, setFooterIcons] = useState<FooterIcon[]>([
+    { imageUrl: '', linkUrl: '', label: 'الأيقونة الأولى' },
+    { imageUrl: '', linkUrl: '', label: 'الأيقونة الثانية' }
+  ]);
 
   useEffect(() => {
     let alive = true;
@@ -77,7 +96,13 @@ export default function StoreFooter() {
           if (alive && Array.isArray(data.pages)) setPages(data.pages);
         }
         if (settingsResponse.ok) {
-          const data = await settingsResponse.json() as { whatsappNumber?: string; vatNumber?: string; barcodeImageUrl?: string; barcodeConfigured?: boolean; barcodeRemoved?: boolean };
+          const data = await settingsResponse.json() as {
+            whatsappNumber?: string;
+            vatNumber?: string;
+            barcodeImageUrl?: string;
+            barcodeConfigured?: boolean;
+            footerIcons?: FooterIcon[];
+          };
           if (alive && typeof data.whatsappNumber === 'string') setWhatsappNumber(data.whatsappNumber);
           if (alive && typeof data.vatNumber === 'string') setVatNumber(data.vatNumber);
           // A successful settings response may explicitly report a removed/missing barcode.
@@ -87,7 +112,7 @@ export default function StoreFooter() {
           } else if (alive && data.barcodeConfigured === false) {
             setBarcodeImageUrl('');
           }
-          if (alive && typeof data.barcodeRemoved === 'boolean') setBarcodeRemoved(data.barcodeRemoved);
+          if (alive && Array.isArray(data.footerIcons)) setFooterIcons(data.footerIcons);
         }
       } catch {
         // Keep the fallback links working if settings cannot be loaded.
@@ -162,15 +187,44 @@ export default function StoreFooter() {
 
           <div className="store-footer-column store-footer-barcode">
             <h2>الباركود</h2>
-            {barcodeImageUrl ? (
-              <img src={barcodeImageUrl} alt="باركود المتجر" width={150} height={150} loading="lazy" />
-            ) : barcodeRemoved ? (
-              <span className="store-footer-muted">تم حذف الباركود من الإدارة.</span>
-            ) : (
-              <div className="footer-demo-barcode" aria-label="باركود المتجر">
-                <svg viewBox="0 0 180 112" role="img" aria-label="باركود المتجر"><rect width="180" height="112" rx="8" fill="#fff"/><g fill="#202020">{Array.from({length: 42}, (_, i) => <rect key={i} x={7 + i * 3.95} y={7 + (i % 3)} width={i % 7 === 0 ? 2.8 : i % 4 === 0 ? 2.2 : 1.25} height={i % 5 === 0 ? 68 : i % 3 === 0 ? 76 : 62} />)}</g><rect x="56" y="31" width="68" height="28" rx="5" fill="#fff" stroke="#b28b37" strokeWidth="1.5"/><text x="90" y="49" fontSize="12" fontWeight="800" fill="#97712e" textAnchor="middle">المتجر</text></svg>
+            <div className="store-footer-barcode-items">
+              {barcodeImageUrl ? (
+                <img className="store-footer-barcode-image" src={barcodeImageUrl} alt="باركود المتجر" width={150} height={150} loading="lazy" />
+              ) : (
+                <div className="store-footer-barcode-placeholder" aria-label="مساحة الباركود الفارغة">
+                  <small>يُضاف من الإدارة</small>
+                </div>
+              )}
+              <div className="store-footer-icon-slots">
+                {[0, 1].map((index) => {
+                  const icon = footerIcons[index] || {
+                    imageUrl: '',
+                    linkUrl: '',
+                    label: index === 0 ? 'الأيقونة الأولى' : 'الأيقونة الثانية'
+                  };
+                  const imageUrl = safeImageUrl(icon.imageUrl);
+                  const linkUrl = safeHttpsUrl(icon.linkUrl);
+                  const label = icon.label || (index === 0 ? 'الأيقونة الأولى' : 'الأيقونة الثانية');
+                  const slotContent = imageUrl
+                    ? <img src={imageUrl} alt={label} width={58} height={58} loading="lazy" />
+                    : <span className="store-footer-icon-placeholder-mark" aria-hidden="true">+</span>;
+                  return (
+                    <div className="store-footer-icon-item" key={index}>
+                      {imageUrl && linkUrl ? (
+                        <a className="store-footer-icon-slot is-filled" href={linkUrl} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}>
+                          {slotContent}
+                        </a>
+                      ) : (
+                        <span className={imageUrl ? 'store-footer-icon-slot is-filled' : 'store-footer-icon-slot is-empty'} aria-label={label} title={label}>
+                          {slotContent}
+                        </span>
+                      )}
+                      <small>{label}</small>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            </div>
           </div>
         </div>
 
