@@ -6051,3 +6051,110 @@ body.erd-verify-waiting-screen .erd-wait-main {
   padding: 18px !important;
   font-size: 16px !important;
 }
+
+
+/* Admin-managed barcode and the two fixed footer icon slots. */
+.store-footer-barcode-items {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
+}
+.store-footer-barcode-image,
+.store-footer-barcode-placeholder {
+  box-sizing: border-box;
+  display: flex;
+  width: 140px;
+  height: 140px;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  object-fit: contain;
+  border: 1px solid rgba(150, 155, 160, .5);
+  border-radius: 10px;
+  background: #fff;
+}
+.store-footer-barcode-placeholder {
+  border-style: dashed;
+  background: rgba(255, 255, 255, .08);
+  color: #9299a1;
+}
+.store-footer-barcode-placeholder small {
+  font-size: 11px;
+  text-align: center;
+}
+.store-footer-icon-slots {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+.store-footer-icon-item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 58px;
+}
+.store-footer-icon-slot {
+  box-sizing: border-box;
+  display: inline-flex;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px dashed rgba(150, 160, 170, .8);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .08);
+  color: #aeb8c2;
+  text-decoration: none;
+}
+.store-footer-icon-slot.is-filled {
+  border-style: solid;
+  border-color: rgba(210, 218, 226, .85);
+  background: #fff;
+}
+.store-footer-icon-slot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  padding: 4px;
+  box-sizing: border-box;
+  object-fit: contain;
+}
+.store-footer-icon-placeholder-mark {
+  display: block;
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+}
+.store-footer-icon-item small {
+  max-width: 76px;
+  color: inherit;
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: center;
+}
+@media (max-width: 480px) {
+  .store-footer-barcode-items { gap: 9px; }
+  .store-footer-barcode-image,
+  .store-footer-barcode-placeholder {
+    width: 124px;
+    height: 124px;
+  }
+  .store-footer-icon-slots { gap: 9px; }
+  .store-footer-icon-slot {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+  }
+  .store-footer-icon-item { min-width: 52px; }
+}
