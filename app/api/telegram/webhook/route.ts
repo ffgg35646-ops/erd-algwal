@@ -2700,10 +2700,17 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     const linkField = slot === 'one' ? 'iconOneLinkUrl' : 'iconTwoLinkUrl';
 
     if (value === 'مسح' || value === 'حذف') {
+      const unsetFields: Record<string, ''> = {
+        [imageField]: '',
+        [dataField]: '',
+        [contentTypeField]: '',
+        [sizeField]: '',
+        [linkField]: ''
+      };
       await db.collection<{ _id: string; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
         { _id: 'footer' },
         {
-          $unset: { [imageField]: '', [dataField]: '', [contentTypeField]: '', [sizeField]: '', [linkField]: '' },
+          $unset: unsetFields,
           $set: { updatedAt: new Date(), updatedByTelegramId: session.telegramUserId }
         },
         { upsert: true }
