@@ -12,6 +12,12 @@ type FooterSettings = {
   imageDataBase64?: string;
   vatNumberRemoved?: boolean;
   barcodeRemoved?: boolean;
+  iconOneImageUrl?: string;
+  iconOneLinkUrl?: string;
+  iconOneImageDataBase64?: string;
+  iconTwoImageUrl?: string;
+  iconTwoLinkUrl?: string;
+  iconTwoImageDataBase64?: string;
   updatedAt?: Date;
 };
 
@@ -36,19 +42,29 @@ export async function GET() {
     const vatNumber = footer?.vatNumberRemoved
       ? ''
       : typeof footer?.vatNumber === 'string' ? footer.vatNumber : DEFAULT_VAT_NUMBER;
-    const barcodeConfigured = (typeof footer?.imageDataBase64 === 'string' && footer.imageDataBase64.length > 0) || (typeof footer?.barcodeFileId === 'string' && footer.barcodeFileId.length > 0);
+    const version = String(footer?.updatedAt instanceof Date ? footer.updatedAt.getTime() : 0);
+    const barcodeConfigured = footer?.barcodeRemoved !== true && (
+      (typeof footer?.imageDataBase64 === 'string' && footer.imageDataBase64.length > 0) ||
+      (typeof footer?.barcodeFileId === 'string' && footer.barcodeFileId.length > 0)
+    );
     const barcodeImageUrl = barcodeConfigured
-      ? '/api/store-footer-assets/barcode/image?v=' + String(
-          footer?.updatedAt instanceof Date ? footer.updatedAt.getTime() : 0
-        )
+      ? '/api/store-footer-assets/barcode/image?v=' + version
       : '';
+    const iconOneImageUrl = footer?.iconOneImageUrl ||
+      (footer?.iconOneImageDataBase64 ? '/api/store-footer-assets/icon/one/image?v=' + version : '');
+    const iconTwoImageUrl = footer?.iconTwoImageUrl ||
+      (footer?.iconTwoImageDataBase64 ? '/api/store-footer-assets/icon/two/image?v=' + version : '');
 
     return NextResponse.json({
       whatsappNumber,
       vatNumber,
       barcodeImageUrl,
       barcodeConfigured,
-      barcodeRemoved: footer?.barcodeRemoved === true
+      barcodeRemoved: footer?.barcodeRemoved === true,
+      footerIcons: [
+        { imageUrl: iconOneImageUrl, linkUrl: footer?.iconOneLinkUrl || '', label: 'الأيقونة الأولى' },
+        { imageUrl: iconTwoImageUrl, linkUrl: footer?.iconTwoLinkUrl || '', label: 'الأيقونة الثانية' }
+      ]
     }, { headers });
   } catch (error) {
     console.error('Store settings read failed:', error instanceof Error ? error.message : 'Unknown error');
