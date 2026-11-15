@@ -1801,9 +1801,9 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
       'footer_settings',
       'footer_icon_image',
       { footerIconSlot: slot },
-      label + '\\n\\nالصورة الحالية: ' + (currentImage || 'غير مضافة') +
-      '\\nالرابط الحالي: ' + (currentLink || 'غير مضاف') +
-      '\\n\\nأرسل صورة الأيقونة كصورة في تيليجرام أو رابط صورة يبدأ بـ https://. أرسل «مسح» لحذفها. اكتب /cancel للإلغاء.'
+      label + '\n\nالصورة الحالية: ' + (currentImage || 'غير مضافة') +
+      '\nالرابط الحالي: ' + (currentLink || 'غير مضاف') +
+      '\n\nأرسل صورة الأيقونة كصورة في تيليجرام أو رابط صورة يبدأ بـ https://. أرسل «مسح» لحذفها. اكتب /cancel للإلغاء.'
     );
     return;
   }
