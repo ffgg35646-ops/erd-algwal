@@ -680,11 +680,11 @@ export async function findStoredProduct(db: Db, id: string) {
 }
 function normalizeCatalogProductName(value: string) {
   return value.normalize('NFKC')
-    .replace(/[\\u064B-\\u065F\\u0670]/g, '')
+    .replace(/[\u064B-\u065F\u0670]/g, '')
     .replace(/[أإآٱ]/g, 'ا')
     .replace(/ى/g, 'ي')
     .toLowerCase()
-    .replace(/[^\\p{L}\\p{N}]/gu, '');
+    .replace(/[^\p{L}\p{N}]/gu, '');
 }
 
 function storedProductCompleteness(product: StoredProduct) {
@@ -705,14 +705,14 @@ export async function findLegacyStoredProduct(
   db: Db,
   product: Pick<Product, 'name' | 'category' | 'specifications'>
 ) {
-  const colourSpec = product.specifications?.find((item) => /^اللون\\s*:/u.test(item));
-  const variantColor = colourSpec?.replace(/^اللون\\s*:\\s*/u, '').trim() || '';
+  const colourSpec = product.specifications?.find((item) => /^اللون\s*:/u.test(item));
+  const variantColor = colourSpec?.replace(/^اللون\s*:\s*/u, '').trim() || '';
   let baseName = product.name.trim();
 
   if (variantColor) {
-    const escapedColor = variantColor.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&');
-    const colorSuffix = new RegExp('\\\\s*[-–—]\\\\s*' + escapedColor + '\\\\s*$', 'u');
-    baseName = baseName.replace(colorSuffix, '').trim();
+    const suffixes = [' - ' + variantColor, ' – ' + variantColor, ' — ' + variantColor];
+    const suffix = suffixes.find((item) => baseName.endsWith(item));
+    if (suffix) baseName = baseName.slice(0, -suffix.length).trim();
   }
 
   const normalizedName = normalizeCatalogProductName(baseName);
@@ -729,7 +729,7 @@ export async function findLegacyStoredProduct(
   // Use the matching category only when there is no exact name match.
   if (!matches.length && product.category) {
     const normalizedCategory = normalizeCatalogProductName(
-      product.category.replace(/^سلسلة\\s*/u, '')
+      product.category.replace(/^سلسلة\s*/u, '')
     );
     matches = candidates.filter((candidate) =>
       normalizeCatalogProductName(candidate.category || '') === normalizedCategory
@@ -755,8 +755,9 @@ export async function findLegacyStoredProduct(
   matches.sort((left, right) => {
     const completeness = storedProductCompleteness(right) - storedProductCompleteness(left);
     if (completeness) return completeness;
-    const leftUpdated = left.updatedAt ? new Date(left.updatedAt).getTime() : 0;
-    const rightUpdated = right.updatedAt ? new Date(right.updatedAt).getTime() : 0;
+
+    const leftUpdated = left.updatedAt instanceof Date ? left.updatedAt.getTime() : 0;
+    const rightUpdated = right.updatedAt instanceof Date ? right.updatedAt.getTime() : 0;
     return rightUpdated - leftUpdated;
   });
 
