@@ -327,11 +327,12 @@ function variantSlug(value: string) {
 
 export const sourceCatalogProducts: Product[] = items.flatMap((product) => {
   if (colourCardProducts.has(product.id)) {
-    const { colors, storageOptions: _storageOptions, storagePrices: _storagePrices, ...base } = product;
-    return (colors || []).map((color) => ({
-      ...base,
+    return (product.colors || []).map((color) => ({
+      ...product,
       id: product.id + '-' + variantSlug(color),
       name: product.name + ' - ' + color,
+      // Keep every available colour, capacity, and capacity price on the
+      // legacy colour URL; the API upgrades this entry to its full DB record.
       specifications: [...product.specifications, 'اللون: ' + color]
     }));
   }

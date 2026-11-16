@@ -6,6 +6,22 @@ const globalForMongo = globalThis as typeof globalThis & {
 
 let localClientPromise: Promise<MongoClient> | undefined;
 
+function getDatabaseName(uri: string) {
+  const uriDatabase = uri.match(/^mongodb(?:\+srv)?:\/\/[^/]+\/([^?]*)/i)?.[1]
+    ?.split('/')[0]
+    ?.trim();
+
+  if (uriDatabase) {
+    try {
+      return decodeURIComponent(uriDatabase);
+    } catch {
+      return uriDatabase;
+    }
+  }
+
+  return process.env.MONGODB_DB?.trim() || 'bb_store';
+}
+
 function getClientPromise(): Promise<MongoClient> {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -48,5 +64,5 @@ function getClientPromise(): Promise<MongoClient> {
 
 export async function getDb(): Promise<Db> {
   const client = await getClientPromise();
-  return client.db(process.env.MONGODB_DB || 'erd_algwal');
+  return client.db(getDatabaseName(uri));
 }

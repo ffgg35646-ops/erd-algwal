@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import CaseColorImage from '@/components/CaseColorImage';
 import type { Product } from '@/lib/products';
-import { formatPrice, getProductPrice } from '@/lib/products';
+import { formatPrice, getProductPrice, getStoragePrice, normalizeStorageOption } from '@/lib/products';
 import { useCart } from '@/components/CartProvider';
 
 const COLOR_HEX: Record<string, string> = {
@@ -62,10 +62,15 @@ export default function ProductDetails({ product }: { product: Product }) {
   const pricedStorageOptions = Object.entries(product.storagePrices || {})
     .filter(([, price]) => typeof price === 'number' && Number.isFinite(price) && price > 0)
     .map(([storage]) => storage);
-  const availableStorage = Array.from(new Set([
+  const storageCandidates = [
     ...(product.storageOptions || []),
     ...pricedStorageOptions
-  ].filter((storage) => typeof storage === 'string' && storage.trim())));
+  ].filter((storage) => typeof storage === 'string' && storage.trim());
+  const availableStorage = storageCandidates.filter((storage, index, all) =>
+    all.findIndex((candidate) =>
+      normalizeStorageOption(candidate) === normalizeStorageOption(storage)
+    ) === index
+  );
   const imageSourceColor = normalizeProductColorName(product.colorMask?.sourceColor || availableColors[0] || '');
   const initialColor = availableColors.includes(imageSourceColor) ? imageSourceColor : (availableColors[0] || '');
   const [selectedColor, setSelectedColor] = useState(initialColor);
@@ -82,7 +87,7 @@ export default function ProductDetails({ product }: { product: Product }) {
   const colorsSignature = availableColors.join('|');
   const storageSignature = availableStorage.join('|');
   const selectedPrice = getProductPrice(product, selectedStorage);
-  const hasStoragePrice = Boolean(selectedStorage && product.storagePrices?.[selectedStorage]);
+  const hasStoragePrice = typeof getStoragePrice(product, selectedStorage) === 'number';
 
   useEffect(() => {
     setSelectedColor(initialColor);

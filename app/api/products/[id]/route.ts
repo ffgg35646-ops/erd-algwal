@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
-import { ensureDefaultProducts, findStoredProduct, serializeStoredProduct } from '@/lib/catalog';
+import { ensureDefaultProducts, findLegacyStoredProduct, findStoredProduct, serializeStoredProduct } from '@/lib/catalog';
 import { getProduct } from '@/lib/products';
 
 export const runtime = 'nodejs';
@@ -32,6 +32,14 @@ export async function GET(_request: Request, { params }: ProductRouteContext) {
     }
 
     if (builtIn) {
+      const legacyStored = await findLegacyStoredProduct(db, builtIn);
+      if (legacyStored) {
+        return NextResponse.json(
+          { product: serializeStoredProduct(legacyStored, { includeColorMask: true }) },
+          { headers: { 'cache-control': 'no-store' } }
+        );
+      }
+
       const deletedSeed = await db.collection('products').findOne(
         { seedId: id, deleted: true },
         { projection: { _id: 1 } }

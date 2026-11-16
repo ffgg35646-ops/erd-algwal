@@ -49,11 +49,39 @@ export function formatPrice(value: number) {
   return amount + ' ر.س';
 }
 
+export function normalizeStorageOption(value: string) {
+  return value.normalize('NFKC')
+    .replace(/[٠-٩]/g, (digit) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/جيجابايت|جيجا/g, '')
+    .replace(/تيرابايت|تيرا/g, 'T')
+    .replace(/GIGABYTES?|GB$/g, '')
+    .replace(/TERABYTES?|TB$/g, 'T');
+}
+
+export function getStoragePrice(
+  product: Pick<Product, 'storagePrices'>,
+  storage?: string
+) {
+  if (!storage) return undefined;
+
+  const exact = product.storagePrices?.[storage];
+  if (typeof exact === 'number' && Number.isFinite(exact) && exact > 0) return exact;
+
+  const normalized = normalizeStorageOption(storage);
+  const match = Object.entries(product.storagePrices || {}).find(
+    ([key, value]) => normalizeStorageOption(key) === normalized
+      && typeof value === 'number'
+      && Number.isFinite(value)
+      && value > 0
+  );
+
+  return match?.[1];
+}
+
 export function getProductPrice(product: Pick<Product, 'price' | 'storagePrices'>, storage?: string) {
-  const optionPrice = storage ? product.storagePrices?.[storage] : undefined;
-  return typeof optionPrice === 'number' && Number.isFinite(optionPrice) && optionPrice > 0
-    ? optionPrice
-    : product.price;
+  return getStoragePrice(product, storage) ?? product.price;
 }
 
 export function getProduct(id: string) {
