@@ -28,7 +28,7 @@
 ## متغيرات البيئة
 أضف القيم في إعدادات الاستضافة فقط؛ لا تحفظ أسرارًا حقيقية في GitHub:
 - `MONGODB_URI`
-- `MONGODB_DB=erd_algwal`
+- `MONGODB_DB=bb_store` — يُستخدم اسم قاعدة البيانات الموجود في مسار `MONGODB_URI` أولًا، ثم هذا المتغير، ثم `bb_store` كقيمة افتراضية.
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_ADMIN_ID=5569918211`
 - `TELEGRAM_WEBHOOK_SECRET`

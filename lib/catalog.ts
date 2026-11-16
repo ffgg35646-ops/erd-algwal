@@ -678,3 +678,87 @@ export async function findStoredProduct(db: Db, id: string) {
     ? collection.findOne({ _id: new ObjectId(id), deleted: { $ne: true } })
     : collection.findOne({ seedId: id, deleted: { $ne: true } });
 }
+function normalizeCatalogProductName(value: string) {
+  return value.normalize('NFKC')
+    .replace(/[\\u064B-\\u065F\\u0670]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .toLowerCase()
+    .replace(/[^\\p{L}\\p{N}]/gu, '');
+}
+
+function storedProductCompleteness(product: StoredProduct) {
+  return (product.colors?.length || 0) * 20
+    + (product.storageOptions?.length || 0) * 10
+    + Object.keys(product.storagePrices || {}).length * 12
+    + (product.images?.length || 0) * 4
+    + Object.keys(product.colorImages || {}).length * 10
+    + (product.details?.trim() ? 2 : 0);
+}
+
+/**
+ * Older catalogue URLs encode one colour as a separate static product slug.
+ * Resolve those URLs to the complete imported MongoDB product instead of
+ * showing the stripped-down hard-coded fallback product.
+ */
+export async function findLegacyStoredProduct(
+  db: Db,
+  product: Pick<Product, 'name' | 'category' | 'specifications'>
+) {
+  const colourSpec = product.specifications?.find((item) => /^اللون\\s*:/u.test(item));
+  const variantColor = colourSpec?.replace(/^اللون\\s*:\\s*/u, '').trim() || '';
+  let baseName = product.name.trim();
+
+  if (variantColor) {
+    const escapedColor = variantColor.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&');
+    const colorSuffix = new RegExp('\\\\s*[-–—]\\\\s*' + escapedColor + '\\\\s*$', 'u');
+    baseName = baseName.replace(colorSuffix, '').trim();
+  }
+
+  const normalizedName = normalizeCatalogProductName(baseName);
+  if (!normalizedName) return null;
+
+  const candidates = await db.collection<StoredProduct>('products')
+    .find({ deleted: { $ne: true }, name: { $type: 'string' } })
+    .toArray();
+
+  let matches = candidates.filter(
+    (candidate) => normalizeCatalogProductName(candidate.name) === normalizedName
+  );
+
+  // Use the matching category only when there is no exact name match.
+  if (!matches.length && product.category) {
+    const normalizedCategory = normalizeCatalogProductName(
+      product.category.replace(/^سلسلة\\s*/u, '')
+    );
+    matches = candidates.filter((candidate) =>
+      normalizeCatalogProductName(candidate.category || '') === normalizedCategory
+      && normalizeCatalogProductName(candidate.name).includes(normalizedName)
+    );
+  }
+
+  if (!matches.length) return null;
+
+  if (variantColor) {
+    const normalizedColor = normalizeCatalogProductName(variantColor);
+    const colorMatches = matches.filter((candidate) =>
+      (candidate.colors || []).some(
+        (color) => normalizeCatalogProductName(color) === normalizedColor
+      )
+      || Object.keys(candidate.colorImages || {}).some(
+        (color) => normalizeCatalogProductName(color) === normalizedColor
+      )
+    );
+    if (colorMatches.length) matches = colorMatches;
+  }
+
+  matches.sort((left, right) => {
+    const completeness = storedProductCompleteness(right) - storedProductCompleteness(left);
+    if (completeness) return completeness;
+    const leftUpdated = left.updatedAt ? new Date(left.updatedAt).getTime() : 0;
+    const rightUpdated = right.updatedAt ? new Date(right.updatedAt).getTime() : 0;
+    return rightUpdated - leftUpdated;
+  });
+
+  return matches[0] || null;
+}
