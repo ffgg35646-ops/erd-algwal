@@ -21,9 +21,12 @@ export type StoredProduct = Document & {
   imageUrl?: string;
   imageUrlMediaId?: string;
   imageUrlDataBase64?: string;
+  imageUrlContentType?: string;
   imagesDataBase64?: string[];
+  imageContentTypes?: string[];
   imageMediaIds?: string[];
   colorImagesDataBase64?: Record<string, string>;
+  colorImageContentTypes?: Record<string, string>;
   colorImageMediaIds?: Record<string, string>;
   oldPrice?: number;
   badge?: string;
