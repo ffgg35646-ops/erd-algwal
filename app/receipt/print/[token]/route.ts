@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/mongodb';
 import type { StoreOrder } from '@/lib/orders';
+import { getDocumentLogoDataUri, type DocumentLogoSettings } from '@/lib/document-logo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -119,6 +120,8 @@ export async function GET(
       });
     }
 
+    const documentLogoSettings = await db.collection<DocumentLogoSettings>('store_settings').findOne({ _id: 'documents' });
+    const documentLogoDataUri = getDocumentLogoDataUri(documentLogoSettings);
     const total = Number.isFinite(Number(order.total)) ? Math.max(0, Number(order.total)) : 0;
     const totalText = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
@@ -163,6 +166,7 @@ export async function GET(
   .side { width: 38%; text-align: center; font-size: 13px; line-height: 1.7; }
   .side b { display: block; margin-bottom: 4px; font-size: 19px; }
   .logo { width: 24%; min-height: 62px; display: flex; align-items: center; justify-content: center; border: 1px solid #999; padding: 8px 5px; text-align: center; color: #222; font-size: 19px; line-height: 1.35; font-weight: 800; }
+  .logo img { display: block; width: 100%; max-width: 100%; max-height: 62px; object-fit: contain; }
   .meta { display: flex; justify-content: space-between; gap: 12px; padding: 10px 22px 0; color: #444; font-size: 12px; }
   .voucher { width: calc(100% - 48px); margin: 20px auto 0; border: 1px solid #888; min-height: 610px; padding-bottom: 28px; }
   .top { position: relative; height: 44px; }
@@ -183,6 +187,7 @@ export async function GET(
     .side { font-size: 10px; }
     .side b { font-size: 14px; }
     .logo { font-size: 14px; min-height: 52px; }
+    .logo img { max-height: 52px; }
     .meta { padding-inline: 10px; font-size: 10px; }
     .voucher { width: calc(100% - 16px); margin-top: 14px; min-height: 560px; }
     .title { font-size: 15px; padding-inline: 18px; }
@@ -208,7 +213,7 @@ export async function GET(
   <main class="page">
     <header class="header">
       <div class="side"><b>أرض الجوال</b>متجر الجوالات والأجهزة الذكية</div>
-      <div class="logo">أرض<br>الجوال</div>
+      <div class="logo">${documentLogoDataUri ? `<img src="${documentLogoDataUri}" alt="شعار المستندات">` : 'أرض<br>الجوال'}</div>
       <div class="side"><b>ERD AL JAWAL</b>Mobile &amp; Smart Devices Store</div>
     </header>
     <div class="meta">

@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/mongodb';
 import type { StoreOrder } from '@/lib/orders';
+import { getDocumentLogoDataUri, type DocumentLogoSettings } from '@/lib/document-logo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -81,6 +82,8 @@ export async function GET(
       });
     }
 
+    const documentLogoSettings = await db.collection<DocumentLogoSettings>('store_settings').findOne({ _id: 'documents' });
+    const documentLogoDataUri = getDocumentLogoDataUri(documentLogoSettings);
     const orderDate = new Date(order.createdAt);
     const orderDateSafe = Number.isNaN(orderDate.getTime()) ? new Date() : orderDate;
     const firstInstallmentDate = getFirstInstallmentDate(orderDateSafe);
@@ -121,6 +124,7 @@ export async function GET(
   .side { width: 36%; text-align: center; font-size: 12px; line-height: 1.7; }
   .side b { font-size: 17px; display: block; }
   .logo { width: 24%; min-height: 60px; display: flex; align-items: center; justify-content: center; border: 1px solid #9ca3af; padding: 10px 6px; color: #3f4a5c; font-size: 18px; font-weight: 800; line-height: 1.35; text-align: center; }
+  .logo img { display: block; width: 100%; max-width: 100%; max-height: 60px; object-fit: contain; }
   h1 { text-align: center; font-size: 25px; margin: 26px 0 20px; }
   .meta { display: flex; flex-wrap: wrap; gap: 10px 24px; font-weight: bold; font-size: 13px; margin-bottom: 18px; }
   p { font-size: 14px; line-height: 2.15; margin: 0 0 9px; overflow-wrap: anywhere; }
@@ -136,6 +140,7 @@ export async function GET(
     .side { font-size: 9px; }
     .side b { font-size: 13px; }
     .logo { font-size: 14px; min-height: 50px; }
+    .logo img { max-height: 50px; }
     h1 { font-size: 20px; margin: 21px 0 16px; }
     .meta { gap: 7px 12px; font-size: 10px; }
     p { font-size: 12px; line-height: 2; }
@@ -156,7 +161,7 @@ export async function GET(
 <main class="page">
   <header class="header">
     <div class="side"><b>أرض الجوال</b>متجر إلكتروني للجوالات والأجهزة الذكية</div>
-    <div class="logo">أرض<br>الجوال</div>
+    <div class="logo">${documentLogoDataUri ? `<img src="${documentLogoDataUri}" alt="شعار المستندات">` : 'أرض<br>الجوال'}</div>
     <div class="side"><b>ERD AL JAWAL</b>Mobile &amp; Smart Devices Store</div>
   </header>
 

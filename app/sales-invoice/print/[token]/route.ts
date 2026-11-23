@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/mongodb';
 import type { StoreOrder } from '@/lib/orders';
+import { getDocumentLogoDataUri, type DocumentLogoSettings } from '@/lib/document-logo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -63,10 +64,12 @@ export async function GET(
       });
     }
 
-    const [contactSettings, footerSettings] = await Promise.all([
+    const [contactSettings, footerSettings, documentLogoSettings] = await Promise.all([
       db.collection<ContactSettings>('store_settings').findOne({ _id: 'contact' }),
-      db.collection<FooterSettings>('store_settings').findOne({ _id: 'footer' })
+      db.collection<FooterSettings>('store_settings').findOne({ _id: 'footer' }),
+      db.collection<DocumentLogoSettings>('store_settings').findOne({ _id: 'documents' })
     ]);
+    const documentLogoDataUri = getDocumentLogoDataUri(documentLogoSettings);
 
     const whatsappNumber = contactSettings?.whatsappNumberRemoved
       ? ''
@@ -129,6 +132,7 @@ export async function GET(
       '.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px; background: #3f4a5c; color: #fff; }',
       '.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }',
       '.logo { display: flex; width: 78px; height: 68px; flex: none; align-items: center; justify-content: center; border-radius: 10px; background: #fff; color: #3f4a5c; font-size: 17px; font-weight: 800; line-height: 1.4; text-align: center; }',
+      '.logo img { display: block; width: 100%; max-width: 100%; max-height: 68px; object-fit: contain; }',
       '.brand h1 { margin: 0 0 6px; font-size: 21px; }',
       '.brand p { margin: 3px 0; font-size: 12px; }',
       '.title { flex: none; text-align: left; }',
@@ -156,7 +160,7 @@ export async function GET(
       '.note p { margin: 0; color: #6b7280; font-size: 10px; line-height: 1.9; }',
       '.footer { margin-top: 16px; padding-top: 12px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 10px; line-height: 1.8; text-align: center; }',
       '.footer b { color: #20242b; }',
-      '@media (max-width: 560px) { body { padding: 8px 5px 18px; } .invoice { margin-top: 48px; } .head { gap: 6px; padding: 10px 8px; } .brand { gap: 7px; } .logo { width: 54px; height: 54px; font-size: 12px; } .brand h1 { font-size: 14px; } .brand p { font-size: 9px; } .title h2 { font-size: 18px; } .title p { font-size: 9px; } .content { padding: 8px; } .cards, .bottom { gap: 6px; } .card { padding: 8px 7px; } .card h3 { font-size: 11px; } .field { gap: 4px; font-size: 9px; } th { padding: 7px 2px; font-size: 9px; } td { padding: 6px 2px; font-size: 9px; } .product-name { min-width: 90px; } .totals { width: 100%; } .total-row { padding: 8px; font-size: 10px; } .note { min-height: 90px; padding: 8px; } .note h3 { font-size: 11px; } .note p { font-size: 9px; } }',
+      '@media (max-width: 560px) { body { padding: 8px 5px 18px; } .invoice { margin-top: 48px; } .head { gap: 6px; padding: 10px 8px; } .brand { gap: 7px; } .logo { width: 54px; height: 54px; font-size: 12px; } .logo img { max-height: 54px; } .brand h1 { font-size: 14px; } .brand p { font-size: 9px; } .title h2 { font-size: 18px; } .title p { font-size: 9px; } .content { padding: 8px; } .cards, .bottom { gap: 6px; } .card { padding: 8px 7px; } .card h3 { font-size: 11px; } .field { gap: 4px; font-size: 9px; } th { padding: 7px 2px; font-size: 9px; } td { padding: 6px 2px; font-size: 9px; } .product-name { min-width: 90px; } .totals { width: 100%; } .total-row { padding: 8px; font-size: 10px; } .note { min-height: 90px; padding: 8px; } .note h3 { font-size: 11px; } .note p { font-size: 9px; } }',
       '@page { size: A4; margin: 10mm; }',
       '@media print { body { padding: 0; background: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; } .print-btn { display: none !important; } .invoice { width: 100%; margin: 0; border-radius: 0; } }',
       '</style>',
@@ -165,7 +169,7 @@ export async function GET(
       '<button class="print-btn" type="button" onclick="window.print()">طباعة / حفظ PDF</button>',
       '<main class="invoice">',
       '<header class="head">',
-      '<div class="brand"><div class="logo">أرض<br>الجوال</div><div><h1>أرض الجوال</h1><p>متجر الجوالات والأجهزة الذكية</p><p>ERD AL JAWAL — Mobile &amp; Smart Devices Store</p></div></div>',
+      '<div class="brand"><div class="logo">' + (documentLogoDataUri ? '<img src="' + escapeHtml(documentLogoDataUri) + '" alt="شعار المستندات">' : 'أرض<br>الجوال') + '</div><div><h1>أرض الجوال</h1><p>متجر الجوالات والأجهزة الذكية</p><p>ERD AL JAWAL — Mobile &amp; Smart Devices Store</p></div></div>',
       '<div class="title"><h2>فاتورة بيع</h2><p>رقم الفاتورة: ' + escapeHtml(orderNumber) + '</p><p>فاتورة نقدية / شراء عادي</p></div>',
       '</header>',
       '<section class="content">',
