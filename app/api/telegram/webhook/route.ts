@@ -56,6 +56,7 @@ type FlowData = {
   price?: number;
   details?: string;
   images?: string[];
+  imageMediaIds?: string[];
   orderId?: string;
   bannerId?: string;
   footerKey?: string;
@@ -239,6 +240,55 @@ async function downloadSliderImage(fileId: string) {
     contentType,
     imageSize: imageBytes.length
   };
+}
+
+async function persistTelegramImage(
+  db: Db,
+  fileId: string,
+  metadata: { purpose: string; createdByTelegramId?: number }
+) {
+  const saved = await downloadSliderImage(fileId);
+  const _id = new ObjectId();
+  await db.collection('store_media').insertOne({
+    _id,
+    imageDataBase64: saved.imageDataBase64,
+    contentType: saved.contentType,
+    imageSize: saved.imageSize,
+    telegramFileId: fileId,
+    source: 'telegram-admin-upload',
+    purpose: metadata.purpose,
+    createdAt: new Date(),
+    ...(metadata.createdByTelegramId ? { createdByTelegramId: metadata.createdByTelegramId } : {})
+  });
+  return _id.toHexString();
+}
+
+async function ensureTelegramImagesPersisted(
+  db: Db,
+  fileIds: string[],
+  existingMediaIds: string[] | undefined,
+  purpose: string,
+  createdByTelegramId: number
+) {
+  const mediaIds: string[] = [];
+  for (let index = 0; index < fileIds.length; index += 1) {
+    const existingId = existingMediaIds?.[index];
+    if (existingId && ObjectId.isValid(existingId)) {
+      const exists = await db.collection('store_media').findOne(
+        { _id: new ObjectId(existingId) },
+        { projection: { _id: 1 } }
+      );
+      if (exists) {
+        mediaIds.push(existingId);
+        continue;
+      }
+    }
+    mediaIds.push(await persistTelegramImage(db, fileIds[index], {
+      purpose,
+      createdByTelegramId
+    }));
+  }
+  return mediaIds;
 }
 
 function isAuthorized(adminId: number) {
@@ -1007,10 +1057,29 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
       ? '\n🖌️ تم تحديث الصور. افتح تعديل المنتج واضغط «تحديد الكفر مجانًا» لإعادة تحديد صورة الغلاف.'
       : '';
 
+    let imageMediaIds: string[];
+    try {
+      imageMediaIds = await ensureTelegramImagesPersisted(
+        db,
+        data.images.slice(0, 10),
+        data.imageMediaIds,
+        'product-gallery',
+        session.telegramUserId
+      );
+    } catch (error) {
+      console.error('Product image persistence failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر حفظ إحدى الصور داخل قاعدة البيانات. لم يتم تغيير صور المنتج؛ أعد إرسال الصور التي لم تُحفظ ثم حاول مرة أخرى.');
+      return false;
+    }
+
     const result = await db.collection<StoredProduct>('products').updateOne(
       { _id: productId },
       {
-        $set: { images: data.images.slice(0, 10), updatedAt: now },
+        $set: {
+          images: data.images.slice(0, 10),
+          imageMediaIds,
+          updatedAt: now
+        },
         $unset: { colorMask: '' }
       }
     );
@@ -1032,6 +1101,21 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     await sendTelegramMessage(chatId, 'القسم لم يعد موجودًا. ابدأ «إضافة منتج» من جديد.');
     return false;
   }
+  let imageMediaIds: string[];
+  try {
+    imageMediaIds = await ensureTelegramImagesPersisted(
+      db,
+      (data.images || []).slice(0, 10),
+      data.imageMediaIds,
+      'product-gallery',
+      session.telegramUserId
+    );
+  } catch (error) {
+    console.error('Product image persistence failed:', error instanceof Error ? error.message : 'Unknown error');
+    await sendTelegramMessage(chatId, 'تعذر حفظ إحدى الصور داخل قاعدة البيانات. لم يتم إنشاء المنتج؛ أعد إرسال الصور وحاول مرة أخرى.');
+    return false;
+  }
+
   const productId = new ObjectId();
   const result = await db.collection<StoredProduct>('products').insertOne({
     _id: productId,
@@ -1044,6 +1128,7 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
     price: data.price,
     details: data.details,
     images: (data.images || []).slice(0, 10),
+    imageMediaIds,
     createdAt: now,
     updatedAt: now
   });
@@ -1068,10 +1153,27 @@ async function saveProduct(db: Db, session: AdminSession, chatId: number) {
 async function handleImageStep(db: Db, session: AdminSession, message: TelegramMessage) {
   const chatId = message.chat.id;
   if (message.photo?.length) {
+    const currentImages = session.data.images || [];
+    if (currentImages.length >= 10) {
+      await sendTelegramMessage(chatId, 'وصلت إلى الحد الأقصى وهو 10 صور للمنتج. اضغط «حفظ المنتج» لإكمال الحفظ.');
+      return;
+    }
     const best = message.photo[message.photo.length - 1];
-    session.data.images = [...(session.data.images || []), best.file_id].slice(0, 10);
+    let mediaId: string;
+    try {
+      mediaId = await persistTelegramImage(db, best.file_id, {
+        purpose: 'product-gallery',
+        createdByTelegramId: session.telegramUserId
+      });
+    } catch (error) {
+      console.error('Product image upload persistence failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'وصلت الصورة إلى تيليجرام لكن تعذر حفظ نسخة منها في قاعدة البيانات. أعد إرسال هذه الصورة مرة أخرى.');
+      return;
+    }
+    session.data.images = [...currentImages, best.file_id];
+    session.data.imageMediaIds = [...(session.data.imageMediaIds || []), mediaId];
     await saveSession(db, session);
-    await sendTelegramMessage(chatId, 'وصلت الصورة رقم ' + session.data.images.length + ' من 10. أرسل صورًا أخرى أو اضغط «حفظ المنتج» عند الانتهاء.', {
+    await sendTelegramMessage(chatId, 'تم استلام الصورة وحفظ نسخة دائمة منها في قاعدة البيانات. الصورة رقم ' + session.data.images.length + ' من 10. أرسل صورًا أخرى أو اضغط «حفظ المنتج» عند الانتهاء.', {
       reply_markup: { keyboard: [[{ text: SAVE_PRODUCT_TEXT }], [{ text: MAIN_MENU_TEXT }]], resize_keyboard: true, one_time_keyboard: false }
     });
     return;
@@ -2534,11 +2636,32 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       return;
     }
 
-    await db.collection<{ _id: string; logoFileId?: string; logoBackgroundMode?: 'with' | 'without'; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
+    let savedLogo: Awaited<ReturnType<typeof downloadSliderImage>>;
+    try {
+      savedLogo = await downloadSliderImage(photo.file_id);
+    } catch (error) {
+      console.error('Store logo upload persistence failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر حفظ صورة الشعار في قاعدة البيانات. لم يتم استبدال الشعار الحالي؛ أعد إرسال الصورة مرة أخرى.');
+      return;
+    }
+
+    await db.collection<{
+      _id: string;
+      logoFileId?: string;
+      logoImageDataBase64?: string;
+      logoContentType?: string;
+      logoImageSize?: number;
+      logoBackgroundMode?: 'with' | 'without';
+      updatedAt?: Date;
+      updatedByTelegramId?: number;
+    }>('store_settings').updateOne(
       { _id: 'branding' },
       {
         $set: {
           logoFileId: photo.file_id,
+          logoImageDataBase64: savedLogo.imageDataBase64,
+          logoContentType: savedLogo.contentType,
+          logoImageSize: savedLogo.imageSize,
           logoBackgroundMode: session.data.logoBackgroundMode === 'without' ? 'without' : 'with',
           updatedAt: new Date(),
           updatedByTelegramId: session.telegramUserId
@@ -2547,7 +2670,7 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       { upsert: true }
     );
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
-    await sendMainMenu(db, chatId, '✅ تم استبدال الشعار الحالي. سيظهر الشعار الجديد في رأس الموقع بعد تحديث الصفحة.');
+    await sendMainMenu(db, chatId, '✅ تم حفظ الشعار في قاعدة البيانات مباشرةً. سيعرض الموقع النسخة المحفوظة دون الرجوع إلى تيليجرام.');
     return;
   }
 
@@ -3097,13 +3220,27 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       return;
     }
 
+    let mediaId: string;
+    try {
+      mediaId = await persistTelegramImage(db, photo.file_id, {
+        purpose: 'product-color',
+        createdByTelegramId: session.telegramUserId
+      });
+    } catch (error) {
+      console.error('Product color image persistence failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر حفظ صورة اللون داخل قاعدة البيانات. لم يتم تغيير الصورة الحالية؛ أعد إرسال الصورة مرة أخرى.');
+      return;
+    }
+
     const colorImages = { ...(product.colorImages || {}), [color]: photo.file_id };
+    const colorImageMediaIds = { ...(product.colorImageMediaIds || {}), [color]: mediaId };
     await db.collection<StoredProduct>('products').updateOne(
       { _id: product._id, deleted: { $ne: true } },
       {
         $set: {
           colorImages,
-          ...(!product.images?.length ? { images: [photo.file_id] } : {}),
+          colorImageMediaIds,
+          ...(!product.images?.length ? { images: [photo.file_id], imageMediaIds: [mediaId] } : {}),
           updatedAt: new Date()
         }
       }
