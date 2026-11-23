@@ -18,7 +18,7 @@ type FooterSettings = {
   iconTwoImageUrl?: string;
   iconTwoLinkUrl?: string;
   iconTwoImageDataBase64?: string;
-  updatedAt?: Date;
+  updatedAt?: Date | string;
 };
 
 const DEFAULT_WHATSAPP_NUMBER = '201090466376';
@@ -42,7 +42,13 @@ export async function GET() {
     const vatNumber = footer?.vatNumberRemoved
       ? ''
       : typeof footer?.vatNumber === 'string' ? footer.vatNumber : DEFAULT_VAT_NUMBER;
-    const version = String(footer?.updatedAt instanceof Date ? footer.updatedAt.getTime() : 0);
+    const rawUpdatedAt = footer?.updatedAt;
+    const parsedUpdatedAt = rawUpdatedAt instanceof Date
+      ? rawUpdatedAt.getTime()
+      : typeof rawUpdatedAt === 'string'
+        ? Date.parse(rawUpdatedAt)
+        : 0;
+    const version = String(Number.isFinite(parsedUpdatedAt) ? parsedUpdatedAt : 0);
     const barcodeConfigured = footer?.barcodeRemoved !== true && (
       (typeof footer?.imageDataBase64 === 'string' && footer.imageDataBase64.length > 0) ||
       (typeof footer?.barcodeFileId === 'string' && footer.barcodeFileId.length > 0)
