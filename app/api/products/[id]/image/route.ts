@@ -14,6 +14,14 @@ type StoredMedia = {
   imageSize?: number;
 };
 
+type StoredProductImageAsset = {
+  productId?: string | ObjectId;
+  fileId?: string;
+  imageDataBase64?: string;
+  contentType?: string;
+  imageSize?: number;
+};
+
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
 function safeImageContentType(value: string | undefined) {
@@ -115,8 +123,26 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       }
     }
 
-    // Images inserted directly into MongoDB (without the Telegram admin)
-    // may be stored as base64 data URLs or as explicit base64 fields.
+    // Older Telegram-admin deployments stored uploaded product image bytes in
+    // product_image_assets, keyed by productId + Telegram fileId. Read that
+    // durable copy before attempting a Telegram download so admin images remain
+    // available even when the bot token or Telegram file cache changes.
+    if (typeof imageValue === 'string' && imageValue) {
+      const adminAsset = await db.collection<StoredProductImageAsset>('product_image_assets').findOne({
+        fileId: imageValue,
+        $or: [
+          { productId: product._id.toHexString() },
+          { productId: product._id }
+        ]
+      });
+      if (adminAsset?.imageDataBase64) {
+        const decoded = decodeStoredImage(adminAsset.imageDataBase64, adminAsset.contentType || 'image/jpeg');
+        if (decoded.bytes.length) return imageResponse(decoded.bytes, decoded.contentType);
+      }
+    }
+
+    // Images inserted directly into MongoDB may also be stored as base64
+    // data URLs or as explicit base64 fields.
     if (typeof directImageData === 'string' && directImageData.length > 0) {
       const decoded = decodeStoredImage(directImageData, directContentType || 'image/jpeg');
       if (decoded.bytes.length) return imageResponse(decoded.bytes, decoded.contentType);

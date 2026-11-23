@@ -47,11 +47,10 @@ function getClientPromise(): Promise<MongoClient> {
 }
 
 export async function getDb(): Promise<Db> {
-  const configuredDatabase = process.env.MONGODB_DB?.trim();
-  if (configuredDatabase && configuredDatabase !== 'bb_store') {
-    throw new Error('MONGODB_DB must be "bb_store" for the Erd Al-Gwal project');
-  }
-
+  // Telegram administration and every storefront API must use the same
+  // authoritative database. The live admin-managed Erd Al-Gwal data is stored
+  // in "erd_algwal"; do not silently route the website to the empty bb_store
+  // database and show seeded fallback content instead.
   const client = await getClientPromise();
-  return client.db('bb_store');
+  return client.db('erd_algwal');
 }
