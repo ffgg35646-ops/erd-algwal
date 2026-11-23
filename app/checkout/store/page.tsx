@@ -187,12 +187,9 @@ export default function StoreCheckoutPage() {
       return;
     }
     if (form.installment === 'yes') {
-      const selectedInstallment = Number(form.installmentDownPayment);
-      const selectedMonths = Number(form.installmentMonths);
-      const totalCents = Math.round(total * 100);
-      const coveredCents = Math.round(selectedInstallment * 100) * selectedMonths;
-      if (selectedInstallment >= total || coveredCents < totalCents) {
-        setFormError('صحح القسط من فضلك.');
+      const firstPayment = Number(form.installmentDownPayment);
+      if (firstPayment >= total) {
+        setFormError('يجب أن تكون الدفعة الأولى أقل من إجمالي الطلب.');
         return;
       }
     }
