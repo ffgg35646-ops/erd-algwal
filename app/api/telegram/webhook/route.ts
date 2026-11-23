@@ -1354,7 +1354,8 @@ async function showSliderMenu(chatId: number) {
 }
 
 async function showBannersForDelete(db: Db, chatId: number) {
-  const banners = await db.collection<StoreBannerRecord>('store_banners').find({})
+  const banners = await db.collection<StoreBannerRecord>('store_banners')
+    .find({ createdBySystem: { $ne: true } })
     .sort({ createdAt: 1, _id: 1 }).limit(12).toArray();
 
   const navigationRows = [
@@ -2840,7 +2841,8 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       await sendTelegramMessage(chatId, 'أرسل الصورة كصورة في تيليجرام، وليس كرابط نصي. اكتب /cancel للإلغاء.');
       return;
     }
-    const bannerCount = await db.collection<StoreBannerRecord>('store_banners').countDocuments({});
+    const bannerCount = await db.collection<StoreBannerRecord>('store_banners')
+      .countDocuments({ createdBySystem: { $ne: true } });
     if (bannerCount >= 12) {
       await sendTelegramMessage(chatId, 'السلايدر ممتلئ بـ12 صورة. احذف صورة   ← حذف صورة» ثم أضف صورة جديدة.');
       return;
