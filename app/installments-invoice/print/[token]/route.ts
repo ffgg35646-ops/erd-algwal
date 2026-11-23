@@ -1,5 +1,6 @@
 import { getDb } from '@/lib/mongodb';
 import type { StoreOrder } from '@/lib/orders';
+import { getDocumentLogoDataUri, type DocumentLogoSettings } from '@/lib/document-logo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -94,10 +95,12 @@ export async function GET(
       });
     }
 
-    const [contactSettings, footerSettings] = await Promise.all([
+    const [contactSettings, footerSettings, documentLogoSettings] = await Promise.all([
       db.collection<ContactSettings>('store_settings').findOne({ _id: 'contact' }),
-      db.collection<FooterSettings>('store_settings').findOne({ _id: 'footer' })
+      db.collection<FooterSettings>('store_settings').findOne({ _id: 'footer' }),
+      db.collection<DocumentLogoSettings>('store_settings').findOne({ _id: 'documents' })
     ]);
+    const documentLogoDataUri = getDocumentLogoDataUri(documentLogoSettings);
 
     const whatsappNumber = contactSettings?.whatsappNumberRemoved
       ? ''
@@ -196,6 +199,7 @@ export async function GET(
       '.header .side { width: 36%; text-align: center; font-size: 10px; line-height: 1.6; }',
       '.header .side b { font-size: 15px; display: block; }',
       '.header .logo { width: 24%; min-height: 54px; display: flex; align-items: center; justify-content: center; text-align: center; color: #3f4a5c; border: 1px solid #9ca3af; padding: 8px 5px; font-size: 17px; font-weight: 800; line-height: 1.3; }',
+      '.header .logo img { display: block; width: 100%; max-height: 54px; object-fit: contain; }',
       '.dateno { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 14px 0 10px; }',
       '.dateno .date { background: #777; color: #fff; font-weight: bold; padding: 3px 24px; font-size: 13px; }',
       '.dateno .no { color: #c00; font-weight: bold; font-style: italic; font-size: 13px; direction: ltr; }',
@@ -226,7 +230,7 @@ export async function GET(
       '.remain span:first-child { width: 22%; text-align: center; border-left: 1px solid #fff; }',
       '.remain span:last-child { padding-right: 12px; }',
       '.status { margin-top: 7px; text-align: center; color: #555; font-size: 9px; }',
-      '@media (max-width: 420px) { body { padding: 5px; } .page { padding-top: 10px; } .header .side { font-size: 8px; } .header .side b { font-size: 12px; } .header .logo { font-size: 13px; min-height: 45px; } .welcome > div { padding: 7px 6px; font-size: 8px; } .dateno .date { padding-inline: 12px; font-size: 11px; } .info > div { padding: 6px; font-size: 8px; } td { font-size: 9px; padding: 5px 2px; } }',
+      '@media (max-width: 420px) { body { padding: 5px; } .page { padding-top: 10px; } .header .side { font-size: 8px; } .header .side b { font-size: 12px; } .header .logo { font-size: 13px; min-height: 45px; } .header .logo img { max-height: 45px; } .welcome > div { padding: 7px 6px; font-size: 8px; } .dateno .date { padding-inline: 12px; font-size: 11px; } .info > div { padding: 6px; font-size: 8px; } td { font-size: 9px; padding: 5px 2px; } }',
       '@page { size: A4; margin: 10mm; }',
       '@media print { body { padding: 0; print-color-adjust: exact; -webkit-print-color-adjust: exact; } .print-btn { display: none !important; } .page { width: 100%; margin: 0 auto; padding: 0; } }',
       '</style>',
@@ -236,7 +240,7 @@ export async function GET(
       '<main class="page">',
       '<header class="header">',
       '<div class="side"><b>أرض الجوال</b>متجر إلكتروني للجوالات والأجهزة الذكية</div>',
-      '<div class="logo">أرض<br>الجوال</div>',
+      '<div class="logo">' + (documentLogoDataUri ? '<img src="' + escapeHtml(documentLogoDataUri) + '" alt="شعار المستندات">' : 'أرض<br>الجوال') + '</div>',
       '<div class="side"><b>ERD AL JAWAL</b>Mobile &amp; Smart Devices Store</div>',
       '</header>',
       '<div class="dateno"><div class="no">No. ' + escapeHtml(orderNumber) + '</div><div class="date">' + escapeHtml(dateText) + '</div></div>',
