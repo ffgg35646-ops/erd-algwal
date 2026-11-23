@@ -30,24 +30,38 @@ export default function SiteHeader() {
 
   useEffect(() => {
     let active = true;
-    let objectUrl: string | null = null;
 
-    fetch('/api/store/logo', { cache: 'no-store' })
-      .then(async (response) => {
-        if (!response.ok) return;
-        const backgroundMode = response.headers.get('x-store-logo-background') || 'legacy';
-        const sourceImage = await response.blob();
-        const image = sourceImage;
+    const refreshLogo = async () => {
+      try {
+        const response = await fetch('/api/store/logo', { cache: 'no-store' });
         if (!active) return;
+
+        if (response.status === 404) {
+          setLogoSrc(siteLogo.src);
+          setLogoFilter('url(#remove-logo-black)');
+          return;
+        }
+        if (!response.ok) return;
+
+        const backgroundMode = response.headers.get('x-store-logo-background') || 'legacy';
         setLogoFilter(backgroundMode === 'legacy' ? 'url(#remove-logo-black)' : 'none');
-        objectUrl = URL.createObjectURL(image);
-        setLogoSrc(objectUrl);
-      })
-      .catch(() => undefined);
+        // A changing query key prevents a previously cached logo from surviving
+        // an admin upload that replaced the image in MongoDB.
+        setLogoSrc('/api/store/logo?v=' + Date.now());
+      } catch {
+        // Keep the last known logo during a temporary network failure.
+      }
+    };
+
+    void refreshLogo();
+    const timer = window.setInterval(() => { void refreshLogo(); }, 30_000);
+    const handleFocus = () => { void refreshLogo(); };
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      window.clearInterval(timer);
+      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
