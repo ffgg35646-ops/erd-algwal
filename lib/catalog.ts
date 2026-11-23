@@ -7,6 +7,7 @@ export type StoreCategory = Document & {
   description?: string;
   icon?: string;
   seedName?: string;
+  sortOrder?: number;
   createdAt: Date;
   updatedAt: Date;
   deleted?: boolean;
@@ -496,9 +497,41 @@ export async function ensureDefaultProducts(db: Db) {
   }
 }
 
+type SortableCategory = {
+  sortOrder?: number;
+  createdAt?: Date;
+  name?: string;
+};
+
+/**
+ * Keep explicitly ordered categories first. Older records without sortOrder
+ * remain visible after them, with createdAt/name as a stable fallback.
+ */
+export function sortCategoriesByOrder<T extends SortableCategory>(categories: T[]): T[] {
+  return categories.sort((left, right) => {
+    const leftOrder = typeof left.sortOrder === 'number' && Number.isFinite(left.sortOrder)
+      ? left.sortOrder
+      : Number.MAX_SAFE_INTEGER;
+    const rightOrder = typeof right.sortOrder === 'number' && Number.isFinite(right.sortOrder)
+      ? right.sortOrder
+      : Number.MAX_SAFE_INTEGER;
+
+    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+
+    const leftCreatedAt = left.createdAt instanceof Date ? left.createdAt.getTime() : 0;
+    const rightCreatedAt = right.createdAt instanceof Date ? right.createdAt.getTime() : 0;
+    if (leftCreatedAt !== rightCreatedAt) return leftCreatedAt - rightCreatedAt;
+
+    return (left.name || '').localeCompare(right.name || '');
+  });
+}
+
 export async function listCategories(db: Db) {
   await ensureDefaultCategories(db);
-  return db.collection<StoreCategory>('categories').find({ deleted: { $ne: true } }).sort({ createdAt: 1, name: 1 }).toArray();
+  const categories = await db.collection<StoreCategory>('categories')
+    .find({ deleted: { $ne: true } })
+    .toArray();
+  return sortCategoriesByOrder(categories);
 }
 
 const REMOVED_CATALOG_IMAGE_NAME = 'GjaaIMG_fbc54b6d-bf6a-49e0-83c1-8c3551b1036c.png';
