@@ -8,7 +8,6 @@ export const dynamic = 'force-dynamic';
 
 type TelegramFile = { file_path?: string };
 type StoredProductImageAsset = {
-  productId: string;
   fileId: string;
   imageDataBase64: string;
   contentType: string;
@@ -63,9 +62,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       // A non-URL value is treated as a Telegram file ID below.
     }
 
-    const productId = product._id.toString();
     const assets = db.collection<StoredProductImageAsset>('product_image_assets');
-    const cachedAsset = await assets.findOne({ productId, fileId: imageValue });
+    const cachedAsset = await assets.findOne({ fileId: imageValue });
     if (cachedAsset?.imageDataBase64) {
       const cachedBytes = Buffer.from(cachedAsset.imageDataBase64, 'base64');
       if (
@@ -104,10 +102,9 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
     const contentType = responseContentType.startsWith('image/') ? responseContentType : 'image/jpeg';
 
     await assets.updateOne(
-      { productId, fileId: imageValue },
+      { fileId: imageValue },
       {
         $setOnInsert: {
-          productId,
           fileId: imageValue,
           imageDataBase64: imageBytes.toString('base64'),
           contentType,

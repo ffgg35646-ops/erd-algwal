@@ -241,6 +241,31 @@ async function downloadSliderImage(fileId: string) {
   };
 }
 
+type StoredProductImageAsset = {
+  fileId: string;
+  imageDataBase64: string;
+  contentType: string;
+  imageSize: number;
+  createdAt: Date;
+};
+
+async function saveProductImageAsset(db: Db, fileId: string) {
+  const savedImage = await downloadSliderImage(fileId);
+  await db.collection<StoredProductImageAsset>('product_image_assets').updateOne(
+    { fileId },
+    {
+      $setOnInsert: {
+        fileId,
+        imageDataBase64: savedImage.imageDataBase64,
+        contentType: savedImage.contentType,
+        imageSize: savedImage.imageSize,
+        createdAt: new Date()
+      }
+    },
+    { upsert: true }
+  );
+}
+
 function isAuthorized(adminId: number) {
   const configured = process.env.TELEGRAM_ADMIN_ID || process.env.Id;
   return Boolean(configured && /^\d+$/.test(configured) && String(adminId) === configured);
@@ -1069,6 +1094,13 @@ async function handleImageStep(db: Db, session: AdminSession, message: TelegramM
   const chatId = message.chat.id;
   if (message.photo?.length) {
     const best = message.photo[message.photo.length - 1];
+    try {
+      await saveProductImageAsset(db, best.file_id);
+    } catch (error) {
+      console.error('Product image persistence failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر حفظ صورة المنتج بشكل دائم. أعد إرسال الصورة مرة أخرى.');
+      return;
+    }
     session.data.images = [...(session.data.images || []), best.file_id].slice(0, 10);
     await saveSession(db, session);
     await sendTelegramMessage(chatId, 'وصلت الصورة رقم ' + session.data.images.length + ' من 10. أرسل صورًا أخرى أو اضغط «حفظ المنتج» عند الانتهاء.', {
@@ -3115,6 +3147,14 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     if (!product) {
       await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
       await showProductColorImagesMenu(db, chatId, productId);
+      return;
+    }
+
+    try {
+      await saveProductImageAsset(db, photo.file_id);
+    } catch (error) {
+      console.error('Product color image persistence failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر حفظ صورة اللون بشكل دائم. أعد إرسال الصورة مرة أخرى.');
       return;
     }
 
