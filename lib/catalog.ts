@@ -659,7 +659,7 @@ async function removeRequestedCatalogImageReferences(db: Db) {
   }
 }
 
-function isHttpImageUrl(value: unknown): value is string {
+function isHttpImageUrl(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   try {
     const url = new URL(value);
