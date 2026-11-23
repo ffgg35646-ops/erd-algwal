@@ -764,7 +764,13 @@ async function showProductColorImagesMenu(db: Db, chatId: number, id: string, no
   const displayedColors = colors.map((color, index) => ({ color: normalizeProductColorName(color), index }))
     .filter((entry, index, all) => all.findIndex((candidate) => candidate.color === entry.color) === index);
   const keyboard: Array<Array<{ text: string; callback_data: string }>> = displayedColors.map(({ color, index }) => [{
-    text: (getProductColorImage(colorImages, color) ? '✓ ' : '') + color,
+    text: (
+      getProductColorImage(colorImages, color)
+      || product.colorImageMediaIds?.[color]
+      || product.colorImagesDataBase64?.[color]
+        ? '✓ '
+        : ''
+    ) + color,
     callback_data: 'product-color-image:' + id + ':' + index
   }]);
   keyboard.push([{ text: 'تعديل الألوان', callback_data: 'product-color-edit-list:' + id }]);
@@ -1483,8 +1489,14 @@ async function showReviewPage(db: Db, chatId: number, page = 0, notice = '') {
 }
 
 async function showStoreLogoMenu(db: Db, chatId: number) {
-  const settings = await db.collection<{ _id: string; logoFileId?: string; logoBackgroundMode?: 'with' | 'without' }>('store_settings')
-    .findOne({ _id: 'branding' });
+  const settings = await db.collection<{
+    _id: string;
+    logoFileId?: string;
+    logoImageDataBase64?: string;
+    logoMediaId?: string;
+    logoBackgroundMode?: 'with' | 'without';
+  }>('store_settings').findOne({ _id: 'branding' });
+  const hasLogo = Boolean(settings?.logoFileId || settings?.logoImageDataBase64 || settings?.logoMediaId);
 
   const productionHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || 'erd-algwal-djl8.vercel.app';
   const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
@@ -1494,13 +1506,13 @@ async function showStoreLogoMenu(db: Db, chatId: number) {
   try {
     await telegramApi('sendPhoto', {
       chat_id: chatId,
-      photo: settings?.logoFileId ? siteOrigin + '/api/store/logo' : defaultLogoUrl,
+      photo: hasLogo ? siteOrigin + '/api/store/logo' : defaultLogoUrl,
       caption: 'الشعار الحالي'
     });
   } catch (error) {
     console.warn('Could not preview current store logo:', error instanceof Error ? error.message : 'Unknown error');
 
-    if (settings?.logoFileId) {
+    if (hasLogo) {
       try {
         await telegramApi('sendPhoto', {
           chat_id: chatId,
