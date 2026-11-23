@@ -499,38 +499,64 @@ export async function ensureDefaultProducts(db: Db) {
 
 type SortableCategory = {
   sortOrder?: unknown;
+  displayOrder?: unknown;
   createdAt?: unknown;
   name?: unknown;
 };
 
+function getCategoryManualOrder(category: SortableCategory) {
+  for (const value of [category.sortOrder, category.displayOrder]) {
+    const order = typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim()
+        ? Number(value)
+        : Number.NaN;
+    if (Number.isFinite(order)) return order;
+  }
+  return undefined;
+}
+
 /**
- * Keep explicitly ordered categories first. Older records without sortOrder
- * remain visible after them, with createdAt/name as a stable fallback.
- *
- * The generic input/output preserves the caller's MongoDB document type
- * (including WithId<Document>) while the sort keys are read defensively.
+ * Match BB's category ordering: explicit admin order first, then the catalogue
+ * source order, and only then createdAt/name for unknown legacy categories.
+ * This keeps old categories without order metadata from jumping ahead of the
+ * iPhone 18 source categories merely because they were created earlier.
  */
 export function sortCategoriesByOrder<T>(categories: T[]): T[] {
+  const sourceOrder = new Map(seedCategories.map((category, index) => [category.name, index] as const));
+
   return [...categories].sort((left, right) => {
     const leftCategory = left as unknown as SortableCategory;
     const rightCategory = right as unknown as SortableCategory;
+    const leftName = typeof leftCategory.name === 'string' ? leftCategory.name : '';
+    const rightName = typeof rightCategory.name === 'string' ? rightCategory.name : '';
 
-    const leftOrder = typeof leftCategory.sortOrder === 'number' && Number.isFinite(leftCategory.sortOrder)
-      ? leftCategory.sortOrder
-      : Number.MAX_SAFE_INTEGER;
-    const rightOrder = typeof rightCategory.sortOrder === 'number' && Number.isFinite(rightCategory.sortOrder)
-      ? rightCategory.sortOrder
-      : Number.MAX_SAFE_INTEGER;
+    const leftManual = getCategoryManualOrder(leftCategory);
+    const rightManual = getCategoryManualOrder(rightCategory);
 
-    if (leftOrder !== rightOrder) return leftOrder - rightOrder;
+    if (leftManual !== undefined && rightManual !== undefined) {
+      if (leftManual !== rightManual) return leftManual - rightManual;
+    } else if (leftManual !== undefined) {
+      return -1;
+    } else if (rightManual !== undefined) {
+      return 1;
+    }
+
+    const leftSourceOrder = sourceOrder.get(leftName);
+    const rightSourceOrder = sourceOrder.get(rightName);
+    if (leftSourceOrder !== undefined && rightSourceOrder !== undefined) {
+      if (leftSourceOrder !== rightSourceOrder) return leftSourceOrder - rightSourceOrder;
+    } else if (leftSourceOrder !== undefined) {
+      return -1;
+    } else if (rightSourceOrder !== undefined) {
+      return 1;
+    }
 
     const leftCreatedAt = leftCategory.createdAt instanceof Date ? leftCategory.createdAt.getTime() : 0;
     const rightCreatedAt = rightCategory.createdAt instanceof Date ? rightCategory.createdAt.getTime() : 0;
     if (leftCreatedAt !== rightCreatedAt) return leftCreatedAt - rightCreatedAt;
 
-    const leftName = typeof leftCategory.name === 'string' ? leftCategory.name : '';
-    const rightName = typeof rightCategory.name === 'string' ? rightCategory.name : '';
-    return leftName.localeCompare(rightName);
+    return leftName.localeCompare(rightName, 'ar');
   });
 }
 
