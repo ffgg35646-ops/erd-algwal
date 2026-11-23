@@ -7,6 +7,12 @@ const globalForMongo = globalThis as typeof globalThis & {
 let localClientPromise: Promise<MongoClient> | undefined;
 
 function getDatabaseName(uri: string) {
+  // An explicit project setting must win over a database path embedded in the
+  // connection URI. Otherwise the URI can silently route this project to an
+  // older database even when MONGODB_DB is correctly configured.
+  const configuredDatabase = process.env.MONGODB_DB?.trim();
+  if (configuredDatabase) return configuredDatabase;
+
   const uriDatabase = uri.match(/^mongodb(?:\+srv)?:\/\/[^/]+\/([^?]*)/i)?.[1]
     ?.split('/')[0]
     ?.trim();
@@ -19,7 +25,7 @@ function getDatabaseName(uri: string) {
     }
   }
 
-  return process.env.MONGODB_DB?.trim() || 'bb_store';
+  return 'bb_store';
 }
 
 function getClientPromise(): Promise<MongoClient> {
