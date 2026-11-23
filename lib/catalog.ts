@@ -498,31 +498,39 @@ export async function ensureDefaultProducts(db: Db) {
 }
 
 type SortableCategory = {
-  sortOrder?: number;
-  createdAt?: Date;
-  name?: string;
+  sortOrder?: unknown;
+  createdAt?: unknown;
+  name?: unknown;
 };
 
 /**
  * Keep explicitly ordered categories first. Older records without sortOrder
  * remain visible after them, with createdAt/name as a stable fallback.
+ *
+ * The generic input/output preserves the caller's MongoDB document type
+ * (including WithId<Document>) while the sort keys are read defensively.
  */
-export function sortCategoriesByOrder<T extends SortableCategory>(categories: T[]): T[] {
-  return categories.sort((left, right) => {
-    const leftOrder = typeof left.sortOrder === 'number' && Number.isFinite(left.sortOrder)
-      ? left.sortOrder
+export function sortCategoriesByOrder<T>(categories: T[]): T[] {
+  return [...categories].sort((left, right) => {
+    const leftCategory = left as unknown as SortableCategory;
+    const rightCategory = right as unknown as SortableCategory;
+
+    const leftOrder = typeof leftCategory.sortOrder === 'number' && Number.isFinite(leftCategory.sortOrder)
+      ? leftCategory.sortOrder
       : Number.MAX_SAFE_INTEGER;
-    const rightOrder = typeof right.sortOrder === 'number' && Number.isFinite(right.sortOrder)
-      ? right.sortOrder
+    const rightOrder = typeof rightCategory.sortOrder === 'number' && Number.isFinite(rightCategory.sortOrder)
+      ? rightCategory.sortOrder
       : Number.MAX_SAFE_INTEGER;
 
     if (leftOrder !== rightOrder) return leftOrder - rightOrder;
 
-    const leftCreatedAt = left.createdAt instanceof Date ? left.createdAt.getTime() : 0;
-    const rightCreatedAt = right.createdAt instanceof Date ? right.createdAt.getTime() : 0;
+    const leftCreatedAt = leftCategory.createdAt instanceof Date ? leftCategory.createdAt.getTime() : 0;
+    const rightCreatedAt = rightCategory.createdAt instanceof Date ? rightCategory.createdAt.getTime() : 0;
     if (leftCreatedAt !== rightCreatedAt) return leftCreatedAt - rightCreatedAt;
 
-    return (left.name || '').localeCompare(right.name || '');
+    const leftName = typeof leftCategory.name === 'string' ? leftCategory.name : '';
+    const rightName = typeof rightCategory.name === 'string' ? rightCategory.name : '';
+    return leftName.localeCompare(rightName);
   });
 }
 
