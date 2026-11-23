@@ -125,6 +125,14 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
       const decoded = decodeStoredImage(imageValue, directContentType || 'image/jpeg');
       if (decoded.bytes.length) return imageResponse(decoded.bytes, decoded.contentType);
     }
+    if (
+      typeof imageValue === 'string'
+      && imageValue.length > 256
+      && /^[a-z0-9+/_=-]+$/i.test(imageValue)
+    ) {
+      const decoded = decodeStoredImage(imageValue, directContentType || 'image/jpeg');
+      if (decoded.bytes.length) return imageResponse(decoded.bytes, decoded.contentType);
+    }
 
     // Preserve direct external URLs and local public paths without involving Telegram.
     if (typeof imageValue === 'string') {
