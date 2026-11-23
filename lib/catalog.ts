@@ -523,7 +523,7 @@ function getCategoryManualOrder(category: SortableCategory) {
  * iPhone 18 source categories merely because they were created earlier.
  */
 export function sortCategoriesByOrder<T>(categories: T[]): T[] {
-  const sourceOrder = new Map(seedCategories.map((category, index) => [category.name, index] as const));
+  const sourceOrder = new Map<string, number>(seedCategories.map((category, index) => [category.name, index] as const));
 
   return [...categories].sort((left, right) => {
     const leftCategory = left as unknown as SortableCategory;
