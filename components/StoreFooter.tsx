@@ -82,6 +82,33 @@ export default function StoreFooter() {
     { imageUrl: '', linkUrl: '', label: 'الأيقونة الأولى' },
     { imageUrl: '', linkUrl: '', label: 'الأيقونة الثانية' }
   ]);
+  const [footerLogoSrc, setFooterLogoSrc] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    async function refreshLogo() {
+      try {
+        const response = await fetch('/api/store/logo', { cache: 'no-store' });
+        if (!alive) return;
+        if (response.status === 404) {
+          setFooterLogoSrc('');
+        } else if (response.ok) {
+          setFooterLogoSrc('/api/store/logo?v=' + Date.now());
+        }
+      } catch {
+        // Keep the last successfully loaded footer logo.
+      }
+    }
+    void refreshLogo();
+    const timer = window.setInterval(() => { void refreshLogo(); }, 30_000);
+    const handleFocus = () => { void refreshLogo(); };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -159,7 +186,13 @@ export default function StoreFooter() {
       <footer id="store-site-footer" className="store-site-footer">
         <div className="store-footer-inner container">
           <div className="store-footer-brand">
-            <span className="stream-footer-mark store-footer-logo" aria-label="شعار المتجر"><svg viewBox="0 0 44 44" aria-hidden="true" focusable="false"><rect x="10" y="5" width="23" height="34" rx="5.5" fill="none" stroke="currentColor" strokeWidth="2.1"/><path d="M16 10h11M18 33h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M35 5.5l2.2 5.2 5.2 2.2-5.2 2.2-2.2 5.2-2.2-5.2-5.2-2.2 5.2-2.2z" fill="currentColor" transform="translate(-1 0) scale(.9)"/></svg></span>
+            <span className="stream-footer-mark store-footer-logo" aria-label="شعار المتجر">
+              {footerLogoSrc ? (
+                <img src={footerLogoSrc} alt="شعار أرض الجوال" width={44} height={44} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              ) : (
+                <svg viewBox="0 0 44 44" aria-hidden="true" focusable="false"><rect x="10" y="5" width="23" height="34" rx="5.5" fill="none" stroke="currentColor" strokeWidth="2.1"/><path d="M16 10h11M18 33h7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M35 5.5l2.2 5.2 5.2 2.2-5.2 2.2-2.2 5.2-2.2-5.2-5.2-2.2 5.2-2.2z" fill="currentColor" transform="translate(-1 0) scale(.9)"/></svg>
+              )}
+            </span>
             <strong>أرض الجوال</strong>
             <p className="store-footer-vat">الرقم الضريبي: {vatNumber ? <bdi dir="ltr">{vatNumber}</bdi> : <span>لم يُضف رقم ضريبي</span>}</p>
             <p>متجر متخصص في الجوالات وملحقاتها، مع أقسام تساعدك على الوصول إلى المنتجات بسهولة.</p>
