@@ -64,5 +64,5 @@ function getClientPromise(): Promise<MongoClient> {
 
 export async function getDb(): Promise<Db> {
   const client = await getClientPromise();
-  return client.db(getDatabaseName(uri));
+  return client.db(getDatabaseName(process.env.MONGODB_URI || ''));
 }
