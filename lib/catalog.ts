@@ -19,6 +19,12 @@ export type StoredProduct = Document & {
   seedId?: string;
   deleted?: boolean;
   imageUrl?: string;
+  imageUrlMediaId?: string;
+  imageUrlDataBase64?: string;
+  imagesDataBase64?: string[];
+  imageMediaIds?: string[];
+  colorImagesDataBase64?: Record<string, string>;
+  colorImageMediaIds?: Record<string, string>;
   oldPrice?: number;
   badge?: string;
   shortDescription?: string;
@@ -681,25 +687,50 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
   const id = product._id.toHexString();
   const colorImageVersion = product.updatedAt instanceof Date ? product.updatedAt.getTime() : 0;
   const images = Array.isArray(product.images) ? product.images : [];
-  // Filter the known broken source images, but retain original indices for
-  // Telegram file IDs because the image API reads from the stored array.
-  const storedImageUrls = images.flatMap((image, index) => (
-    isBlockedCatalogImage(image)
-      ? []
-      : [isHttpImageUrl(image) ? image : `/api/products/${id}/image?index=${index}`]
-  ));
-  const fallbackImage = isBlockedCatalogImage(product.imageUrl) ? '' : product.imageUrl || '';
+  // Keep indices stable across Telegram IDs, MongoDB media references, and
+  // images written directly to MongoDB by an importer.
+  const imageSlots = Math.max(
+    images.length,
+    product.imageMediaIds?.length || 0,
+    product.imagesDataBase64?.length || 0
+  );
+  const storedImageUrls = Array.from({ length: imageSlots }, (_, index) => {
+    const image = images[index];
+    if (typeof image === 'string' && isBlockedCatalogImage(image)) return '';
+    if (typeof image === 'string' && isHttpImageUrl(image)) return image;
+    if (image || product.imageMediaIds?.[index] || product.imagesDataBase64?.[index]) {
+      return `/api/products/${id}/image?index=${index}&v=${colorImageVersion}`;
+    }
+    return '';
+  }).filter(Boolean);
+  const fallbackImage = isBlockedCatalogImage(product.imageUrl)
+    ? ''
+    : product.imageUrl
+      ? (isHttpImageUrl(product.imageUrl) || product.imageUrl.startsWith('/') || product.imageUrl.startsWith('data:image/')
+        ? product.imageUrl
+        : `/api/products/${id}/image?source=cover&v=${colorImageVersion}`)
+      : product.imageUrlMediaId || product.imageUrlDataBase64
+        ? `/api/products/${id}/image?source=cover&v=${colorImageVersion}`
+        : '';
   const displayImages = storedImageUrls.length ? storedImageUrls : fallbackImage ? [fallbackImage] : [];
   const storage = getStoredProductStorage(product);
+  const colorNames = new Set([
+    ...Object.keys(product.colorImages || {}),
+    ...Object.keys(product.colorImagesDataBase64 || {}),
+    ...Object.keys(product.colorImageMediaIds || {})
+  ]);
   const colorImages = Object.fromEntries(
-    Object.entries(product.colorImages || {})
-      .filter(([, image]) => !isBlockedCatalogImage(image))
-      .map(([color, image]) => [
-        color,
-        isHttpImageUrl(image)
-          ? image
-          : `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
-      ] as const)
+    [...colorNames]
+      .filter((color) => !isBlockedCatalogImage(product.colorImages?.[color]))
+      .map((color) => {
+        const image = product.colorImages?.[color];
+        return [
+          color,
+          typeof image === 'string' && isHttpImageUrl(image)
+            ? image
+            : `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
+        ] as const;
+      })
   );
   return {
     id: product.seedId || id,
