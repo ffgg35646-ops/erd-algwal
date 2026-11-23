@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
 import { findStoredProduct, isBlockedCatalogImage } from '@/lib/catalog';
 import { telegramApi } from '@/lib/telegram';
+import { fetchRemoteImage } from '@/lib/remote-image';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -169,9 +170,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
           && !imageUrl.username
           && !imageUrl.password
         ) {
-          const response = NextResponse.redirect(imageUrl, 302);
-          response.headers.set('cache-control', 'public, max-age=3600, stale-while-revalidate=86400');
-          return response;
+          return fetchRemoteImage(imageUrl.toString());
         }
       } catch {
         if (imageValue.startsWith('/') && !imageValue.startsWith('//')) {

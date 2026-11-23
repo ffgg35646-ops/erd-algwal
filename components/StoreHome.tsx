@@ -132,9 +132,9 @@ export default function StoreHome({
   );
 
   const allCategories = useMemo(() => {
-    const knownNames = new Set(categories.map((category) => category.name));
+    const knownNames = new Set(categories.map((category) => normalizeSearchValue(category.name)));
     const extraNames = Array.from(new Set(products.map((product) => product.category)))
-      .filter((name) => name && !knownNames.has(name) && categories.length === 0);
+      .filter((name) => name && !knownNames.has(normalizeSearchValue(name)));
     return [
       ...categories,
       ...extraNames.map((name) => ({ id: name, name, description: 'تصفح منتجات القسم' }))
@@ -149,7 +149,7 @@ export default function StoreHome({
     () => allCategories
       .map((category) => ({
         ...category,
-        products: searchedProducts.filter((product) => product.category === category.name)
+        products: searchedProducts.filter((product) => normalizeSearchValue(product.category) === normalizeSearchValue(category.name))
       }))
       .filter((category) => (!term || category.products.length > 0) && (!selectedCategory || selectedCategory === category.name)),
     [allCategories, searchedProducts, term, selectedCategory]
