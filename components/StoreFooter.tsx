@@ -77,7 +77,6 @@ export default function StoreFooter() {
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [whatsappNumber, setWhatsappNumber] = useState('201090466376');
   const [vatNumber, setVatNumber] = useState('4353454564');
-  const [barcodeImageUrl, setBarcodeImageUrl] = useState('');
   const [footerIcons, setFooterIcons] = useState<FooterIcon[]>([
     { imageUrl: '', linkUrl: '', label: 'الأيقونة الأولى' },
     { imageUrl: '', linkUrl: '', label: 'الأيقونة الثانية' }
@@ -99,19 +98,10 @@ export default function StoreFooter() {
           const data = await settingsResponse.json() as {
             whatsappNumber?: string;
             vatNumber?: string;
-            barcodeImageUrl?: string;
-            barcodeConfigured?: boolean;
             footerIcons?: FooterIcon[];
           };
           if (alive && typeof data.whatsappNumber === 'string') setWhatsappNumber(data.whatsappNumber);
           if (alive && typeof data.vatNumber === 'string') setVatNumber(data.vatNumber);
-          // A successful settings response may explicitly report a removed/missing barcode.
-          // Failed requests are ignored above, preserving the last working image URL.
-          if (alive && data.barcodeConfigured === true && typeof data.barcodeImageUrl === 'string' && data.barcodeImageUrl) {
-            setBarcodeImageUrl(data.barcodeImageUrl);
-          } else if (alive && data.barcodeConfigured === false) {
-            setBarcodeImageUrl('');
-          }
           if (alive && Array.isArray(data.footerIcons)) setFooterIcons(data.footerIcons);
         }
       } catch {
@@ -183,18 +173,6 @@ export default function StoreFooter() {
           <div className="store-footer-column store-footer-contact">
             <h2><a className="store-footer-contact-link" href={whatsappLink} target="_blank" rel="noreferrer">تواصل معنا</a></h2>
             <p>نسعد بخدمتك ومتابعة استفساراتك.</p>
-          </div>
-
-          <div className="store-footer-column store-footer-barcode">
-            <h2>الباركود</h2>
-            <div className="store-footer-barcode-items">
-              {barcodeImageUrl ? (
-                <img className="store-footer-barcode-image" src={barcodeImageUrl} alt="باركود المتجر" width={150} height={150} loading="lazy" />
-              ) : (
-                <div className="store-footer-barcode-placeholder" aria-label="مساحة الباركود الفارغة">
-                  <small>يُضاف من الإدارة</small>
-                </div>
-              )}
               <div className="store-footer-icon-slots">
                 {[0, 1].map((index) => {
                   const icon = footerIcons[index] || {
@@ -224,7 +202,6 @@ export default function StoreFooter() {
                   );
                 })}
               </div>
-            </div>
           </div>
         </div>
 
