@@ -104,12 +104,16 @@ export default function StoreHome({
   // Once the background request finishes, the live provider data takes over.
   const products = catalogStatus === 'ready'
     ? catalogProducts
-    : initialCatalog?.products ?? catalogProducts;
+    : catalogStatus === 'loading'
+      ? initialCatalog?.products ?? []
+      : [];
   const categories = catalogStatus === 'ready'
     ? catalogCategories
-    : initialCatalog?.categories ?? catalogCategories;
+    : catalogStatus === 'loading'
+      ? initialCatalog?.categories ?? []
+      : [];
   const isCatalogLoading = catalogStatus === 'loading' && !initialCatalog;
-  const hasCatalogError = catalogStatus === 'error' && !initialCatalog;
+  const hasCatalogError = catalogStatus === 'error';
   const [search, setSearch] = useState('');
 
   useEffect(() => {

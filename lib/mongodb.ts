@@ -47,11 +47,9 @@ function getClientPromise(): Promise<MongoClient> {
 }
 
 export async function getDb(): Promise<Db> {
-  const configuredDatabase = process.env.MONGODB_DB?.trim();
-  if (configuredDatabase && configuredDatabase !== 'bb_store') {
-    throw new Error('MONGODB_DB must be "bb_store" for the Erd Al-Gwal project');
-  }
-
   const client = await getClientPromise();
-  return client.db('bb_store');
+
+  // Erd Al-Gwal owns its own Atlas database. Never let a stale BB setting
+  // redirect this project to bb_store.
+  return client.db('erd_algwal');
 }

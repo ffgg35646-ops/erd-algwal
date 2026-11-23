@@ -9,10 +9,14 @@ export const dynamic = 'force-dynamic';
 type StoreBrandingSettings = {
   _id: string;
   logoFileId?: string;
+  logoImageDataBase64?: string;
+  logoContentType?: string;
+  logoImageSize?: number;
   logoBackgroundMode?: 'with' | 'without';
 };
 
 type TelegramFile = { file_path?: string };
+const MAX_LOGO_IMAGE_BYTES = 8 * 1024 * 1024;
 
 async function removeFlatLogoBackground(source: Buffer): Promise<Buffer> {
   const decoded = await sharp(source)
@@ -99,35 +103,73 @@ async function removeFlatLogoBackground(source: Buffer): Promise<Buffer> {
 }
 
 export async function GET() {
-  if (!process.env.MONGODB_URI || !process.env.TELEGRAM_BOT_TOKEN) {
+  if (!process.env.MONGODB_URI) {
     return new NextResponse('Store logo service not configured', { status: 503 });
   }
 
   try {
     const db = await getDb();
-    const settings = await db.collection<StoreBrandingSettings>('store_settings')
-      .findOne({ _id: 'branding' });
-    if (!settings?.logoFileId) {
-      return new NextResponse('Custom store logo not configured', { status: 404 });
+    const collection = db.collection<StoreBrandingSettings>('store_settings');
+    const settings = await collection.findOne({ _id: 'branding' });
+    if (!settings) return new NextResponse('Custom store logo not configured', { status: 404 });
+
+    let imageBytes: Buffer;
+    let sourceContentType = settings.logoContentType || 'image/jpeg';
+
+    // Prefer the durable copy stored in MongoDB. Telegram is only used to
+    // migrate older records that contain a file_id but no image bytes.
+    if (typeof settings.logoImageDataBase64 === 'string' && settings.logoImageDataBase64) {
+      imageBytes = Buffer.from(settings.logoImageDataBase64, 'base64');
+    } else {
+      if (!settings.logoFileId) {
+        return new NextResponse('Custom store logo not configured', { status: 404 });
+      }
+      const token = process.env.TELEGRAM_BOT_TOKEN;
+      if (!token) return new NextResponse('Legacy logo requires Telegram configuration', { status: 503 });
+
+      const file = await telegramApi<TelegramFile>('getFile', { file_id: settings.logoFileId });
+      if (!file.file_path) return new NextResponse('Store logo not available', { status: 404 });
+
+      const telegramResponse = await fetch(`https://api.telegram.org/file/bot${token}/${file.file_path}`, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(15_000)
+      });
+      if (!telegramResponse.ok) return new NextResponse('Unable to load store logo', { status: 502 });
+
+      imageBytes = Buffer.from(await telegramResponse.arrayBuffer());
+      sourceContentType = telegramResponse.headers.get('content-type') || 'image/jpeg';
+      if (!sourceContentType.startsWith('image/')) sourceContentType = 'image/jpeg';
+      if (!imageBytes.length || imageBytes.length > MAX_LOGO_IMAGE_BYTES) {
+        return new NextResponse('Stored logo is invalid or larger than 8 MB', { status: 422 });
+      }
+
+      await collection.updateOne(
+        { _id: 'branding', logoImageDataBase64: { $exists: false } },
+        {
+          $set: {
+            logoImageDataBase64: imageBytes.toString('base64'),
+            logoContentType: sourceContentType,
+            logoImageSize: imageBytes.length,
+            updatedAt: new Date()
+          }
+        }
+      );
     }
 
-    const file = await telegramApi<TelegramFile>('getFile', { file_id: settings.logoFileId });
-    if (!file.file_path) return new NextResponse('Store logo not available', { status: 404 });
+    if (!imageBytes.length || imageBytes.length > MAX_LOGO_IMAGE_BYTES) {
+      return new NextResponse('Stored logo is invalid or larger than 8 MB', { status: 422 });
+    }
+    if (settings.logoImageSize && imageBytes.length !== settings.logoImageSize) {
+      return new NextResponse('Stored logo size does not match its metadata', { status: 422 });
+    }
 
-    const token = process.env.TELEGRAM_BOT_TOKEN;
-    const telegramResponse = await fetch(`https://api.telegram.org/file/bot${token}/${file.file_path}`, {
-      cache: 'no-store'
-    });
-    if (!telegramResponse.ok) return new NextResponse('Unable to load store logo', { status: 502 });
-
-    let image: Buffer<ArrayBufferLike> = Buffer.from(await telegramResponse.arrayBuffer());
     const withoutBackground = settings.logoBackgroundMode === 'without';
-    if (withoutBackground) image = await removeFlatLogoBackground(image);
+    const image = withoutBackground ? await removeFlatLogoBackground(imageBytes) : imageBytes;
 
     return new NextResponse(new Uint8Array(image), {
       status: 200,
       headers: {
-        'content-type': withoutBackground ? 'image/png' : (telegramResponse.headers.get('content-type') || 'image/jpeg'),
+        'content-type': withoutBackground ? 'image/png' : sourceContentType,
         'x-store-logo-background': withoutBackground ? 'without' : settings.logoBackgroundMode === 'with' ? 'with' : 'legacy',
         'cache-control': 'no-store, max-age=0',
         'x-content-type-options': 'nosniff'

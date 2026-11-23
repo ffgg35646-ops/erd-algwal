@@ -230,20 +230,9 @@ async function initializeDefaultCategories(db: Db) {
   await collection.createIndex({ createdAt: -1 });
 }
 
-export async function ensureDefaultCategories(db: Db) {
-  const key = initializationKey(db);
-  let pending = categoryInitialization.get(key);
-  if (!pending) {
-    pending = initializeDefaultCategories(db);
-    categoryInitialization.set(key, pending);
-  }
-  try {
-    await pending;
-  } catch (error) {
-    if (categoryInitialization.get(key) === pending) categoryInitialization.delete(key);
-    throw error;
-  }
-}
+// Admin-managed categories are authoritative. Never seed, rename, reorder,
+// or archive them from the bundled source catalogue at request time.
+export async function ensureDefaultCategories(_db: Db): Promise<void> {}
 
 // Replace the previous demo catalogue with the supplied source catalogue.
 // Old catalogue records are soft-deleted so historical orders remain intact.
@@ -482,20 +471,9 @@ async function initializeDefaultProducts(db: Db) {
   );
 }
 
-export async function ensureDefaultProducts(db: Db) {
-  const key = initializationKey(db);
-  let pending = productInitialization.get(key);
-  if (!pending) {
-    pending = initializeDefaultProducts(db);
-    productInitialization.set(key, pending);
-  }
-  try {
-    await pending;
-  } catch (error) {
-    if (productInitialization.get(key) === pending) productInitialization.delete(key);
-    throw error;
-  }
-}
+// Admin-managed products are authoritative. Keep this compatibility hook
+// read-only so deploys and page requests cannot restore bundled defaults.
+export async function ensureDefaultProducts(_db: Db): Promise<void> {}
 
 type SortableCategory = {
   sortOrder?: unknown;

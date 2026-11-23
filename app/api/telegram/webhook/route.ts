@@ -2534,11 +2534,32 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
       return;
     }
 
-    await db.collection<{ _id: string; logoFileId?: string; logoBackgroundMode?: 'with' | 'without'; updatedAt?: Date; updatedByTelegramId?: number }>('store_settings').updateOne(
+    let savedLogo: Awaited<ReturnType<typeof downloadSliderImage>>;
+    try {
+      savedLogo = await downloadSliderImage(photo.file_id);
+    } catch (error) {
+      console.error('Store logo image download failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر حفظ صورة الشعار من تيليجرام. أعد إرسال الصورة مرة أخرى.');
+      return;
+    }
+
+    await db.collection<{
+      _id: string;
+      logoFileId?: string;
+      logoImageDataBase64?: string;
+      logoContentType?: string;
+      logoImageSize?: number;
+      logoBackgroundMode?: 'with' | 'without';
+      updatedAt?: Date;
+      updatedByTelegramId?: number;
+    }>('store_settings').updateOne(
       { _id: 'branding' },
       {
         $set: {
           logoFileId: photo.file_id,
+          logoImageDataBase64: savedLogo.imageDataBase64,
+          logoContentType: savedLogo.contentType,
+          logoImageSize: savedLogo.imageSize,
           logoBackgroundMode: session.data.logoBackgroundMode === 'without' ? 'without' : 'with',
           updatedAt: new Date(),
           updatedByTelegramId: session.telegramUserId

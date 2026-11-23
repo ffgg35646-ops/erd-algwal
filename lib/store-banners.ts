@@ -56,6 +56,7 @@ function isHttpsImageUrl(value: unknown): value is string {
 export async function listStoreBanners(db: Db): Promise<StoreBanner[]> {
   const bannerCollection = db.collection('store_banners');
   const existingCount = await bannerCollection.countDocuments({});
+  const adminBannerCount = await bannerCollection.countDocuments({ createdBySystem: { $ne: true } });
 
   const seedClaim = await db.collection<{ _id: string; createdAt?: Date; purpose?: string }>('store_settings').updateOne(
     { _id: SLIDER_SEED_MARKER_ID },
@@ -63,11 +64,12 @@ export async function listStoreBanners(db: Db): Promise<StoreBanner[]> {
     { upsert: true }
   );
 
-  if (seedClaim.upsertedCount === 1 && existingCount < DEFAULT_ONLINE_BANNERS.length) {
-    const remaining = DEFAULT_ONLINE_BANNERS.length - existingCount;
+  // Seed the showcase only when the collection is truly empty. Never mix
+  // bundled demo banners into a list that already contains admin uploads.
+  if (seedClaim.upsertedCount === 1 && existingCount === 0) {
     const seedTime = Date.now();
     await bannerCollection.insertMany(
-      DEFAULT_ONLINE_BANNERS.slice(0, remaining).map((banner, index) => ({
+      DEFAULT_ONLINE_BANNERS.map((banner, index) => ({
         ...banner,
         createdAt: new Date(seedTime + index),
         createdBySystem: true
@@ -76,7 +78,7 @@ export async function listStoreBanners(db: Db): Promise<StoreBanner[]> {
   }
 
   const banners = await bannerCollection
-    .find({})
+    .find(adminBannerCount > 0 ? { createdBySystem: { $ne: true } } : {})
     .sort({ createdAt: 1, _id: 1 })
     .limit(12)
     .toArray();
