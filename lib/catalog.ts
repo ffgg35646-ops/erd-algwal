@@ -727,7 +727,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
   const storedImageUrls = Array.from({ length: imageSlots }, (_, index) => {
     const image = images[index];
     if (typeof image === 'string' && isBlockedCatalogImage(image)) return '';
-    if (typeof image === 'string' && isHttpImageUrl(image)) return `/api/products/${id}/image?index=${index}&v=${colorImageVersion}`;
+    if (typeof image === 'string' && isHttpImageUrl(image)) return image;
     if (image || product.imageMediaIds?.[index] || product.imagesDataBase64?.[index]) {
       return `/api/products/${id}/image?index=${index}&v=${colorImageVersion}`;
     }
@@ -737,7 +737,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
     ? ''
     : product.imageUrl
       ? (isHttpImageUrl(product.imageUrl)
-        ? `/api/products/${id}/image?source=cover&v=${colorImageVersion}`
+        ? product.imageUrl
         : product.imageUrl.startsWith('/') || product.imageUrl.startsWith('data:image/')
           ? product.imageUrl
         : `/api/products/${id}/image?source=cover&v=${colorImageVersion}`)
@@ -759,7 +759,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
         return [
           color,
           typeof image === 'string' && isHttpImageUrl(image)
-            ? `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
+            ? image
             : `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
         ] as const;
       })
