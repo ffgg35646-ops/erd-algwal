@@ -6,28 +6,6 @@ const globalForMongo = globalThis as typeof globalThis & {
 
 let localClientPromise: Promise<MongoClient> | undefined;
 
-function getDatabaseName(uri: string) {
-  // An explicit project setting must win over a database path embedded in the
-  // connection URI. Otherwise the URI can silently route this project to an
-  // older database even when MONGODB_DB is correctly configured.
-  const configuredDatabase = process.env.MONGODB_DB?.trim();
-  if (configuredDatabase) return configuredDatabase;
-
-  const uriDatabase = uri.match(/^mongodb(?:\+srv)?:\/\/[^/]+\/([^?]*)/i)?.[1]
-    ?.split('/')[0]
-    ?.trim();
-
-  if (uriDatabase) {
-    try {
-      return decodeURIComponent(uriDatabase);
-    } catch {
-      return uriDatabase;
-    }
-  }
-
-  return 'bb_store';
-}
-
 function getClientPromise(): Promise<MongoClient> {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -69,6 +47,11 @@ function getClientPromise(): Promise<MongoClient> {
 }
 
 export async function getDb(): Promise<Db> {
+  const configuredDatabase = process.env.MONGODB_DB?.trim();
+  if (configuredDatabase && configuredDatabase !== 'bb_store') {
+    throw new Error('MONGODB_DB must be "bb_store" for the Erd Al-Gwal project');
+  }
+
   const client = await getClientPromise();
-  return client.db(getDatabaseName(process.env.MONGODB_URI || ''));
+  return client.db('bb_store');
 }
