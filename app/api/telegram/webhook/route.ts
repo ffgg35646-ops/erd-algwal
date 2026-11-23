@@ -970,7 +970,7 @@ async function saveCategory(db: Db, name: string) {
     throw new Error('يوجد قسم بهذا الاسم بالفعل.');
   }
 
-  await collection.insertOne({
+  await db.collection('categories').insertOne({
     name: normalized,
     description: '',
     sortOrder: activeSections.length + 1,
