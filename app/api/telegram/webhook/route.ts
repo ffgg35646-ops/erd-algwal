@@ -77,7 +77,7 @@ type FlowStep =
   | 'edit_product_name' | 'edit_product_colors' | 'edit_product_storage' | 'edit_product_price' | 'edit_product_details' | 'edit_product_images' | 'edit_product_color_image'
   | 'edit_product_storage_add' | 'edit_product_storage_select_edit' | 'edit_product_storage_edit_value' | 'edit_product_storage_select_delete'
   | 'contact_whatsapp' | 'cancel_reason' | 'slider_image' | 'footer_edit_text' | 'footer_confirm_save'
-  | 'footer_vat_number' | 'footer_barcode_image' | 'footer_icon_image' | 'footer_icon_link' | 'store_logo_image' | 'search_products';
+  | 'footer_vat_number' | 'footer_barcode_image' | 'document_logo_image' | 'footer_icon_image' | 'footer_icon_link' | 'store_logo_image' | 'search_products';
 
 type AdminSession = {
   telegramUserId: number;
@@ -1403,7 +1403,7 @@ async function showStoreLogoMenu(db: Db, chatId: number) {
 }
 
 async function showFooterSettings(db: Db, chatId: number) {
-  const [settings, reviewCount] = await Promise.all([
+  const [settings, reviewCount, documentSettings] = await Promise.all([
     db.collection<{
       _id: string;
       vatNumber?: string;
@@ -1416,7 +1416,12 @@ async function showFooterSettings(db: Db, chatId: number) {
       iconTwoImageUrl?: string;
       iconTwoImageDataBase64?: string;
     }>('store_settings').findOne({ _id: 'footer' }),
-    db.collection('customer_reviews').countDocuments({})
+    db.collection('customer_reviews').countDocuments({}),
+    db.collection<{
+      _id: string;
+      documentLogoImageDataBase64?: string;
+      documentLogoRemoved?: boolean;
+    }>('store_settings').findOne({ _id: 'documents' })
   ]);
   const vatNumber = settings?.vatNumberRemoved ? 'محذوف' : settings?.vatNumber || '4353454564';
   const barcodeStatus = settings?.barcodeFileId || settings?.imageDataBase64
@@ -1424,11 +1429,15 @@ async function showFooterSettings(db: Db, chatId: number) {
     : settings?.barcodeRemoved ? 'محذوف' : 'غير مضاف';
   const iconOneStatus = settings?.iconOneImageUrl || settings?.iconOneImageDataBase64 ? 'مضافة' : 'غير مضافة';
   const iconTwoStatus = settings?.iconTwoImageUrl || settings?.iconTwoImageDataBase64 ? 'مضافة' : 'غير مضافة';
+  const documentLogoStatus = documentSettings?.documentLogoImageDataBase64
+    ? 'مضاف'
+    : documentSettings?.documentLogoRemoved ? 'محذوف' : 'غير مضاف';
   await sendTelegramMessage(chatId,
     'تعديلات أخرى — إعدادات المتجر والفوتر\n\nالرقم الضريبي: ' + vatNumber +
     '\nالباركود: ' + barcodeStatus +
     '\nالأيقونة الأولى: ' + iconOneStatus +
     '\nالأيقونة الثانية: ' + iconTwoStatus +
+    '\nشعار العقود والمستندات: ' + documentLogoStatus +
     '\n\nاختر العنصر الذي تريد تعديله:',
     {
       reply_markup: {
@@ -1436,6 +1445,7 @@ async function showFooterSettings(db: Db, chatId: number) {
           [{ text: 'الرقم الضريبي', callback_data: 'footer-setting:vat' }, { text: 'الباركود', callback_data: 'footer-setting:barcode' }],
           [{ text: 'الأيقونة الأولى', callback_data: 'footer-setting:icon-one' }, { text: 'الأيقونة الثانية', callback_data: 'footer-setting:icon-two' }],
           [{ text: '🖼️ تعديل الشعار', callback_data: 'footer-setting:logo' }, { text: '🖼️ السلايدر', callback_data: 'footer-setting:slider' }],
+          [{ text: '🧾 شعار العقود والمستندات', callback_data: 'footer-setting:document-logo' }],
           [{ text: 'السياسات', callback_data: 'footer-setting:policies' }, { text: 'خدمات العملاء', callback_data: 'footer-setting:customer-service' }],
           [{ text: '📞 الاتصال', callback_data: 'footer-setting:contact' }],
           [{ text: '⭐ تقييمات العملاء (' + reviewCount + ')', callback_data: 'footer-setting:reviews' }],
@@ -1727,6 +1737,26 @@ async function handleCallback(db: Db, callback: TelegramCallback) {
   }
   if (action === 'footer-settings-menu') {
     await showFooterSettings(db, chatId);
+    return;
+  }
+  if (action === 'footer-setting' && id === 'document-logo') {
+    const current = await db.collection<{
+      _id: string;
+      documentLogoImageDataBase64?: string;
+    }>('store_settings').findOne({ _id: 'documents' });
+    await startFlow(
+      db,
+      callback.from.id,
+      chatId,
+      'footer_settings',
+      'document_logo_image',
+      {},
+      (current?.documentLogoImageDataBase64
+        ? 'الشعار الحالي محفوظ. أرسل صورة جديدة لاستبداله. '
+        : 'لم تتم إضافة شعار للمستندات بعد. ') +
+      'سيظهر الشعار في فاتورة البيع وسند القبض وفاتورة الأقساط وعقد التقسيط فقط.\n\n' +
+      'أرسل الصورة كصورة في تيليجرام. أرسل «مسح» لإرجاع كلمة أرض الجوال. اكتب /cancel للإلغاء.'
+    );
     return;
   }
   if (action === 'footer-setting' && id === 'logo') {
@@ -2808,6 +2838,90 @@ async function handleFlowMessage(db: Db, session: AdminSession, message: Telegra
     );
     await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
     await sendMainMenu(db, chatId, '✅ تم حفظ الأيقونة ورابطها في الفوتر.');
+    return;
+  }
+
+  if (session.workflow === 'footer_settings' && session.step === 'document_logo_image') {
+    if (value === 'مسح' || value === 'حذف') {
+      await db.collection<{
+        _id: string;
+        documentLogoFileId?: string;
+        documentLogoImageDataBase64?: string;
+        documentLogoContentType?: string;
+        documentLogoImageSize?: number;
+        documentLogoRemoved?: boolean;
+        updatedAt?: Date;
+        updatedByTelegramId?: number;
+      }>('store_settings').updateOne(
+        { _id: 'documents' },
+        {
+          $unset: {
+            documentLogoFileId: '',
+            documentLogoImageDataBase64: '',
+            documentLogoContentType: '',
+            documentLogoImageSize: ''
+          },
+          $set: {
+            documentLogoRemoved: true,
+            updatedAt: new Date(),
+            updatedByTelegramId: session.telegramUserId
+          }
+        },
+        { upsert: true }
+      );
+      await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+      await sendTelegramMessage(chatId, '✅ تمت إزالة شعار المستندات، وستعود كلمة «أرض الجوال» إلى مكانه.');
+      await showFooterSettings(db, chatId);
+      return;
+    }
+
+    if (!message.photo?.length) {
+      await sendTelegramMessage(chatId, 'أرسل صورة الشعار كصورة في تيليجرام، وليس كرابط أو كملف. الحد الأقصى 1 ميجابايت. اكتب /cancel للإلغاء.');
+      return;
+    }
+
+    const photo = message.photo[message.photo.length - 1];
+    let savedImage: Awaited<ReturnType<typeof downloadSliderImage>>;
+    try {
+      savedImage = await downloadSliderImage(photo.file_id);
+    } catch (error) {
+      console.error('Document logo image download failed:', error instanceof Error ? error.message : 'Unknown error');
+      await sendTelegramMessage(chatId, 'تعذر تحميل صورة الشعار من تيليجرام. أعد إرسالها مرة أخرى بصيغة PNG أو JPG أو WebP.');
+      return;
+    }
+
+    if (savedImage.imageSize > 1024 * 1024) {
+      await sendTelegramMessage(chatId, 'حجم شعار المستندات يجب ألا يتجاوز 1 ميجابايت. أرسل صورة أصغر.');
+      return;
+    }
+
+    await db.collection<{
+      _id: string;
+      documentLogoFileId?: string;
+      documentLogoImageDataBase64?: string;
+      documentLogoContentType?: string;
+      documentLogoImageSize?: number;
+      updatedAt?: Date;
+      updatedByTelegramId?: number;
+    }>('store_settings').updateOne(
+      { _id: 'documents' },
+      {
+        $set: {
+          documentLogoFileId: photo.file_id,
+          documentLogoImageDataBase64: savedImage.imageDataBase64,
+          documentLogoContentType: savedImage.contentType,
+          documentLogoImageSize: savedImage.imageSize,
+          updatedAt: new Date(),
+          updatedByTelegramId: session.telegramUserId
+        },
+        $unset: { documentLogoRemoved: '' }
+      },
+      { upsert: true }
+    );
+
+    await db.collection('telegram_sessions').deleteOne({ telegramUserId: session.telegramUserId });
+    await sendTelegramMessage(chatId, '✅ تم حفظ شعار العقود والمستندات. سيظهر في الملفات الأربعة عند فتحها أو طباعتها.');
+    await showFooterSettings(db, chatId);
     return;
   }
 
