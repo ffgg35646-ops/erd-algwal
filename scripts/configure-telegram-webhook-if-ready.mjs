@@ -1,3 +1,10 @@
+// Preview and local builds must never replace the live Telegram webhook.
+// Vercel runs this build script for production and preview deployments alike.
+if (process.env.VERCEL_ENV !== 'production') {
+  console.log('[telegram] Webhook registration skipped: only production deployments may update the live webhook.');
+  process.exit(0);
+}
+
 const required = [
   'TELEGRAM_BOT_TOKEN',
   'TELEGRAM_WEBHOOK_URL',
