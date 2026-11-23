@@ -759,7 +759,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
         return [
           color,
           typeof image === 'string' && isHttpImageUrl(image)
-            ? image
+            ? `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
             : `/api/products/${id}/image?color=${encodeURIComponent(color)}&v=${colorImageVersion}`
         ] as const;
       })
