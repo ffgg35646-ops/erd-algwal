@@ -680,6 +680,33 @@ export function getStoredProductStorage(
   };
 }
 
+function getProductImageVersion(product: StoredProduct) {
+  const versionSource = JSON.stringify({
+    updatedAt: product.updatedAt instanceof Date
+      ? product.updatedAt.getTime()
+      : product.updatedAt || null,
+    imageUrl: product.imageUrl || '',
+    imageUrlMediaId: product.imageUrlMediaId || '',
+    images: Array.isArray(product.images) ? product.images : [],
+    imageMediaIds: product.imageMediaIds || [],
+    imagesDataLengths: (product.imagesDataBase64 || []).map((value) => value?.length || 0),
+    colorImages: product.colorImages || {},
+    colorImageMediaIds: product.colorImageMediaIds || {},
+    colorImageDataLengths: Object.fromEntries(
+      Object.entries(product.colorImagesDataBase64 || {}).map(([color, value]) => [color, value?.length || 0])
+    )
+  });
+
+  // Stable lightweight hash: Telegram file IDs/media IDs change even when an
+  // older admin deployment forgets to update products.updatedAt.
+  let hash = 2166136261;
+  for (let index = 0; index < versionSource.length; index += 1) {
+    hash ^= versionSource.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
 export function serializeStoredProduct(product: StoredProduct, options: { includeColorMask?: boolean } = {}): Product & {
   categoryId: string;
   colors: string[];
@@ -688,7 +715,7 @@ export function serializeStoredProduct(product: StoredProduct, options: { includ
   images: string[];
 } {
   const id = product._id.toHexString();
-  const colorImageVersion = product.updatedAt instanceof Date ? product.updatedAt.getTime() : 0;
+  const colorImageVersion = getProductImageVersion(product);
   const images = Array.isArray(product.images) ? product.images : [];
   // Keep indices stable across Telegram IDs, MongoDB media references, and
   // images written directly to MongoDB by an importer.
