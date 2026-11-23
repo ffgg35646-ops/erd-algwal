@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/mongodb';
-import { ensureDefaultProducts, listCatalogProducts, listCategories } from '@/lib/catalog';
+import { ensureDefaultProducts, listCatalogProducts, listCategories, sortCategoriesByOrder } from '@/lib/catalog';
 import type { Product } from '@/lib/products';
 
 export const runtime = 'nodejs';
@@ -41,10 +41,10 @@ async function readCategories(db: Awaited<ReturnType<typeof getDb>>): Promise<Ca
       // This read does not run the one-time seed reconciliation.
       const categories = await db.collection('categories')
         .find({ deleted: { $ne: true } })
-        .sort({ createdAt: 1, name: 1 })
         .toArray();
+      const sortedCategories = sortCategoriesByOrder(categories);
       return {
-        items: categories
+        items: sortedCategories
           .filter((category) => typeof category.name === 'string' && category.name.trim())
           .map((category) => ({
             id: String(category._id),
